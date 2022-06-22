@@ -1,2 +1,1 @@
-# CNVPipe
-Develope a new CNV calling method
+# Develope a new CNV calling method - CNVPipe
