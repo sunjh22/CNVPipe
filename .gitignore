@@ -2,6 +2,9 @@ data/
 analysis/
 report/
 refs/
-bin/
-report/
+.snakemake/
 .gitignore
+src/
+bin/
+tools/
+.ipynb_checkpoints/

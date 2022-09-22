@@ -1,0 +1,74 @@
+## Config file for CNVPipe snakemake workflow
+
+data:
+    samples:    "/home/jhsun/data/project/CNVPipe/analysis/samples.tsv"
+    control-samples:    "/home/jhsun/data/project/CNVPipe/analysis/control-samples.tsv"
+    genome: ""
+    refFlat:    ""
+
+settings:
+    read-depth:
+        - cnvkit
+        - mops
+        - cnvpytor
+        - freec
+    
+    snp-calling:
+        - bcftools
+        - freebayes
+    
+    breakpoints-detc:
+        - lumpy
+        - delly
+    
+    pathogenicity-pred:
+        - toolA
+        - toolB
+
+params:
+    bwamem:
+        threads:    10
+        extra:  ""
+    
+    cnvkit:
+        threads:    8
+        extra:  ""
+    
+    mops:
+        threads:    8
+        extra:  ""
+    
+    cnvpytor:
+        threads:    8
+        extra:  ""
+    
+    freec:
+        threads:    8
+        extra:  ""
+    
+    bcftools:
+        threads: 8
+        mode: "combined"
+        mpileup: "--max-depth 10000"
+        call: "--multiallelic-caller"
+        stats: ""
+        stats-plot: ""
+    
+    freebayes:
+        extra: ""
+        threads: 8
+        compress-threads: 2
+        chunksize: 100000
+    
+    fastqc:
+        input:  "samples"
+        extra:  ""
+
+
+
+## Reference genome specific files
+human_reference:        /home/jhsun/data/refs/hg38/analysisSet/hg38.analysisSet.fa
+sequence_dict:          /home/jhsun/data/refs/hg38/analysisSet/hg38.analysisSet.fa.dict
+refFlat:                /home/jhsun/data/refs/hg38/bundle/CNVKit/refFlat.txt
+access:                 /home/jhsun/data/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed
+
