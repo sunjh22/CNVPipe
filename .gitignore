@@ -2,3 +2,6 @@ data/
 analysis/
 report/
 refs/
+bin/
+report/
+.gitignore
