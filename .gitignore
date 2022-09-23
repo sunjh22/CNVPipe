@@ -8,3 +8,5 @@ src/
 bin/
 tools/
 .ipynb_checkpoints/
+logs/
+bundle/

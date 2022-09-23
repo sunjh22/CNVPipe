@@ -6,6 +6,10 @@ Objectives of CNVPipe
 2. integrate comprehensive plotting tools for visualization
 3. integrate CNV annotation tools: pathogenicity prediction
 
+## Run CNVPipe snakemake
+
+    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/sunjh/data3/biosoft/conda-env-cnvpipe --cores 10 --directory analysis/ 
+
 ## 1. Prepare test data - simulation
 
 We want to simulate three patient samples with CNV in them and three control samples,
@@ -48,43 +52,28 @@ params:
 
 import config file, get fastq files (depending on se or pe), wildcard_constraints (sample names and control-sample names), valid filename and filepath
 
-##
+## 4. Write pre-processing.smk
 
-Map reads, sort, mark duplicates
+This script includes another two scripts - `fastp.smk` for cleaning reads,
+`bwamem` for mapping reads using bwa-mem
 
-    time bwa mem -t 8 -M -R '@RG\tID:test0\tLB:test0\tPL:ILLUMINA\tSM:test0' ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa sample1_1.fq.gz sample1_2.fq.gz 2>2.log | samtools sort -@ 4 -o sample1.bam - 1>1.log &
-    gatk MarkDuplicates -I sample1.bam -O sample1.mkdup.bam -M sample1.mkdup.metric > 1.log 2> 2.log &
+## 5. Write Read-depth based CNV-calling methods
 
-Simulate 10X pair-end 100 bp data using dwgsim, map using `bowtie2`,
-add read group using gatk `AddOrReplaceReadGroups`, mark duplicates
-using gatk `MarkDuplicatesSpark`
-
-Downsample 10X data to 1X using `seqkit sample -p 0.1 -s 123`, map
-with `bwa mem -M`, and mark duplicates using gatk `MarkDuplicatesSpark`
-
-    gatk AddOrReplaceReadGroups -I test0.bam -O test0.addRG.bam -LB test0 -PL ILLUMINA -PU test0 -SM test0
-    gatk MarkDuplicatesSpark -I test0.addRG.bam -O test0.markdup.bam
-    bowtie2 --mm -p 10 -x ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa -1 test0_1.fq.gz -2 test0_2.fq.gz | samtools sort -@ 10 > test0.bam
-    seqkit sample -p 0.1 -s 123 test0_1.fq.gz -o downsample_test0_1.fq.gz
-    seqkit sample -p 0.1 -s 123 test0_2.fq.gz -o downsample_test0_2.fq.gz
-
-## Read-depth based methods
-
-## Install `CNVKit`
+### Install `CNVKit`
 
  pip install numpy==1.20.0 scipy pandas matplotlib reportlab biopython pyfaidx pysam pyvcf
  pip install cnvkit
 
 Determine read depth and bin size
 
- cnvkit.py autobin analysis/bam/*.bam -m wgs -b 20000 -g ~/data/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed --annotate ~/data/refs/hg38/bundle/CNVKit/refFlat.txt
+    cnvkit.py autobin analysis/bam/*.bam -m wgs -b 20000 -g ~/data/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed --annotate ~/data/refs/hg38/bundle/CNVKit/refFlat.txt
 
-## Install `cn.MOPS`
+### Install `cn.MOPS`
 
  R
  BiocManager::install('cn.mops')
 
-## Install `cnvnator` through conda
+### Install `cnvnator` through conda
 
  conda create -n cnvnator python=3.6
  conda activate cnvnator
@@ -99,7 +88,7 @@ resolve the problem, so I changed to another tool which used
 same principle and write by the same person with Python, called
 `cnvpytor.`
 
-## Install `cnvpytor`
+### Install `cnvpytor`
 
  git clone <https://github.com/abyzovlab/CNVpytor.git>
  cd CNVpytor
@@ -125,7 +114,7 @@ Plotting
 
  time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -plot rd 20000 -o ../read-depth/cnvnator/sample1.png &
 
-## Install `Control-FREEC`
+### Install `Control-FREEC`
 
  git clone <https://github.com/BoevaLab/FREEC.git>
  cd FREEC/src

@@ -1,9 +1,8 @@
 ## Config file for CNVPipe snakemake workflow
 
 data:
-    samples:    "/home/jhsun/data/project/CNVPipe/analysis/samples.tsv"
-    control-samples:    "/home/jhsun/data/project/CNVPipe/analysis/control-samples.tsv"
-    genome: ""
+    samples:    "/home/sunjh/data3/project/CNVPipe/analysis/samples.2.tsv"
+    genome: "/home/sunjh/data3/refs/hg38/analysisSet/hg38.analysisSet.fa"
     refFlat:    ""
 
 settings:
@@ -24,11 +23,20 @@ settings:
     pathogenicity-pred:
         - toolA
         - toolB
+    
+    keep-intermediate:
+        fastp: True
 
 params:
+    fastp:
+        threads:    10
+        se: ""
+        pe: ""
+
     bwamem:
         threads:    10
         extra:  ""
+        index: True
     
     cnvkit:
         threads:    8
