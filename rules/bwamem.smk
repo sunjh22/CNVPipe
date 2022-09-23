@@ -56,5 +56,5 @@ rule all_bwamem:
 
 localrules: all_bwamem
 
-def get_mapped_reads(wildcards):
-    return "mapped/{wildcards.sample}.bam"
+def get_mapped_reads():
+    return "mapped/{sample}.bam"

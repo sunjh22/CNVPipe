@@ -10,7 +10,11 @@ Objectives of CNVPipe
 
     snakemake --use-conda --conda-frontend mamba --conda-prefix /home/sunjh/data3/biosoft/conda-env-cnvpipe --cores 10 --directory analysis/ 
 
-## 1. Prepare test data - simulation
+CNVPipe-token: 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
+
+    git clone https://github.com/sunjh22/CNVPipe.git
+
+## 01. Prepare test data - simulation
 
 We want to simulate three patient samples with CNV in them and three control samples,
 all downsampled to 0.01X for fast testing of our pipeline.
@@ -42,43 +46,84 @@ all downsampled to 0.01X for fast testing of our pipeline.
 
 `seqkit stat analysis/samples-control/*`, 116619 reads in control samples, 201149 in test samples.
 
-## 2. Prepare snakemake config file
+## 02. Prepare snakemake config file
 
 data: samples, control-samples, genome, refFlat
 settings:
 params:
 
-## 3. Write common.smk
+## 03. Prepare main Snakefile
 
-import config file, get fastq files (depending on se or pe), wildcard_constraints (sample names and control-sample names), valid filename and filepath
+Include `.smk` file step by step, testing their availability during development.
 
-## 4. Write pre-processing.smk
+## 04. Write common.smk
 
-This script includes another two scripts - `fastp.smk` for cleaning reads,
-`bwamem` for mapping reads using bwa-mem
+Import config file, get fastq files (depending on se or pe), get patient sample and control sample names and set them to be global parameter. 
+wildcard_constraints (sample names and control-sample names), valid filename and filepath.
 
-## 5. Write Read-depth based CNV-calling methods
+## 05. Write pre-processing.smk
 
-### Install `CNVKit`
+This script includes another two scripts:
+- `fastp.smk` for cleaning reads, used snakemake wrapper;
+- `bwamem.smk` for mapping reads using bwa-mem, also used snakemake wrapper.
 
- pip install numpy==1.20.0 scipy pandas matplotlib reportlab biopython pyfaidx pysam pyvcf
- pip install cnvkit
+## 06. Write smk for Read-depth based CNV-calling methods
 
-Determine read depth and bin size
+### 06.1. CNVKit
 
-    cnvkit.py autobin analysis/bam/*.bam -m wgs -b 20000 -g ~/data/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed --annotate ~/data/refs/hg38/bundle/CNVKit/refFlat.txt
+Include four rules:
+- `autobin` for estimating optimal bin resolution;
+- `batch` for calling CNV for WGS data in batch mode;
+- `segmetrics` for segmenting CNVs based on confidence interval;
+- `call` for trasforming log2 depth ratio to integer copy numbers.
+
+And a simple shell command using `awk` to extract informative columns
+to another file. Columns include genomeic coordinates, integer CN,
+log2 ratio, depth, probe and weight.
+
+The refFlat and access file should be provided.
+
+Principle of CNVKit
+
+The first step is to get accessible regions. Find low mappability track: 1. get from
+rqfu, in `~/data/refs/hg38/low-mappability-track/hg38.badRegions.bed`,
+which includes all centromere, telomere and heterochromatin regions; 2. download from
+10x genomics - black list of SV <http://cf.10xgenomics.com/supp/genome/GRCh38/sv_blacklist.bed> to
+`~/data/refs/hg38/low-mappability-track/sv_blacklist.bed`, re-format it using
+`grep -E -w "chr([0-9]+|[XY])" low-mappability-track/sv_blacklist.bed | sort -Vk 1 -k 2,3n > low-mappability-track/hg38.sv_blacklist.bed`.
+Then use `cnvkit.py access hg38.analysisSet.fa -x hg38.badRegions.bed -x hg38.sv_blacklist.bed -o access-excludes.hg38.bed`
+to get accessible regions. `cnvkit.py access` command will automatically find
+sequence of N's in genome and filter regions with long N's. Then we get target bin file
+by `cnvkit.py target refs/access-excludes.hg38.bed --annotate ~/data/refs/hg38/bundle/CNVKit/refFlat.txt --avg-size 20000 --split -o refs/target.bed`,
+which will then be used to calculate coverage of samples in these bins.
+
+### 06.2. cnvpytor
+
+Include one rule with four commands:
+- `rd` for extracting reads from sample bam file;
+- `his` for calculating reads depth at certain resolution;
+- `partition` for segmenting the bins;
+- `call` for calling CNV.
+
+The results include "CNVtype, CNVregion, CNVsize, CNVlevel, eval1, eval2, eval3, eval4, q0, pN, dG"
+- `CNVlevel` - normalized read depth value, estimated integer CN value should be `round(2*CNVlevel)`;
+- `eval1` - e-value (p-value multiplied by genome size divided by bin size) calculated using t-test statistics between RD statistics in the region and global - set to [0 - 0.00001];
+- `eval2` - e-value from the probability of RD values within the region to be in the tails of a gaussian distribution of binned RD - set to [0 - 0.00001];
+- `q0` - fraction of reads mapped with q0 quality in call region - not useful for filtering since most reads have good quality;
+- `pN` - fraction of reference genome gaps (Ns) in call region - set to [0 - 0.5];
+- `dG` - distance from closest large (>100bp) gap in reference genome - set to [>100kb];
 
 ### Install `cn.MOPS`
 
- R
- BiocManager::install('cn.mops')
+    R
+    BiocManager::install('cn.mops')
 
 ### Install `cnvnator` through conda
 
- conda create -n cnvnator python=3.6
- conda activate cnvnator
- conda install -c conda-forge root_base=6.20
- conda install -c conda-forge -c bioconda cnvnator
+    conda create -n cnvnator python=3.6
+    conda activate cnvnator
+    conda install -c conda-forge root_base=6.20
+    conda install -c conda-forge -c bioconda cnvnator
 
 Use `cnvnator`
 In the step of calculating statistics, cnvnator does not work,
@@ -96,34 +141,34 @@ same principle and write by the same person with Python, called
 
 Extract reads mapping
 
- time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -chrom $(seq -f 'chr%g' 1 22) chrX chrY -rd sample1.bam &
+    time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -chrom $(seq -f 'chr%g' 1 22) chrX chrY -rd sample1.bam &
 
 Generate histogram, 1k resolution
 
- time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -his 20000 &
+    time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -his 20000 &
 
 Partition
 
- time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -partition 20000 &
+    time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -partition 20000 &
 
 Call CNVs
 
- time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -call 20000 > ../read-depth/cnvnator/sample1.2k.tsv &
+    time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -call 20000 > ../read-depth/cnvnator/sample1.2k.tsv &
 
 Plotting
 
- time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -plot rd 20000 -o ../read-depth/cnvnator/sample1.png &
+    time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -plot rd 20000 -o ../read-depth/cnvnator/sample1.png &
 
 ### Install `Control-FREEC`
 
- git clone <https://github.com/BoevaLab/FREEC.git>
- cd FREEC/src
- make clean
- make
+    git clone <https://github.com/BoevaLab/FREEC.git>
+    cd FREEC/src
+    make clean
+    make
 
 Run freec
 
- ~/data/biosoft/FREEC/src/freec -conf analysis/read-depth/freec/config_WGS.txt -sample analysis/bam/sample1.bam -control analysis/bam-control/control1.bam
+    ~/data/biosoft/FREEC/src/freec -conf analysis/read-depth/freec/config_WGS.txt -sample analysis/bam/sample1.bam -control analysis/bam-control/control1.bam
 
 ## Principles of Varbin
 
@@ -138,21 +183,10 @@ Then we calculate the coverage of samples in target bins and correct the log2 ra
 `bin/varbin/coverage.py`, in which `pysam` `bedcov` utils was used to calclulate the basecount in bin
 regions. For example,
 
- time python bin/varbin/coverage.py refs/bin.5k.boundary.gc.txt data/simulation/1X/sample1.mkdup.bam analysis/read-depth/coverage/sample1.coverage.bed 1>1.log 2>2.log &
+    time python bin/varbin/coverage.py refs/bin.5k.boundary.gc.txt data/simulation/1X/sample1.mkdup.bam analysis/read-depth/coverage/sample1.coverage.bed 1>1.log 2>2.log &
 
 ## Principles of CNVKit
 
-The first step is to get accessible regions. Find low mappability track: 1. get from
-rqfu, in `~/data/refs/hg38/low-mappability-track/hg38.badRegions.bed`,
-which includes all centromere, telomere and heterochromatin regions; 2. download from
-10x genomics - black list of SV <http://cf.10xgenomics.com/supp/genome/GRCh38/sv_blacklist.bed> to
-`~/data/refs/hg38/low-mappability-track/sv_blacklist.bed`, re-format it using
-`grep -E -w "chr([0-9]+|[XY])" low-mappability-track/sv_blacklist.bed | sort -Vk 1 -k 2,3n > low-mappability-track/hg38.sv_blacklist.bed`.
-Then use `cnvkit.py access hg38.analysisSet.fa -x hg38.badRegions.bed -x hg38.sv_blacklist.bed -o access-excludes.hg38.bed`
-to get accessible regions. `cnvkit.py access` command will automatically find
-sequence of N's in genome and filter regions with long N's. Then we get target bin file
-by `cnvkit.py target refs/access-excludes.hg38.bed --annotate ~/data/refs/hg38/bundle/CNVKit/refFlat.txt --avg-size 20000 --split -o refs/target.bed`,
-which will then be used to calculate coverage of samples in these bins.
 
 Useful commandlines:
 

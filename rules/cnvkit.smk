@@ -82,7 +82,7 @@ rule cnvkit_call:
         "cnvkit.py call {input} {params} -o {output} 2> {log}"
 
 # use simple shell commandline to extract columns: chromosome, start, end
-# cn, log2, dpeth, probes and weight.
+# cn, log2, dpeth, probe and weight.
 rule cnvkit_convert:
     input:
         rules.cnvkit_call.output
