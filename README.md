@@ -113,6 +113,10 @@ The results include "CNVtype, CNVregion, CNVsize, CNVlevel, eval1, eval2, eval3,
 - `pN` - fraction of reference genome gaps (Ns) in call region - set to [0 - 0.5];
 - `dG` - distance from closest large (>100bp) gap in reference genome - set to [>100kb];
 
+### 06.3. Control-FREEC
+
+
+
 ### Install `cn.MOPS`
 
     R

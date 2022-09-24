@@ -2,8 +2,6 @@
 
 include: "rules/common.smk"
 
-
-
 # rule cnvs:
 # 	input:
 # 		cnvs_wgs = expand("5k/results/{tool}/{sample}.bed", tool = config["TOOLS"], sample = SAMPLES)
