@@ -1,11 +1,6 @@
-# rule cnvkit_access:
-#     input:
-#     output:
-#     params:
-#     log:
-#     benchmark:
-#     conda:
-#     shell:
+# =================================================================================================
+#     CNV calling by CNVKit
+# =================================================================================================
 
 rule cnvkit_autobin:
     input:
@@ -36,7 +31,7 @@ rule cnvkit_batch:
         access=config['data']['access'],
         refflat=config['data']['refflat'],
         outdir="temp/cnvkit",
-        bin_size=config['params']['cnvkit']['bin_size'],
+        bin_size=config['params']['bin_size'],
     log:
         "logs/cnvkit/batch.log"
     benchmark:

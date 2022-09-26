@@ -113,66 +113,34 @@ The results include "CNVtype, CNVregion, CNVsize, CNVlevel, eval1, eval2, eval3,
 - `pN` - fraction of reference genome gaps (Ns) in call region - set to [0 - 0.5];
 - `dG` - distance from closest large (>100bp) gap in reference genome - set to [>100kb];
 
-### 06.3. Control-FREEC
-
-
-
-### Install `cn.MOPS`
-
-    R
-    BiocManager::install('cn.mops')
-
-### Install `cnvnator` through conda
-
-    conda create -n cnvnator python=3.6
-    conda activate cnvnator
-    conda install -c conda-forge root_base=6.20
-    conda install -c conda-forge -c bioconda cnvnator
-
-Use `cnvnator`
-In the step of calculating statistics, cnvnator does not work,
-throw an error "Can't find directory 'bin_1000' in file". The
-problem may happen in the step of generating histogram. I cannot
-resolve the problem, so I changed to another tool which used
-same principle and write by the same person with Python, called
-`cnvpytor.`
-
-### Install `cnvpytor`
-
- git clone <https://github.com/abyzovlab/CNVpytor.git>
- cd CNVpytor
- python install --user .
-
-Extract reads mapping
+Run cnvpytor
 
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -chrom $(seq -f 'chr%g' 1 22) chrX chrY -rd sample1.bam &
-
-Generate histogram, 1k resolution
-
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -his 20000 &
-
-Partition
-
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -partition 20000 &
-
-Call CNVs
-
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -call 20000 > ../read-depth/cnvnator/sample1.2k.tsv &
-
-Plotting
-
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -plot rd 20000 -o ../read-depth/cnvnator/sample1.png &
 
-### Install `Control-FREEC`
+### 06.3. Control-FREEC
 
-    git clone <https://github.com/BoevaLab/FREEC.git>
-    cd FREEC/src
-    make clean
-    make
+After reading developer's manual and testing for several times, I found it hard to include normal sample in this software,
+which is really weired. So now I just need to focus on step 2 and 3. Build a config file first and run the software for
+each sample.
 
 Run freec
 
-    ~/data/biosoft/FREEC/src/freec -conf analysis/read-depth/freec/config_WGS.txt -sample analysis/bam/sample1.bam -control analysis/bam-control/control1.bam
+    ~/data/biosoft/FREEC/src/freec -conf analysis/temp/freec/config_WGS.txt -sample analysis/mapped/sample1.bam
+    ~/data/biosoft/FREEC/src/freec -conf analysis/temp/freec/config_WGS.txt -sample analysis/mapped/sample1.bam -control analysis/mapped/control1.bam
+
+`assess_significance.R` is not working - may need some debug.
+
+`makeGraph.R` scirpt plot the dot plot of copy number in each window in each chromosome. gain is red, loss is blue.
+
+
+### 06.4. cn.MOPS
+
+    R
+    BiocManager::install('cn.mops')
 
 ## Principles of Varbin
 
@@ -188,8 +156,6 @@ Then we calculate the coverage of samples in target bins and correct the log2 ra
 regions. For example,
 
     time python bin/varbin/coverage.py refs/bin.5k.boundary.gc.txt data/simulation/1X/sample1.mkdup.bam analysis/read-depth/coverage/sample1.coverage.bed 1>1.log 2>2.log &
-
-## Principles of CNVKit
 
 
 Useful commandlines:

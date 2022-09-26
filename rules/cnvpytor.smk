@@ -1,4 +1,7 @@
-#print('------------------------------->>>>>>>>>>>')
+# =================================================================================================
+#     CNV calling by cnvpytor
+# =================================================================================================
+
 rule cnvpytor_call:
     input:
         get_mapped_reads(),
@@ -6,7 +9,7 @@ rule cnvpytor_call:
         pytor="temp/cnvpytor/{sample}.pytor",
         call="temp/cnvpytor/{sample}.call",
     params:
-        bin_size=config['params']['cnvpytor']['bin_size']
+        bin_size=config['params']['bin_size']
     threads:
         config['params']['cnvpytor']['threads']
     log:

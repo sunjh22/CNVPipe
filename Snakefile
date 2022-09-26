@@ -14,5 +14,5 @@ include: "rules/common.smk"
 
 include: "rules/pre-processing.smk"
 include: "rules/cnvkit.smk"
-
 include: "rules/cnvpytor.smk"
+include: "rules/freec.smk"
