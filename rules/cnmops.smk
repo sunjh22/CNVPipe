@@ -17,9 +17,9 @@ rule mops_call:
     benchmark:
         "benchmarks/mops/call.bench.log"
     conda:
-        "envs/cnmops.yaml"
+        "../envs/cnmops.yaml"
     shell:
-        "Rscript scripts/cnmops_wgs.R {params.res_dir} {params.bin_size} {threads} {input.bam} 2> {log}"
+        "Rscript ../scripts/cnmops_wgs.R {params.res_dir} {params.bin_size} {threads} {input.bam} 2> {log}"
 
 
 rule all_mops:

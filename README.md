@@ -8,11 +8,15 @@ Objectives of CNVPipe
 
 ## Run CNVPipe snakemake
 
-    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/sunjh/data3/biosoft/conda-env-cnvpipe --cores 10 --directory analysis/ 
+    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/sunjh/data3/biosoft/conda-env-cnvpipe --cores 10 --directory analysis/
 
 CNVPipe-token: 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
 
     git clone https://github.com/sunjh22/CNVPipe.git
+
+Use bio1 server to develop with small data
+
+Use bio2 server to run big data
 
 ## 01. Prepare test data - simulation
 
@@ -49,8 +53,6 @@ all downsampled to 0.01X for fast testing of our pipeline.
 ## 02. Prepare snakemake config file
 
 data: samples, control-samples, genome, refFlat
-settings:
-params:
 
 ## 03. Prepare main Snakefile
 
@@ -83,7 +85,7 @@ log2 ratio, depth, probe and weight.
 
 The refFlat and access file should be provided.
 
-Principle of CNVKit
+#### Principle of CNVKit
 
 The first step is to get accessible regions. Find low mappability track: 1. get from
 rqfu, in `~/data/refs/hg38/low-mappability-track/hg38.badRegions.bed`,
@@ -136,7 +138,6 @@ Run freec
 
 `makeGraph.R` scirpt plot the dot plot of copy number in each window in each chromosome. gain is red, loss is blue.
 
-
 ### 06.4. cn.MOPS
 
 Run cn.MOPS
@@ -147,7 +148,7 @@ Some unexpected error happened for test data, at least 6 samples are required fo
 I suspect it may due to the extremely low coverage of test data. The next step should be
 increasing the sample number and coverage and test again. But now I have to stop at here because
 Dr. Jin ask me to focus more on scCNV project. I will catch up again if I have time.
-(问心无愧即可)
+(问心无愧即可). Catch up here at Wed Oct 12 15:47:48 CST 2022.
 
 ## Principles of Varbin
 
