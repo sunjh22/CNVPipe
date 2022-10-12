@@ -1,6 +1,11 @@
 #!/usr/bin/env Rscript
 
 library(cn.mops)
+
+if(!require(magrittr, quietly=TRUE)){
+    install.package("magrittr", repos = "http://cran.us.r-project.org")
+}
+
 library(magrittr)
 
 options(scipen = 999)

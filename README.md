@@ -139,8 +139,15 @@ Run freec
 
 ### 06.4. cn.MOPS
 
-    R
-    BiocManager::install('cn.mops')
+Run cn.MOPS
+
+    Rscript scripts/cnmops_wgs.R analysis/temp/mops 20000 10 analysis/mapped/sample*.bam 2> analysis/logs/mops/call.log
+
+Some unexpected error happened for test data, at least 6 samples are required for running mops.
+I suspect it may due to the extremely low coverage of test data. The next step should be
+increasing the sample number and coverage and test again. But now I have to stop at here because
+Dr. Jin ask me to focus more on scCNV project. I will catch up again if I have time.
+(问心无愧即可)
 
 ## Principles of Varbin
 

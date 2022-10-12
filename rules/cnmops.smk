@@ -4,9 +4,9 @@
 
 rule mops_call:
     input:
-        bam = expand("mapped/{sample}.bam", sample=config['global']['sample-names']),
+        bam = expand("mapped/{sample}.bam", sample=config['global']['all-sample-names']),
     output:
-        bed = expand("temp/mops/{sample}.txt", sample=config['global']['sample-names']),
+        bed = expand("temp/mops/{sample}.txt", sample=config['global']['all-sample-names']),
     params:
         res_dir = "temp/mops/",
         bin_size = config['params']['bin_size'],
@@ -19,4 +19,9 @@ rule mops_call:
     conda:
         "envs/cnmops.yaml"
     shell:
-        "../scripts/cnmops.R"
+        "Rscript scripts/cnmops_wgs.R {params.res_dir} {params.bin_size} {threads} {input.bam} 2> {log}"
+
+
+rule all_mops:
+    input:
+        rules.mops_call.output
