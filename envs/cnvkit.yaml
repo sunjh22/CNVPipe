@@ -1,7 +1,4 @@
 channels:
   - bioconda
-  - conda-forge
-  - defaults
 dependencies:
-  # Tools
-  - cnvkit ==0.9.9
+  - cnvkit =0.9.9

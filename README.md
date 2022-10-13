@@ -8,7 +8,7 @@ Objectives of CNVPipe
 
 ## Run CNVPipe snakemake
 
-    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/sunjh/data3/biosoft/conda-env-cnvpipe --cores 10 --directory analysis/
+    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 10 --directory analysis2/
 
 CNVPipe-token: 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
 
@@ -142,13 +142,119 @@ Run freec
 
 Run cn.MOPS
 
-    Rscript scripts/cnmops_wgs.R analysis/temp/mops 20000 10 analysis/mapped/sample*.bam 2> analysis/logs/mops/call.log
+    Rscript scripts/cnmops_wgs.R analysis/res/mops 20000 10 analysis/mapped/sample*.bam 2> analysis/logs/mops/call.log
 
 Some unexpected error happened for test data, at least 6 samples are required for running mops.
 I suspect it may due to the extremely low coverage of test data. The next step should be
 increasing the sample number and coverage and test again. But now I have to stop at here because
 Dr. Jin ask me to focus more on scCNV project. I will catch up again if I have time.
 (问心无愧即可). Catch up here at Wed Oct 12 15:47:48 CST 2022.
+
+cn.mops is not applicable to very-low-coverage data, since Windows should contain 50-100 reads each.
+Three steps in cn.mops:
+1. calculate read counts in windows (bins) from bam file
+2. call CNV
+3. calculate integer copy numbers
+
+conda config --set channel_priority strict
+
+## 07. Merge the results from four CNV calling tools
+
+Emergent.
+
+## 08. Call SNPs from data
+
+The reason we do not use GATK for this task is that it
+requires many known-variant files, which increase the
+preparation load if for clinical usages. I will consider
+add that option in future development.
+
+### 08.1 freebayes
+
+Calling sample by sample (the problem is the accuracy).
+Then filter based on quality score, which is hard filter. Hope
+this will not affect our purpose to correct CNV. The allele frequency
+is critical here.
+
+    freebayes -f ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa mapped/sample1.bam | grep 'TYPE=snp' > snps/freebayes/sample1.raw.snp.vcf
+
+### 08.2 samtools + bcftools
+
+Almost the same as freebayes.
+
+## 09. Use SNPs to filter merged CNV set
+
+### 09.1 CNVfilteR
+
+How to install and use it in snakemake? Or I need to write a
+simplified version in Python by myself. Or I need to find another
+tool that was implemented in Python.
+
+Run CNVfilteR:
+1. load cnv file
+2. load snv file
+3. filterCNVs
+4. plot single cnvs or all cnvs
+
+CNVfilteR applies a scoring model, which is based on fuzzy logic,
+to filter false positive CNVs. Briefly, copy number deletion could
+be filtered if there is over 30% (default) heterozygous snvs in CNV
+region; For copy number duplication, scoring model is used: the variants
+with allele frequency close to 50% will be given positive value ([0,1]),
+and variants with allele frequency close to 33.3% or 66.6% will be given
+negative value ([-1,0]), a total score is calculated for CNV region by
+summing up all the score of snvs in that CNV region; finally, positive
+value indicates FP CNV and should be filtered.
+
+This method requires as accurate SNP calling as possible. Is 10X data
+really suitable for this tool? We can rank the CNVs by score but not
+remove them.
+
+.libPaths(c("/home/jhsun/R/x86_64-pc-linux-gnu-library/4.2/", "/data/jinwf/caow/R_lib/" , "/home/wangxf/R/x86_64-redhat-linux-gnu-library/3.6/"))
+
+### 09.2 Adjacent regions
+
+Remove all CNVs in bad genomic regions
+
+## 10. Call CNV based on read-pair and split-read
+
+### 10.1 Lumpy
+
+### 10.2 Delly
+
+## 11. Merge results from Lumpy and Delly
+
+## 12. Combine results from read-depth based and read-pair based methods
+
+## 13. CNV pathogenicity prediction
+
+## 14. visualization
+
+
+TODO:
+1. merge some conda envs yaml files, put common tools together, only those require specific environment get a single env
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Principles of Varbin
 

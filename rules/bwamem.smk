@@ -14,8 +14,8 @@ def get_bwa_mem_extra(wildcards):
 rule map_reads:
     input:
         reads=get_cleaned_reads,
-        idx = multiext(config['data']['genome'], ".amb", ".ann", ".bwt", ".pac", ".sa"),
-        # ref=config['data']['genome'],
+        # idx = multiext(config['data']['genome'], ".amb", ".ann", ".bwt", ".pac", ".sa"),
+        ref=config['data']['genome'],
         # idx=expand(config['data']['genome'] + '.{ext}', ext = ["amb", "ann", "bwt", "pac", "sa", "fai"])
     output:
         (
@@ -25,17 +25,18 @@ rule map_reads:
         )
     params:
         extra=get_bwa_mem_extra,
-        sorting="samtools",
-        sort_order="coordinate",
         sort_extra=config["params"]["samtools"]["sort"],
     threads:
         config['params']['bwamem']['threads'],
     log:
-        "logs/bwamem/{sample}.log",
+        log1 = "logs/bwamem/{sample}.log",
     benchmark:
         "benchmarks/bwamem/{sample}.bench.log",
-    wrapper:
-        "v1.14.0/bio/bwa/mem"
+    conda:
+        "../envs/bwamem.yaml"
+    shell:
+        "(bwa mem {params.extra} -t {threads} {input.ref} {input.reads} | "
+        "samtools sort {params.sort_extra} -@ {threads} -o {output}) 2>{log}"
 
 rule samtools_index:
     input:

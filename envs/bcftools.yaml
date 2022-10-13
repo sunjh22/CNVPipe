@@ -2,5 +2,5 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  # Tools
-  - bioconductor-cn.mops =1.40.0
+  - bcftools =1.11
+  - samtools =1.16.1

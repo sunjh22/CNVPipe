@@ -1,4 +1,5 @@
 channels:
   - bioconda
 dependencies:
-  - cnvpytor =1.2.1
+  # Tools
+  - delly =1.1.5

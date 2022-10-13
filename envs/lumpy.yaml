@@ -1,4 +1,5 @@
 channels:
   - bioconda
 dependencies:
-  - cnvpytor =1.2.1
+  # Tools
+  - lumpy-sv =0.3.1

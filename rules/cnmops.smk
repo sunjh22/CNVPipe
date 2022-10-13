@@ -4,11 +4,12 @@
 
 rule mops_call:
     input:
-        bam = expand("mapped/{sample}.bam", sample=config['global']['all-sample-names']),
+        bam = expand("mapped/{sample}.bam", sample=config['global']['sample-names']),
+        bai = expand("mapped/{sample}.bam.bai", sample=config['global']['sample-names']),
     output:
-        bed = expand("temp/mops/{sample}.txt", sample=config['global']['all-sample-names']),
+        bed = expand("res/mops/{sample}.bed", sample=config['global']['sample-names']),
     params:
-        res_dir = "temp/mops/",
+        res_dir = "res/mops/",
         bin_size = config['params']['bin_size'],
     threads:
         config['params']['mops']['threads']
@@ -21,7 +22,10 @@ rule mops_call:
     shell:
         "Rscript ../scripts/cnmops_wgs.R {params.res_dir} {params.bin_size} {threads} {input.bam} 2> {log}"
 
+# the results from mops is already in formated cnv bed
+
+
 
 rule all_mops:
     input:
-        rules.mops_call.output
+        expand("res/mops/{sample}.bed", sample=config['global']['sample-names']),
