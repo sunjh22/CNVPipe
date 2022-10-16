@@ -36,4 +36,4 @@ rule bcftools_filter:
     
 rule all_bcftools:
     input:
-        expand("snps/bcftools/{sample}.snp.vcf", sample = config['globla']['sample-names'])
+        expand("snps/bcftools/{sample}.snp.vcf", sample = config['global']['sample-names'])

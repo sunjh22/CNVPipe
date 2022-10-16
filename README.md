@@ -8,9 +8,9 @@ Objectives of CNVPipe
 
 ## Run CNVPipe snakemake
 
-    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 10 --directory analysis2/
+    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 10 --directory analysis/ all_freebayes --rerun-triggers mtime
 
-CNVPipe-token: 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
+CNVPipe-token: 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
 
     git clone https://github.com/sunjh22/CNVPipe.git
 
@@ -160,7 +160,11 @@ conda config --set channel_priority strict
 
 ## 07. Merge the results from four CNV calling tools
 
-Emergent.
+Except merging the results from four calling tools, we try to remove genomic bad regions (centromere, telomere and
+heterochromatin). The bad region file is in `~/data/refs/hg38/low-mappability-track/hg38.badRegions.bed`. Besides,
+we need to make sure the merged file adapt to the input format of `CNVfilteR`.
+
+??? What is heterochromatin
 
 ## 08. Call SNPs from data
 
@@ -176,7 +180,7 @@ Then filter based on quality score, which is hard filter. Hope
 this will not affect our purpose to correct CNV. The allele frequency
 is critical here.
 
-    freebayes -f ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa mapped/sample1.bam | grep 'TYPE=snp' > snps/freebayes/sample1.raw.snp.vcf
+    freebayes -f ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa mapped/sample1.bam > snps/freebayes/sample1.raw.vcf
 
 ### 08.2 samtools + bcftools
 
@@ -210,8 +214,6 @@ This method requires as accurate SNP calling as possible. Is 10X data
 really suitable for this tool? We can rank the CNVs by score but not
 remove them.
 
-.libPaths(c("/home/jhsun/R/x86_64-pc-linux-gnu-library/4.2/", "/data/jinwf/caow/R_lib/" , "/home/wangxf/R/x86_64-redhat-linux-gnu-library/3.6/"))
-
 ### 09.2 Adjacent regions
 
 Remove all CNVs in bad genomic regions
@@ -220,7 +222,20 @@ Remove all CNVs in bad genomic regions
 
 ### 10.1 Lumpy
 
+
+
 ### 10.2 Delly
+
+Download map file from [here]<https://gear.embl.de/data/delly/> at Sat Oct 15 17:08:30 +08 2022. These three
+files are mandantory for Delly to call CNV.
+Some R scripts were provided for plotting CNV, which could be a reference for later usage.
+
+    delly cnv -u -i 20000 -g ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -m ~/data/refs/hg38/bundle/delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz -c analysis/temp/delly/sample1.cov.gz -o analysis/temp/delly/sample1.cnv.bcf analysis/mapped/sample1.bam
+    delly classify -f germline -o analysis/temp/delly/sample1.filtered.bcf analysis/temp/delly/sample1.cnv.bcf
+    bcftools query -f "%CHROM\t%POS\t%INFO/END\t[%RDCN]\n" analysis/temp/delly/sample1.filtered.bcf > analysis/temp/delly/sample1.segment.bed
+    Rscript ~/data/biosoft/delly/R/rd.R analysis/temp/delly/sample1.cov.gz analysis/temp/delly/sample1.segment.bed
+
+    Version: Delly 1.1.5
 
 ## 11. Merge results from Lumpy and Delly
 

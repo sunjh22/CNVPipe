@@ -36,7 +36,7 @@ rule map_reads:
         "../envs/bwamem.yaml"
     shell:
         "(bwa mem {params.extra} -t {threads} {input.ref} {input.reads} | "
-        "samtools sort {params.sort_extra} -@ {threads} -o {output}) 2>{log}"
+        "samtools sort {params.sort_extra} -@ {threads} -o {output}) 1>{log}"
 
 rule samtools_index:
     input:

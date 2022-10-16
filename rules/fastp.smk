@@ -25,18 +25,24 @@ rule clean_reads_se:
         extra=config["params"]["fastp"]["se"]
     threads:
         config["params"]["fastp"]["threads"]
-    wrapper:
-        "0.64.0/bio/fastp"
+    conda:
+        "../envs/fastp.yaml"
+    shell:
+        "(fastp --thread {threads} {params.extra} --in1 {input.sample} "
+        "--out1 {output.trimmed} --html {output.html} --json {output.json}) 1> {log}"
 
 rule clean_reads_pe:
     input:
-        sample=unpack_fastp_files
+        sample1 = "samples/{sample}_1.fq.gz",
+        sample2 = "samples/{sample}_2.fq.gz",
     output:
-        trimmed=(
-            ["cleaned/{sample}_1.fq.gz", "cleaned/{sample}_2.fq.gz"]
-            if config['settings']['keep-intermediate']['fastp']
-            else temp(["cleaned/{sample}_1.fq.gz", "cleaned/{sample}_2.fq.gz"])
-        ),
+        # trimmed=(
+        #     ["cleaned/{sample}_1.fq.gz", "cleaned/{sample}_2.fq.gz"]
+        #     if config['settings']['keep-intermediate']['fastp']
+        #     else temp(["cleaned/{sample}_1.fq.gz", "cleaned/{sample}_2.fq.gz"])
+        # ),
+        trimmed1 = "cleaned/{sample}_1.fq.gz",
+        trimmed2 = "cleaned/{sample}_2.fq.gz",
         html="cleaned/{sample}-pe-fastp.html",
         json="cleaned/{sample}-pe-fastp.json",
     log:
@@ -47,8 +53,12 @@ rule clean_reads_pe:
         extra=config["params"]["fastp"]["pe"]
     threads:
         config["params"]["fastp"]["threads"]
-    wrapper:
-        "0.64.0/bio/fastp"
+    conda:
+        "../envs/fastp.yaml"
+    shell:
+        "(fastp --thread {threads} {params.extra} --in1 {input.sample1} --in2 {input.sample2} "
+        "--out1 {output.trimmed1} --out2 {output.trimmed2} "
+        "--html {output.html} --json {output.json}) 1> {log}"
 
 rule all_fastp:
     input:
