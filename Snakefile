@@ -13,9 +13,13 @@ include: "rules/common.smk"
 #TOOLS = set(tool for tool in config["TOOLS"])
 
 include: "rules/pre-processing.smk"
+
 include: "rules/cnvkit.smk"
 include: "rules/cnvpytor.smk"
 include: "rules/freec.smk"
 include: "rules/cnmops.smk"
+
 include: "rules/freebayes.smk"
+
 include: "rules/delly.smk"
+include: "rules/lumpy.smk"

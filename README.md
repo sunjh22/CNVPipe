@@ -8,7 +8,8 @@ Objectives of CNVPipe
 
 ## Run CNVPipe snakemake
 
-    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 10 --directory analysis/ all_freebayes --rerun-triggers mtime
+    snakemake -np --directory analysis/ all_lumpy --rerun-triggers mtime
+    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 10 --directory analysis/ all_lumpy --rerun-triggers mtime
 
 CNVPipe-token: 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
 
@@ -222,9 +223,40 @@ Remove all CNVs in bad genomic regions
 
 ### 10.1 Lumpy
 
+Lumpy is written by C.
+Five steps to call CNV by Lumpy. 1. get discordant reads (insert size over expected size or
+mate pair mapped to different chromosomes); 2. get split reads by Lumpy script; 3. call CNV by
+lumpyexpress; 4. genotype CNV by svtypes, a quality score was given (in QUAL filed of vcf file),
+but how to select CNV based on score need further consideration; 5. extract CNV.
 
+    samtools view -b -F 1294 analysis/mapped/sample1.bam | samtools sort -@ 8 -o analysis/temp/lumpy/sample1.discordant.bam -
+    samtools view -h analysis/mapped/sample1.bam | extractSplitReads_BwaMem -i stdin | samtools sort -@ 8 -o analysis/temp/lumpy/sample1.split.bam -
+    lumpyexpress -B analysis/mapped/sample1.bam -S analysis/temp/lumpy/sample1.split.bam -D analysis/temp/lumpy/sample1.discordant.bam -o analysis/temp/lumpy/sample1.vcf
+    svtyper -i analysis/temp/lumpy/sample1.vcf -B analysis/mapped/sample1.bam -l analysis/temp/lumpy/sample1.bam.json > analysis/temp/lumpy/sample1.gt.vcf
+    bcftools query -f '%CHROM\t%POS\t%INFO/END\t%INFO/SVTYPE\t%QUAL\n' analysis/temp/lumpy/sample1.gt.vcf | egrep 'DUP|DEL' > analysis/res/lumpy/sample1.bed
 
-### 10.2 Delly
+A coverage calculation script was provided `scripts/get_coverages.py` for later reference.
+
+A low mappbility track file provided by Heng Li is suggested, I downloaded and extracted
+the file at Mon Oct 17 08:59:27 +08 2022, the file is in `~/refs/hg38/low-mappability-track/HengLi-lowMapTrach/btu356_LCR-hs38.bed/btu356_LCR-hs38.bed`.
+Overall length of low-map region is 228,061,378.
+
+### 10.2 Smoove
+There is a Lumpy wrapper called `smoove`, which is claimed to be faster. Just have try and see
+if it can replace lumpy.
+
+An bad region file was downloaded according to the author of smoove. Overall length is 119,556,880,
+which is almost half shorter than Heng Li's. But when we remove non-cannonical chromosomes, its length
+became 3,042,685, which is definitely not correct.
+
+Our own bad region file is in `low-mappability-track/hg38.badRegions.bed`, which includes centromere,
+telomere and heterochromatin, the length is 199,765,358.
+
+    wget https://raw.githubusercontent.com/hall-lab/speedseq/master/annotations/exclude.cnvnator_100bp.GRCh38.20170403.bed
+
+To be tested.
+
+### 10.3 Delly
 
 Download map file from [here]<https://gear.embl.de/data/delly/> at Sat Oct 15 17:08:30 +08 2022. These three
 files are mandantory for Delly to call CNV.

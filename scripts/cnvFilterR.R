@@ -26,7 +26,7 @@ vcf_file <- "~/data/project/CNVPipe/analysis/snps/freebayes/sample1.snp.vcf"
 
 # Load copy number data
 cnv_gr <- loadCNVcalls(cnvs.file = cnv_file, chr.column = 'chromosome', start.column = 'start', end.column = 'end',
-                       cnv.column = 'cnv_type', sample.column = 'sample', genome = 'hg19')
+                       cnv.column = 'cnv_type', sample.column = 'sample', genome = 'hg38')
 
 # Load variant data
 vcfs <- loadVCFs(vcf.files = vcf_file, cnvs.gr = cnv_gr, min.total.depth = 5)
