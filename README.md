@@ -2,7 +2,7 @@
 
 Objectives of CNVPipe
 
-1. easy to use, high sensitivity and low FDR CNV calling
+1. easy to use, high sensitivity and low FDR for CNV calling
 2. integrate comprehensive plotting tools for visualization
 3. integrate CNV annotation tools: pathogenicity prediction
 
@@ -61,8 +61,9 @@ Include `.smk` file step by step, testing their availability during development.
 
 ## 04. Write common.smk
 
-Import config file, get fastq files (depending on se or pe), get patient sample and control sample names and set them to be global parameter. 
-wildcard_constraints (sample names and control-sample names), valid filename and filepath.
+Import config file, get fastq files (depending on se or pe), get patient sample and 
+control sample names and set them to be global parameter. wildcard_constraints (sample 
+names and control-sample names), valid filename and filepath.
 
 ## 05. Write pre-processing.smk
 
@@ -78,13 +79,14 @@ Include four rules:
 - `autobin` for estimating optimal bin resolution;
 - `batch` for calling CNV for WGS data in batch mode;
 - `segmetrics` for segmenting CNVs based on confidence interval;
-- `call` for trasforming log2 depth ratio to integer copy numbers.
+- `call` for transforming log2 depth ratio to integer copy numbers.
 
 And a simple shell command using `awk` to extract informative columns
 to another file. Columns include genomeic coordinates, integer CN,
 log2 ratio, depth, probe and weight.
 
-The refFlat and access file should be provided.
+The refFlat and access file should be provided for annotation and
+discarding reads in low-mappbility region.
 
 #### Principle of CNVKit
 
@@ -157,8 +159,6 @@ Three steps in cn.mops:
 2. call CNV
 3. calculate integer copy numbers
 
-conda config --set channel_priority strict
-
 ## 07. Merge the results from four CNV calling tools
 
 Except merging the results from four calling tools, we try to remove genomic bad regions (centromere, telomere and
@@ -193,7 +193,8 @@ Almost the same as freebayes.
 
 How to install and use it in snakemake? Or I need to write a
 simplified version in Python by myself. Or I need to find another
-tool that was implemented in Python.
+tool that was implemented in Python. Directly download in R script
+if not installed.
 
 Run CNVfilteR:
 1. load cnv file
@@ -238,7 +239,7 @@ but how to select CNV based on score need further consideration; 5. extract CNV.
 A coverage calculation script was provided `scripts/get_coverages.py` for later reference.
 
 A low mappbility track file provided by Heng Li is suggested, I downloaded and extracted
-the file at Mon Oct 17 08:59:27 +08 2022, the file is in `~/refs/hg38/low-mappability-track/HengLi-lowMapTrach/btu356_LCR-hs38.bed/btu356_LCR-hs38.bed`.
+the file at Mon Oct 17 08:59:27 +08 2022, the file is in `~/refs/hg38/low-mappability-track/HengLi-lowMapTrach/hg38.exclude.hengli.bed`.
 Overall length of low-map region is 228,061,378.
 
 ### 10.2 Smoove
@@ -247,14 +248,22 @@ if it can replace lumpy.
 
 An bad region file was downloaded according to the author of smoove. Overall length is 119,556,880,
 which is almost half shorter than Heng Li's. But when we remove non-cannonical chromosomes, its length
-became 3,042,685, which is definitely not correct.
+became 3,042,685, which is definitely not correct. The file is in `low-mappability-track/smoove/hg38.exclude.bed`.
+
+    wget https://raw.githubusercontent.com/hall-lab/speedseq/master/annotations/exclude.cnvnator_100bp.GRCh38.20170403.bed
 
 Our own bad region file is in `low-mappability-track/hg38.badRegions.bed`, which includes centromere,
 telomere and heterochromatin, the length is 199,765,358.
 
-    wget https://raw.githubusercontent.com/hall-lab/speedseq/master/annotations/exclude.cnvnator_100bp.GRCh38.20170403.bed
+Another low-map track is downloaded from 10x genomics in `low-mappability-track/10x/hg38.sv_blacklist.bed`, its overall length is 212,765,070.
+I think this one might be the best one to use.
 
-To be tested.
+Testing
+
+    smoove call --outdir analysis/temp/smoove/ --exclude ~/data/refs/hg38/exclude.cnvnator_100bp.GRCh38.20170403.bed --name sample4 --fasta ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -p 1 --genotype analysis/mapped/sample4.bam
+
+After comparing the results from Lumpy and Smoove, we found no big difference, so we will use smoove
+to replace lumpy in our CNVPipe.
 
 ### 10.3 Delly
 

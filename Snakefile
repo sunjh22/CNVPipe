@@ -23,3 +23,4 @@ include: "rules/freebayes.smk"
 
 include: "rules/delly.smk"
 include: "rules/lumpy.smk"
+include: "rules/smoove.smk"
