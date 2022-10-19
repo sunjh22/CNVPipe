@@ -16,10 +16,6 @@ options(scipen = 999)
 # args <- commandArgs(trailingOnly = TRUE)
 # cnv_file <- args[1]
 # vcf_file <- args[2]
-# sample1 <- read.delim("~/data/project/CNVPipe/analysis/res/cnvkit/sample1.bed")
-# sample1$cnv <- ifelse(sample1$cn>2, 'deletion', 'duplication')
-# sample1$sample <- 'sample1'
-# write.table(sample1, "~/data/project/CNVPipe/analysis/res/cnvfilter/sample1.bed", quote = F, sep = '\t', row.names = F)
 
 cnv_file <- "~/data/project/CNVPipe/analysis/res/merge/sample1.bed"
 vcf_file <- "~/data/project/CNVPipe/analysis/snps/freebayes/sample1.snp.vcf"
@@ -37,6 +33,13 @@ cnv_filter <- filterCNVs(temp_cnv_gr, vcfs)
 
 # Get filtered CNVs
 filtered <- cnv_filter$cnvs[cnv_filter$cnvs$filter == TRUE]
-filtered0 <- data.frame(seqname = seqnames(filtered),
+filtered0 <- data.frame(chromosome = seqnames(filtered),
                         start = start(filtered),
-                        end = end(filtered))
+                        end = end(filtered),
+                        CNVfilteR = rep('False', length(filtered)))
+
+# Label filtered CNVs in original bed file
+cnv <- read.delim(cnv_file)
+cnv <- dplyr::left_join(cnv, filtered0, by = c('chromosome', 'start', 'end'))
+cnv$CNVfilteR[is.na(cnv$CNVfilteR)] <- 'True'
+write.table(cnv, file = "~/data/project/CNVPipe/analysis/res/cnvfilter/sample1.bed", sep = '\t', quote = F, row.names = F)

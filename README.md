@@ -243,6 +243,7 @@ the file at Mon Oct 17 08:59:27 +08 2022, the file is in `~/refs/hg38/low-mappab
 Overall length of low-map region is 228,061,378.
 
 ### 10.2 Smoove
+
 There is a Lumpy wrapper called `smoove`, which is claimed to be faster. Just have try and see
 if it can replace lumpy.
 
@@ -258,31 +259,97 @@ telomere and heterochromatin, the length is 199,765,358.
 Another low-map track is downloaded from 10x genomics in `low-mappability-track/10x/hg38.sv_blacklist.bed`, its overall length is 212,765,070.
 I think this one might be the best one to use.
 
-Testing
+Test `smoove` calling
 
     smoove call --outdir analysis/temp/smoove/ --exclude ~/data/refs/hg38/exclude.cnvnator_100bp.GRCh38.20170403.bed --name sample4 --fasta ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -p 1 --genotype analysis/mapped/sample4.bam
 
 After comparing the results from Lumpy and Smoove, we found no big difference, so we will use smoove
 to replace lumpy in our CNVPipe.
 
+Use `duphold` to genotype. Three additional fields will be added into `FORMAT` per sample:
+DHFC - "fold-change for the variant depth relative to the rest of the chromosome the variant was found on"
+DHFFC - "fold-change for the variant depth relative to Flanking regions"
+DHBFC - "fold-change for the variant depth relative to bins in the genome with similar GC-content"
+
+    smoove genotype -d -x -p 1 --name sample4 --outdir analysis/temp/smoove-genotype/ --fasta ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa --vcf analysis/temp/smoove/sample4-smoove.genotyped.vcf.gz analysis/mapped/sample4.bam
+
+The authors suggest use DHFFC<0.7 to filter deletion and DHBFC>1.3 to filter duplication
+
+    bcftools view -i '(SVTYPE = "DEL" & FMT/DHFFC[0] < 0.7) | (SVTYPE = "DUP" & FMT/DHBFC[0] > 1.3)' analysis/temp/smoove-genotype/sample4-smoove.genotyped.vcf.gz
+
+Use `bcftools` to extract informative columns
+
+    bcftools query -f '%CHROM\t%POS\t%INFO/END\t%INFO/SVTYPE\t%QUAL[\t%DHFC\t%DHFFC\t%DHBFC]\n' analysis/temp/smoove-genotype/sample4-smoove.genotyped.vcf.gz
+
+Follow author's suggestion to filter by `awk`
+
+    awk '$4<2 && $7<0.7 {print $0} $4>2 && $8>1.3 {print $0}' analysis/res/smoove/sample1.bed | wcl
+
+`duphold` also support SNP vcf file for filtering, just like `CNVfilteR`.
+
 ### 10.3 Delly
 
-Download map file from [here]<https://gear.embl.de/data/delly/> at Sat Oct 15 17:08:30 +08 2022. These three
-files are mandantory for Delly to call CNV.
-Some R scripts were provided for plotting CNV, which could be a reference for later usage.
+Delly is written in C++. It is primarily designed for calling structural variant, both
+germline and somatic (cancers). It also supports CNV calling now.
+
+Mappbility files are mandantory for Delly to call CNV, we downloaded map files
+from [here]<https://gear.embl.de/data/delly/> at Sat Oct 15 17:08:30 +08 2022. All three
+files are required.
+
+Delly by default divide genome into 10kb-mappable bins, but we can set window size by `-i`
+parameter. `-u` is for segmentation, `-l` is for using delly SV calling to refine breakpoints.
+
+So we try to call SV first, and use its output as input for CNV calling. 
+`delly call` only use paired-end and split-read information, and read-depth is not used.
+
+    delly call -g ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -x ~/data/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed -o analysis/temp/delly/sample1.sv.bcf analysis/mapped/sample1.bam
+
+Use `delly cnv` to call CNV
 
     delly cnv -u -i 20000 -g ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -m ~/data/refs/hg38/bundle/delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz -c analysis/temp/delly/sample1.cov.gz -o analysis/temp/delly/sample1.cnv.bcf analysis/mapped/sample1.bam
-    delly classify -f germline -o analysis/temp/delly/sample1.filtered.bcf analysis/temp/delly/sample1.cnv.bcf
-    bcftools query -f "%CHROM\t%POS\t%INFO/END\t[%RDCN]\n" analysis/temp/delly/sample1.filtered.bcf > analysis/temp/delly/sample1.segment.bed
+
+Use `duphold` to do genotyping
+
+    duphold -v analysis/temp/delly/sample4.filtered.bcf -b analysis/mapped/sample4.bam -f ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa -o analysis/temp/delly/sample4.duphold.vcf
+
+`delly classify` will select CNVs with 'PASS' (filter low-quality CNVs), bad thing is that it
+transforms all quality score into 10000, so we decided to filter CNVs by grep and keep
+the original quality score. A thing need to notice is that in some cases, value in `FILTER`
+field is not matched with `FT` tag in `format` field. One could be PASS while the other one
+could be LowQual. We just use the `FILTER`=="PASS" to select all good-quality CNVs. (strict mode)
+
+Use `bcftools` to extract informative columns
+
+    bcftools query -f '%FILTER\t%CHROM\t%POS\t%INFO/END[\t%RDCN\t%DHFC\t%DHFFC\t%DHBFC]\n' analysis/temp/delly/sample4.duphold.vcf | grep 'PASS' | cut -f 2- > analysis/res/delly/sample4.bed
+
+In `INFO` field, `MP` means fraction of mappable positions; `GCF` means GC fraction (added by duphold);
+these should not be used for CNV filtering.
+
+Some R scripts were provided for plotting CNV, which could be a reference for later usage.
+
     Rscript ~/data/biosoft/delly/R/rd.R analysis/temp/delly/sample1.cov.gz analysis/temp/delly/sample1.segment.bed
 
     Version: Delly 1.1.5
 
 ## 11. Merge results from Lumpy and Delly
 
+
+
+Section9, 11 and 12 need more time to think. Test section 13 first.
+
 ## 12. Combine results from read-depth based and read-pair based methods
 
 ## 13. CNV pathogenicity prediction
+
+### 13.1 ClassifyCNV
+
+ClassifyCNV cannot be downloaded from bioconda, and its result directory is weired,
+we need to figure out how to make it work in our CNVPipe.
+
+### 13.2 X-CNV
+
+XCNV only supports hg19, which is outdated, so we give up using this tool to predict
+CNV pathogenicity.
 
 ## 14. visualization
 
