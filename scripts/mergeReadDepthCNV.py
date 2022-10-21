@@ -46,13 +46,7 @@ def readFile(infile, bad):
                 x[0] = 'chr' + x[0]
 
             # make cnv results from different tools output in the same format
-            if len(x) > 5:
-                x.pop(4)
-            elif len(x) == 5:
-                x.pop(4)
-                x.append('-')
-            else:
-                x.append('-')
+            x = x[:4] + [x[-1]]
             
             # prepare for CNVfilteR input
             if int(x[3]) > 2:
@@ -77,20 +71,19 @@ if __name__ == "__main__":
     cnvpytor = sys.argv[2]
     freec = sys.argv[3]
     mops = sys.argv[4]
-    lowMapFile = sys.argv[5]    # by default, we use blacklist from 10x
-    outputFile = sys.argv[6]
+    smoove = sys.argv[5]
+    delly = sys.argv[6]
+    lowMapFile = sys.argv[7]    # by default, we use blacklist from 10x
+    outputFile = sys.argv[8]
 
     sample = os.path.basename(cnvkit).split('.')[0]
 
+    cnvfiles = [cnvkit, cnvpytor, freec, mops, smoove, delly]
+    cnvtools = ['cnvkit', 'cnvpytor', 'freec', 'mops', 'smoove', 'delly']
     bad = readBadRegion(lowMapFile)
 
     with open(outputFile, 'w') as f:
         print('chromosome', 'start', 'end', 'cn', 'info', 'cnv', 'sample', 'tool', sep='\t', file=f)
-        for x in readFile(cnvkit, bad):
-            print(*x, sample, 'cnvkit', sep='\t', file=f)
-        for x in readFile(cnvpytor, bad):
-            print(*x, sample, 'cnvpytor', sep='\t', file=f)
-        for x in readFile(freec, bad):
-            print(*x, sample, 'freec', sep='\t', file=f)
-        for x in readFile(mops, bad):
-            print(*x, sample, 'mops', sep='\t', file=f)
+        for i, cnvfile in enumerate(cnvfiles):
+            for cnv in readFile(cnvfile, bad):
+                print(*cnv, sample, cnvtools[i], sep='\t', file=f)

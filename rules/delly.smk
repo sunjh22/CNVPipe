@@ -74,6 +74,7 @@ rule delly_genotype:
 #         "delly classify -f germline -o {output} {input} 1> {log}"
 
 # Transform bcf file to bed and filter low-quality CNVs
+# Extract genomic coordinates, CN and QUAL, DHFFC and DHBFC columns
 rule delly_convert:
     input:
         rules.delly_genotype.output,
@@ -82,8 +83,10 @@ rule delly_convert:
     conda:
         "../envs/delly.yaml"
     shell:
-        "bcftools query -f '%FILTER\t%CHROM\t%POS\t%INFO/END[\t%CN]\t%QUAL[\t%DHFC\t%DHFFC\t%DHBFC]\n' {input} | "
-        "grep 'PASS' | cut -f 2- > {output}"
+        "bcftools query -f '%FILTER\t%CHROM\t%POS\t%INFO/END[\t%CN]\t%QUAL[\t%DHFC\t%DHFFC\t%DHBFC]\n' "
+        "{input} | grep 'PASS' | cut -f 2- | "
+        "awk -v OFS='\t' '$4<2 && $7<0.7 {{print $1,$2,$3,$4,$5\"|\"$7\"|\"$8}} "
+        "$4>2 && $8>1.3 {{print $1,$2,$3,$4,$5\"|\"$7\"|\"$8}}'> {output}"
 
 rule all_delly:
     input:

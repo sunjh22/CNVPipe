@@ -2,6 +2,7 @@
 #     CNV calling by CNVKit
 # =================================================================================================
 
+# Estimate optimal resolution for specific depth data, will not be triggered automatically
 rule cnvkit_autobin:
     input:
         expand("mapped/{sample}.bam", sample=config['global']['sample-names']),
@@ -14,8 +15,10 @@ rule cnvkit_autobin:
     conda:
         "../envs/cnvkit.yaml"
     shell:
-        "cnvkit.py autobin {input} {params.extra} -g {params.access} --annotate {params.refflat} > {output.estibin} 2>&1"
+        "cnvkit.py autobin {input} {params.extra} -g {params.access} --annotate {params.refflat} "
+        "> {output.estibin} 2>&1"
 
+# Call CNVs in samples in batch mode
 rule cnvkit_batch:
     input:
         sample=expand("mapped/{sample}.bam", sample=config['global']['sample-names']),
@@ -35,17 +38,16 @@ rule cnvkit_batch:
     log:
         "logs/cnvkit/batch.log"
     benchmark:
-        "benchmarks/cnvkit/batch.bench.log"
+        "benchmarks/cnvkit/batch.benchmark"
     conda:
         "../envs/cnvkit.yaml"
     shell:
-        "echo 'A good day!'; \n"
         "(cnvkit.py batch {input.sample} -n {input.control} -m wgs -f {params.ref} "
         "--access {params.access} --target-avg-size {params.bin_size} -p {threads} "
-        "--annotate {params.refflat} --drop-low-coverage --output-reference {output.reference} -d {params.outdir}) 2> {log}"
-    # script:
-    #     "../scripts/cnvkit.py"
+        "--annotate {params.refflat} --drop-low-coverage --output-reference {output.reference} "
+        "-d {params.outdir}) 2> {log}"
 
+# Segment CNVs based on confidence interval
 rule cnvkit_segmetric:
     input:
         cns="temp/cnvkit/{sample}.cns",
@@ -59,9 +61,9 @@ rule cnvkit_segmetric:
     conda:
         "../envs/cnvkit.yaml"
     shell:
-        "cnvkit.py segmetrics -s {input.cns} {input.cnr} "
-        "{params} -o {output} 2> {log}"
+        "cnvkit.py segmetrics -s {input.cns} {input.cnr} {params} -o {output} 2> {log}"
 
+# Call integer copy number
 rule cnvkit_call:
     input:
         rules.cnvkit_segmetric.output,
@@ -76,15 +78,15 @@ rule cnvkit_call:
     shell:
         "cnvkit.py call {input} {params} -o {output} 2> {log}"
 
-# use simple shell commandline to extract columns: chromosome, start, end
-# cn, log2, dpeth, probe and weight.
+# Use awk to extract columns: chromosome, start, end, cn, log2, dpeth, probe and weight.
 rule cnvkit_convert:
     input:
         rules.cnvkit_call.output
     output:
         "res/cnvkit/{sample}.bed"
     shell:
-        "cat {input} | awk -v OFS='\t' '$8 != 2{{print $1,$2,$3,$8,$5,$9\"|\"$12\"|\"$13}}' > {output}"
+        "cat {input} | awk -v OFS='\t' '$8 != 2{{print $1,$2,$3,$8,$5,$9\"|\"$12\"|\"$13}}' "
+        "> {output}"
 
 
 rule all_cnvkit:

@@ -33,7 +33,7 @@ rule map_reads:
     benchmark:
         "benchmarks/bwamem/{sample}.bench.log",
     conda:
-        "../envs/bwamem.yaml"
+        "../envs/pre-processing.yaml"
     shell:
         "(bwa mem {params.extra} -t {threads} {input.ref} {input.reads} | "
         "samtools sort {params.sort_extra} -@ {threads} -o {output}) 1>{log}"

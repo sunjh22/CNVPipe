@@ -22,9 +22,9 @@ rule smoove_call:
         "(smoove call --outdir {params.outdir} --exclude {params.exclude} "
         "--name {wildcards.sample} --fasta {params.ref} -p 1 --genotype {input}) 2> {log}"
 
-# Smoove genotype command is a wrapper of svtyper and duphold, the later one will calculate
-# the read depth ratio between CNV region and its flanking region, regions with the same
-# GC content, and CNV region in the same chromosome.
+# Smoove genotype command is a wrapper of svtyper and duphold, the later one will calculatethe read 
+# depth ratio between CNV region and its flanking region, and regions with the same GC content, and 
+# regions in the same chromosome.
 rule smoove_genotype:
     input:
         vcf = rules.smoove_call.output,
@@ -44,18 +44,20 @@ rule smoove_genotype:
         "smoove genotype -d -x -p 1 --name {wildcards.sample} --outdir {params.outdir} "
         "--fasta {params.ref} --vcf {input.vcf} {input.bam} 2> {log}"
 
+# Extract genomic coordinates, transform SVType to copy number (DEL=1, DUP=3), extract QUAL, DHFFC 
+# and DHBFC columns
 rule smoove_convert:
     input:
         rules.smoove_genotype.output
     output:
         "res/smoove/{sample}.bed"
-    log:
-        "logs/smoove/{sample}.convert.log"
     conda:
         "../envs/freebayes.yaml"
     shell:
-        "(bcftools query -f '%CHROM\t%POS\t%INFO/END\t%INFO/SVTYPE\t%QUAL[\t%DHFC\t%DHFFC\t%DHBFC]\n' {input} | "
-        "egrep 'DUP|DEL' > {output}) 2> {log}"
+        "bcftools query -f '%CHROM\t%POS\t%INFO/END\t%INFO/SVTYPE\t%QUAL[\t%DHFC\t%DHFFC\t%DHBFC]\n' "
+        "{input} | egrep 'DUP|DEL' | "
+        "awk -v OFS='\t' '$4==\"DEL\" && $7<0.7 {{print $1,$2,$3,1,$5\"|\"$7\"|\"$8}} "
+        "$4==\"DUP\" && $8>1.3 {{print $1,$2,$3,3,$5\"|\"$7\"|\"$8}}' > {output}"
 
 rule all_smoove:
     input:

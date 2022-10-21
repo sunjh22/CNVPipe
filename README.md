@@ -68,12 +68,20 @@ names and control-sample names), valid filename and filepath.
 ## 05. Write pre-processing.smk
 
 This script includes another two scripts:
-- `fastp.smk` for cleaning reads, used snakemake wrapper;
-- `bwamem.smk` for mapping reads using bwa-mem, also used snakemake wrapper.
+- `fastp.smk` for cleaning reads, use snakemake wrapper;
+- `bwamem.smk` for mapping reads using bwa-mem, also use snakemake wrapper.
 
 ## 06. Write smk for Read-depth based CNV-calling methods
 
+We need to be clear about some features of these methods:
+1. require normal samples? if yes, how many?
+2. call germline CNV sample by sample or in batch
+3. exclude low-mappability region? require reference file?
+
 ### 06.1. CNVKit
+
+Require normal samples (no limit on the number), reference genome and exclude low-map region.
+Call germline CNV in batch.
 
 Include four rules:
 - `autobin` for estimating optimal bin resolution;
@@ -82,7 +90,7 @@ Include four rules:
 - `call` for transforming log2 depth ratio to integer copy numbers.
 
 And a simple shell command using `awk` to extract informative columns
-to another file. Columns include genomeic coordinates, integer CN,
+into another file. Columns include genomeic coordinates, integer CN,
 log2 ratio, depth, probe and weight.
 
 The refFlat and access file should be provided for annotation and
@@ -103,6 +111,10 @@ by `cnvkit.py target refs/access-excludes.hg38.bed --annotate ~/data/refs/hg38/b
 which will then be used to calculate coverage of samples in these bins.
 
 ### 06.2. cnvpytor
+
+Do not require normal sample and reference genome and do not exclude low-map region.
+This method solely depends on comparing read depth between adjacent region (?) and regions
+with similar GC content. Call germline CNV sample by sample.
 
 Include one rule with four commands:
 - `rd` for extracting reads from sample bam file;
@@ -128,6 +140,9 @@ Run cnvpytor
 
 ### 06.3. Control-FREEC
 
+It claims requiring control samples, but I cannot include them into analysis. Require reference genome,
+do not exclude low-map region. Call germline CNV sample by sample.
+
 After reading developer's manual and testing for several times, I found it hard to include normal sample in this software,
 which is really weired. So now I just need to focus on step 2 and 3. Build a config file first and run the software for
 each sample.
@@ -143,6 +158,15 @@ Run freec
 
 ### 06.4. cn.MOPS
 
+Require at least 6 normal samples, do not require reference genome and do not exclude low-map region.
+Call CNV in batch. This method call CNV by comparing read depth between patient sample and control sample.
+
+cn.mops is not applicable to very-low-coverage data, since Windows should contain 50-100 reads each.
+Three steps in cn.mops:
+1. calculate read counts in windows (bins) from bam file
+2. call CNV
+3. calculate integer copy numbers
+
 Run cn.MOPS
 
     Rscript scripts/cnmops_wgs.R analysis/res/mops 20000 10 analysis/mapped/sample*.bam 2> analysis/logs/mops/call.log
@@ -153,17 +177,15 @@ increasing the sample number and coverage and test again. But now I have to stop
 Dr. Jin ask me to focus more on scCNV project. I will catch up again if I have time.
 (问心无愧即可). Catch up here at Wed Oct 12 15:47:48 CST 2022.
 
-cn.mops is not applicable to very-low-coverage data, since Windows should contain 50-100 reads each.
-Three steps in cn.mops:
-1. calculate read counts in windows (bins) from bam file
-2. call CNV
-3. calculate integer copy numbers
-
 ## 07. Merge the results from four CNV calling tools
 
-Except merging the results from four calling tools, we try to remove genomic bad regions (centromere, telomere and
-heterochromatin). The bad region file is in `~/data/refs/hg38/low-mappability-track/hg38.badRegions.bed`. Besides,
-we need to make sure the merged file adapt to the input format of `CNVfilteR`.
+Except merging the results from four calling tools, we try to remove genomic bad regions 
+(centromere, telomere and heterochromatin). The bad region file is in 
+`~/data/refs/hg38/low-mappability-track/hg38.badRegions.bed`. Besides, we need to make sure the 
+merged file adapt to the input format of `CNVfilteR`.
+
+We tried to merge CNV results from all tools including cnvkit, cnvpytor, freec, mops, smoove 
+and delly.
 
 ??? What is heterochromatin
 
@@ -176,53 +198,23 @@ add that option in future development.
 
 ### 08.1 freebayes
 
-Calling sample by sample (the problem is the accuracy).
-Then filter based on quality score, which is hard filter. Hope
-this will not affect our purpose to correct CNV. The allele frequency
-is critical here.
+Call SNP sample by sample (the problem is the accuracy). Then filter based on quality score
+and read depth, this is a critical step. We should set different threshold for different depth
+data. The accuracy of SNP calling will affect the correction of CNV in later step.
 
     freebayes -f ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa mapped/sample1.bam > snps/freebayes/sample1.raw.vcf
+    bcftools filter -O v -o snps/freebayes/sample1.filtered.vcf -s LOWQUAL -e 'QUAL<10 || FMT/DP <5' --SnpGap 5 --set-GTs . snps/freebayes/sample1.raw.vcf
+    bcftools view -v snps snps/freebayes/sample1.filtered.vcf > snps/freebayes/sample1.snp.vcf
 
 ### 08.2 samtools + bcftools
 
 Almost the same as freebayes.
 
-## 09. Use SNPs to filter merged CNV set
+### 08.3 GATK
 
-### 09.1 CNVfilteR
+## 9. Call CNV based on read-pair and split-read
 
-How to install and use it in snakemake? Or I need to write a
-simplified version in Python by myself. Or I need to find another
-tool that was implemented in Python. Directly download in R script
-if not installed.
-
-Run CNVfilteR:
-1. load cnv file
-2. load snv file
-3. filterCNVs
-4. plot single cnvs or all cnvs
-
-CNVfilteR applies a scoring model, which is based on fuzzy logic,
-to filter false positive CNVs. Briefly, copy number deletion could
-be filtered if there is over 30% (default) heterozygous snvs in CNV
-region; For copy number duplication, scoring model is used: the variants
-with allele frequency close to 50% will be given positive value ([0,1]),
-and variants with allele frequency close to 33.3% or 66.6% will be given
-negative value ([-1,0]), a total score is calculated for CNV region by
-summing up all the score of snvs in that CNV region; finally, positive
-value indicates FP CNV and should be filtered.
-
-This method requires as accurate SNP calling as possible. Is 10X data
-really suitable for this tool? We can rank the CNVs by score but not
-remove them.
-
-### 09.2 Adjacent regions
-
-Remove all CNVs in bad genomic regions
-
-## 10. Call CNV based on read-pair and split-read
-
-### 10.1 Lumpy
+### 9.1 Lumpy
 
 Lumpy is written by C.
 Five steps to call CNV by Lumpy. 1. get discordant reads (insert size over expected size or
@@ -239,24 +231,27 @@ but how to select CNV based on score need further consideration; 5. extract CNV.
 A coverage calculation script was provided `scripts/get_coverages.py` for later reference.
 
 A low mappbility track file provided by Heng Li is suggested, I downloaded and extracted
-the file at Mon Oct 17 08:59:27 +08 2022, the file is in `~/refs/hg38/low-mappability-track/HengLi-lowMapTrach/hg38.exclude.hengli.bed`.
+the file at Mon Oct 17 08:59:27 +08 2022, the file is in 
+`~/refs/hg38/low-mappability-track/HengLi-lowMapTrach/hg38.exclude.hengli.bed`.
 Overall length of low-map region is 228,061,378.
 
-### 10.2 Smoove
+### 9.2 Smoove
 
 There is a Lumpy wrapper called `smoove`, which is claimed to be faster. Just have try and see
 if it can replace lumpy.
 
 An bad region file was downloaded according to the author of smoove. Overall length is 119,556,880,
-which is almost half shorter than Heng Li's. But when we remove non-cannonical chromosomes, its length
-became 3,042,685, which is definitely not correct. The file is in `low-mappability-track/smoove/hg38.exclude.bed`.
+which is almost half shorter than Heng Li's. But when we remove non-cannonical chromosomes, its 
+length became 3,042,685, which is definitely not correct. 
+The file is in `low-mappability-track/smoove/hg38.exclude.bed`.
 
     wget https://raw.githubusercontent.com/hall-lab/speedseq/master/annotations/exclude.cnvnator_100bp.GRCh38.20170403.bed
 
 Our own bad region file is in `low-mappability-track/hg38.badRegions.bed`, which includes centromere,
 telomere and heterochromatin, the length is 199,765,358.
 
-Another low-map track is downloaded from 10x genomics in `low-mappability-track/10x/hg38.sv_blacklist.bed`, its overall length is 212,765,070.
+Another low-map track is downloaded from 10x genomics in 
+`low-mappability-track/10x/hg38.sv_blacklist.bed`, its overall length is 212,765,070.
 I think this one might be the best one to use.
 
 Test `smoove` calling
@@ -281,13 +276,13 @@ Use `bcftools` to extract informative columns
 
     bcftools query -f '%CHROM\t%POS\t%INFO/END\t%INFO/SVTYPE\t%QUAL[\t%DHFC\t%DHFFC\t%DHBFC]\n' analysis/temp/smoove-genotype/sample4-smoove.genotyped.vcf.gz
 
-Follow author's suggestion to filter by `awk`
+Follow author's suggestion to filter CNV based on DHFFC and DHBFC by `awk`
 
-    awk '$4<2 && $7<0.7 {print $0} $4>2 && $8>1.3 {print $0}' analysis/res/smoove/sample1.bed | wcl
+    awk '$4=="DEL" && $7<0.7 {print $0} $4=="DUP" && $8>1.3 {print $0}' analysis/res/smoove/sample1.bed | wcl
 
 `duphold` also support SNP vcf file for filtering, just like `CNVfilteR`.
 
-### 10.3 Delly
+### 9.3 Delly
 
 Delly is written in C++. It is primarily designed for calling structural variant, both
 germline and somatic (cancers). It also supports CNV calling now.
@@ -314,7 +309,7 @@ Use `duphold` to do genotyping
 
 `delly classify` will select CNVs with 'PASS' (filter low-quality CNVs), bad thing is that it
 transforms all quality score into 10000, so we decided to filter CNVs by grep and keep
-the original quality score. A thing need to notice is that in some cases, value in `FILTER`
+the original quality score. One thing need to be noticed is that in some cases, value in `FILTER`
 field is not matched with `FT` tag in `format` field. One could be PASS while the other one
 could be LowQual. We just use the `FILTER`=="PASS" to select all good-quality CNVs. (strict mode)
 
@@ -322,8 +317,12 @@ Use `bcftools` to extract informative columns
 
     bcftools query -f '%FILTER\t%CHROM\t%POS\t%INFO/END[\t%RDCN\t%DHFC\t%DHFFC\t%DHBFC]\n' analysis/temp/delly/sample4.duphold.vcf | grep 'PASS' | cut -f 2- > analysis/res/delly/sample4.bed
 
-In `INFO` field, `MP` means fraction of mappable positions; `GCF` means GC fraction (added by duphold);
-these should not be used for CNV filtering.
+In `INFO` field, `MP` means fraction of mappable positions; `GCF` means GC fraction (added by 
+duphold); these should not be used for CNV filtering.
+
+We also need to filter CNV based on DHFFC and DHBFC as stated in `smoove` section.
+
+    awk '$4<2 && $7<0.7 {print $0} $4>2 && $8>1.3 {print $0}' analysis/res/delly/sample1.bed | wcl
 
 Some R scripts were provided for plotting CNV, which could be a reference for later usage.
 
@@ -331,11 +330,36 @@ Some R scripts were provided for plotting CNV, which could be a reference for la
 
     Version: Delly 1.1.5
 
-## 11. Merge results from Lumpy and Delly
+## 10. Merge results from Lumpy and Delly
 
 
 
-Section9, 11 and 12 need more time to think. Test section 13 first.
+## 11. BAF-based CNV correction
+
+`CNVfilteR`
+
+How to install and use it in snakemake? Or I need to write a simplified version in Python by myself. 
+Or I need to find another tool that was implemented in Python. Directly download in R script if not 
+installed.
+
+Run CNVfilteR:
+1. load cnv file
+2. load snv file
+3. filterCNVs
+4. plot single cnvs or all cnvs
+
+CNVfilteR applies a scoring model, which is based on fuzzy logic, to filter false positive CNVs. 
+Briefly, copy number deletion could be filtered if there is over 30% (default) heterozygous snvs in 
+CNV region; For copy number duplication, scoring model is used: the variants with allele frequency 
+close to 50% will be given positive value ([0,1]), and variants with allele frequency close to 33.3% 
+or 66.6% will be given negative value ([-1,0]), a total score is calculated for CNV region by 
+summing up all the score of snvs in that CNV region; finally, positive value indicates FP CNV and 
+should be filtered.
+
+This method requires as accurate SNP calling as possible. Is 10X data really suitable for this tool? 
+We can rank the CNVs by score but not remove them.
+
+The script is in `scripts/cnvFilteR.R`
 
 ## 12. Combine results from read-depth based and read-pair based methods
 
@@ -393,8 +417,3 @@ Then we calculate the coverage of samples in target bins and correct the log2 ra
 regions. For example,
 
     time python bin/varbin/coverage.py refs/bin.5k.boundary.gc.txt data/simulation/1X/sample1.mkdup.bam analysis/read-depth/coverage/sample1.coverage.bed 1>1.log 2>2.log &
-
-
-Useful commandlines:
-
-1. sum up length of cnv region `awk 'BEGIN {s=0} {a=$3-$2;s=s+a} END {print s}' cnv.bed`
