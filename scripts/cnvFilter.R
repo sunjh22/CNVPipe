@@ -8,17 +8,22 @@ if(!require("CNVfilteR", quietly=TRUE)){
     BiocManager::install("CNVfilteR")
 }
 
+if(!require("dplyr", quietly=TRUE)){
+  install.packages('dplyr')
+}
+
 library(CNVfilteR)
 
 options(scipen = 999)
 
 # Get arguments.
-# args <- commandArgs(trailingOnly = TRUE)
-# cnv_file <- args[1]
-# vcf_file <- args[2]
+args <- commandArgs(trailingOnly = TRUE)
+cnv_file <- args[1]
+vcf_file <- args[2]
+out_file <- args[3]
 
-cnv_file <- "~/data/project/CNVPipe/analysis/res/merge/sample1.bed"
-vcf_file <- "~/data/project/CNVPipe/analysis/snps/freebayes/sample1.snp.vcf"
+# cnv_file <- "~/data/project/CNVPipe/analysis/res/merge/sample1.bed"
+# vcf_file <- "~/data/project/CNVPipe/analysis/snps/freebayes/sample1.snp.vcf"
 
 # Load copy number data
 cnv_gr <- loadCNVcalls(cnvs.file = cnv_file, chr.column = 'chromosome', start.column = 'start', end.column = 'end',
@@ -42,4 +47,6 @@ filtered0 <- data.frame(chromosome = seqnames(filtered),
 cnv <- read.delim(cnv_file)
 cnv <- dplyr::left_join(cnv, filtered0, by = c('chromosome', 'start', 'end'))
 cnv$CNVfilteR[is.na(cnv$CNVfilteR)] <- 'True'
-write.table(cnv, file = "~/data/project/CNVPipe/analysis/res/cnvfilter/sample1.bed", sep = '\t', quote = F, row.names = F)
+
+# write.table(cnv, file = "~/data/project/CNVPipe/analysis/res/cnvfilter/sample1.bed", sep = '\t', quote = F, row.names = F)
+write.table(cnv, file = out_file, sep = '\t', quote = F, row.names = F)

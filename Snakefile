@@ -23,4 +23,6 @@ include: "rules/freebayes.smk"
 
 include: "rules/smoove.smk"
 include: "rules/delly.smk"
-#include: "rules/lumpy.smk"
+
+include: "rules/merge.smk"
+include: "rules/cnvfilter.smk"

@@ -5,20 +5,21 @@
 # Call structural variants first
 rule delly_call_sv:
     input:
-        "mapped/{sample}.bam",
+        "mapped/{sample}.bam.bai",
+        bam = "mapped/{sample}.bam",
     output:
-        "temp/delly/{sample}.sv.bcf"
+        "temp/delly/{sample}.sv.bcf",
     params:
         ref = config['data']['genome'],
-        exclude = config['data']['smoove_exclude']
+        exclude = config['data']['smoove-exclude'],
     log:
         "logs/delly/{sample}.callsv.log"
     benchmark:
-        "benchmarks/delly/{sample}.callsv.benchmark"
+        "benchmarks/delly/{sample}.callsv.bench"
     conda:
         "../envs/delly.yaml"
     shell:
-        "delly call -g {params.ref} -x {params.exclude} -o {output} {input} 2> {log}"
+        "delly call -g {params.ref} -x {params.exclude} -o {output} {input.bam} > {log} 2>&1"
 
 # Delly by default divide genome into 10kb-mappable bins, but we can set window size by `-i`,
 # here we set window size to 20k.
@@ -30,9 +31,9 @@ rule delly_call_cnv:
         cnv = "temp/delly/{sample}.cnv.bcf",
         cov = "temp/delly/{sample}.cov.gz",
     params:
-        window = config['params']['bin_size'],
+        window = config['params']['binSize'],
         ref = config['data']['genome'],
-        maptrack = config['data']['delly_map'],
+        maptrack = config['data']['delly-map'],
     log:
         "logs/delly/{sample}.callcnv.log"
     benchmark:
@@ -41,7 +42,7 @@ rule delly_call_cnv:
         "../envs/delly.yaml"
     shell:
         "(delly cnv -u -i {params.window} -g {params.ref} -l {input.sv} "
-        "-m {params.maptrack} -c {output.cov} -o {output.cnv} {input.bam}) 2> {log}"
+        "-m {params.maptrack} -c {output.cov} -o {output.cnv} {input.bam}) > {log} 2>&1"
 
 # Use duphold to genotype delly results
 rule delly_genotype:
@@ -49,9 +50,9 @@ rule delly_genotype:
         bcf = rules.delly_call_cnv.output.cnv,
         bam = "mapped/{sample}.bam",
     output:
-        "temp/delly/{sample}.duphold.vcf"
+        "temp/delly/{sample}.duphold.vcf",
     params:
-        ref = config['data']['genome'],
+        ref = config['data']['genome']
     log:
         "logs/delly/{sample}.genotype.log"
     benchmark:
@@ -59,7 +60,7 @@ rule delly_genotype:
     conda:
         "../envs/smoove.yaml"
     shell:
-        "duphold -v {input.bcf} -b {input.bam} -f {params.ref} -o {output}"
+        "duphold -v {input.bcf} -b {input.bam} -f {params.ref} -o {output} > {log} 2>&1"
 
 # rule delly_classify:
 #     input:
@@ -73,7 +74,10 @@ rule delly_genotype:
 #     shell:
 #         "delly classify -f germline -o {output} {input} 1> {log}"
 
-# Transform bcf file to bed and filter low-quality CNVs
+# Transform bcf file to bed and filter low-quality CNVs by awk instead of delly_classify, because in 
+# some cases, value in `FILTER` field is not matched with `FT` tag in `format` field, `FILTER` could 
+# be PASS while `FT` could be LowQual, delly_classify will keep this type of CNV, but we want to 
+# remove them.
 # Extract genomic coordinates, CN and QUAL, DHFFC and DHBFC columns
 rule delly_convert:
     input:

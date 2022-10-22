@@ -5,22 +5,23 @@
 # This is a wrapper of Lumpy, which get discordant and split reads automatically, and very fast.
 rule smoove_call:
     input:
-        "mapped/{sample}.bam"
+        "mapped/{sample}.bam.bai",
+        bam = "mapped/{sample}.bam",
     output:
-        "temp/smoove/{sample}-smoove.genotyped.vcf.gz"
+        "temp/smoove/{sample}-smoove.genotyped.vcf.gz",
     params:
         outdir = "temp/smoove/",
-        exclude = config['data']['smoove_exclude'],
+        exclude = config['data']['smoove-exclude'],
         ref = config['data']['genome'],
     log:
         "logs/smoove/{sample}.call.log"
     benchmark:
-        "benchmarks/smoove/{sample}.benchmark.log"
+        "benchmarks/smoove/{sample}.bench"
     conda:
         "../envs/smoove.yaml"
     shell:
         "(smoove call --outdir {params.outdir} --exclude {params.exclude} "
-        "--name {wildcards.sample} --fasta {params.ref} -p 1 --genotype {input}) 2> {log}"
+        "--name {wildcards.sample} --fasta {params.ref} -p 1 --genotype {input.bam}) > {log} 2>&1"
 
 # Smoove genotype command is a wrapper of svtyper and duphold, the later one will calculatethe read 
 # depth ratio between CNV region and its flanking region, and regions with the same GC content, and 
@@ -30,7 +31,7 @@ rule smoove_genotype:
         vcf = rules.smoove_call.output,
         bam = "mapped/{sample}.bam",
     output:
-        "temp/smoove-genotype/{sample}-smoove.genotyped.vcf.gz"
+        "temp/smoove-genotype/{sample}-smoove.genotyped.vcf.gz",
     params:
         outdir = "temp/smoove-genotype/",
         ref = config['data']['genome'],
@@ -42,15 +43,15 @@ rule smoove_genotype:
         "../envs/smoove.yaml"
     shell:
         "smoove genotype -d -x -p 1 --name {wildcards.sample} --outdir {params.outdir} "
-        "--fasta {params.ref} --vcf {input.vcf} {input.bam} 2> {log}"
+        "--fasta {params.ref} --vcf {input.vcf} {input.bam} > {log} 2>&1"
 
 # Extract genomic coordinates, transform SVType to copy number (DEL=1, DUP=3), extract QUAL, DHFFC 
 # and DHBFC columns
 rule smoove_convert:
     input:
-        rules.smoove_genotype.output
+        rules.smoove_genotype.output,
     output:
-        "res/smoove/{sample}.bed"
+        "res/smoove/{sample}.bed",
     conda:
         "../envs/freebayes.yaml"
     shell:

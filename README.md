@@ -8,8 +8,9 @@ Objectives of CNVPipe
 
 ## Run CNVPipe snakemake
 
-    snakemake -np --directory analysis/ all_lumpy --rerun-triggers mtime
-    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 10 --directory analysis/ all_lumpy --rerun-triggers mtime
+    snakemake -np --directory analysis/ all_cnvfilter #--rerun-triggers mtime
+    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 100 --directory analysis/ all_cnvfilter
+    snakemake --directory analysis/ all_cnvfilter --rulegraph | dot -Tpdf > dag.pdf
 
 CNVPipe-token: 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
 
@@ -21,23 +22,40 @@ Use bio2 server to run big data
 
 ## 01. Prepare test data - simulation
 
-We want to simulate three patient samples with CNV in them and three control samples,
-all downsampled to 0.01X for fast testing of our pipeline.
+For developing pipeline, we used 1X data with 6 samples and 6 controls.
+For evaluating pipeline, we used 10X data with 6 samples and 6 controls.
 
 ### Use SCNVSim to simulate SV in genome
+
+`SCNVSim` is a tool to simulate somatic SVs and CNVs in tumors, here we use it to simulate CNVs.
+It has two steps: 1. simulate germline SNV and INDELs to get a normal genome, which requires 
+reference genome and its length file; `-s` assigns SNV rate, `-r` assigns INDEL rate; 2. simulate 
+somatic SVs and CNVs based on the first step genome and an additional repeatmask file; `-s` assigns 
+structure variation rate, `-l` assigns copy neutral LOH rate, `-c` assigns number of SVs simulated, 
+`-g` assigns mean copy number segment size (default 1M), `-m` assigns minimal deletion size, `-x` 
+assigns maximum size of tandem duplication, `-a` prefix.
+
+In this simulation, we need germline SNPs for later SNP calling and BAF correction, we also set
+SV rate to be very low to make sure only CNV happens in the genome, so we can fully test the
+performance of CNV calling tools.
 
     curl -OL https://sourceforge.net/projects/scnvsim/files/latest/download
     unzip download
     cd data/
-    time java -jar ~/data/biosoft/scnvsim_1.3.1/normgenomsim_1.3.1.jar -v ~/data/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -o ./simulation/simuGenome -s 0.00000001 -r 0.000000005 2>2.log &
-    time java -jar ~/data/biosoft/scnvsim_1.3.1/tumorgenomsim_1.3.1.jar -v ~/data/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -k ../refs/repeatmask.txt -i ./simulation/simuGenome/normal_snvindelsim.vcf -o simulation/simuGenome -s 0.001 -l 0.001 -c 100 -a tumor1 1>1.log 2>2.log &
+    time java -jar ~/data/biosoft/scnvsim_1.3.1/normgenomsim_1.3.1.jar -v ~/data/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -o ./simulation/simuGenome 1>1.log 2>2.log &
+    time java -jar ~/data/biosoft/scnvsim_1.3.1/tumorgenomsim_1.3.1.jar -v ~/data/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -k ~/data/refs/hg38/bundle/SCNVSim/repeatmask.txt -i ./simulation/simuGenome/normal_snvindelsim.vcf -o simulation/simuGenome -s 0.001 -l 0.001 -c 150 -m 500 -x 10000 -a tumor1 1>1.log 2>2.log &
     $ SCNVSim Version: 1.3.1
 
 ### Use ART to simulate reads
 
-    ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HS25 -f 1 -i simulation/simuGenome/normal_snvindelsim.fasta -l 150 -m 500 -na -o simulation/1X/control_ -p -s 10 > 1.log 2> 2.log &
-    ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HS25 -f 1 -i simulation/simuGenome/tumor1_svcnvsim_clone_0.fasta -l 150 -m 500 -na -o simulation/1X/sample2_ -p -s 10 > 1.log 2> 2.log &
-    gzip --fast sample_1.fq
+`ART` was used to simulate paired-end sequencing reads. `-ss` model Illumina sequencing system, e.g
+HSXn - HiSeqX PCR free (150bp), HS25 - HiSeq 2500 (125bp, 150bp), HSXt - HiSeqX TruSeq (150bp); `-f`
+assigns coverage, `-l` assigns length, `-m` assigns mean size of DNA fragments in library; `-na` do 
+not output ALN alignment file, `-s` standard deviation of DNA fragment size.
+
+    time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 10 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/normal_snvindelsim.fasta -o simulation/10X/control1_ 1> 1.log 2> 2.log &
+    time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 10 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/tumor1_svcnvsim_clone_0.fasta -o simulation/10X/sample1_ > 1.log 2> 2.log &
+    gzip -q -1 simulation/10X/control1_* &
     ART Version: v2.5.8
 
 ### Use seqkit to downsample

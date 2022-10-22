@@ -1,5 +1,5 @@
 # =================================================================================================
-#     Mapping
+#     Mapping with BWA MEM
 # =================================================================================================
 
 def get_read_group_tags(wildcards):
@@ -13,10 +13,9 @@ def get_bwa_mem_extra(wildcards):
 
 rule map_reads:
     input:
-        reads=get_cleaned_reads,
-        # idx = multiext(config['data']['genome'], ".amb", ".ann", ".bwt", ".pac", ".sa"),
-        ref=config['data']['genome'],
-        # idx=expand(config['data']['genome'] + '.{ext}', ext = ["amb", "ann", "bwt", "pac", "sa", "fai"])
+        reads = get_cleaned_reads,
+        idx = multiext(config['data']['genome'], ".amb", ".ann", ".bwt", ".pac", ".sa", ".fai"),
+        ref = config['data']['genome'],
     output:
         (
             "mapped/{sample}.bam"
@@ -29,14 +28,14 @@ rule map_reads:
     threads:
         config['params']['bwamem']['threads'],
     log:
-        log1 = "logs/bwamem/{sample}.log",
+        log = "logs/bwamem/{sample}.log",
     benchmark:
-        "benchmarks/bwamem/{sample}.bench.log",
+        "benchmarks/bwamem/{sample}.bench",
     conda:
         "../envs/pre-processing.yaml"
     shell:
         "(bwa mem {params.extra} -t {threads} {input.ref} {input.reads} | "
-        "samtools sort {params.sort_extra} -@ {threads} -o {output}) 1>{log}"
+        "samtools sort {params.sort_extra} -@ {threads} -o {output}) >{log} 2>&1"
 
 rule samtools_index:
     input:
@@ -47,15 +46,14 @@ rule samtools_index:
         config['params']['samtools']['threads'],
     log:
         "logs/samtools_index/{sample}.log",
-    wrapper:
-        "v1.14.0/bio/samtools/index"
+    conda:
+        "../envs/pre-processing.yaml"
+    shell:
+        "samtools index {input} > {log} 2>&1"
+
+localrules: all_bwamem
 
 rule all_bwamem:
     input:
         expand("mapped/{sample}.bam", sample=config['global']['all-sample-names']),
         expand("mapped/{sample}.bam.bai", sample=config['global']['all-sample-names'])
-
-localrules: all_bwamem
-
-def get_mapped_reads():
-    return "mapped/{sample}.bam"
