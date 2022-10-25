@@ -49,7 +49,7 @@ rule freec_call:
     conda:
         "../envs/freec.yaml"
     shell:
-        "freec -conf {input.config} -sample {input.bam} > {log} 2>&1"
+        "(freec -conf {input.config} -sample {input.bam}) >{log} 2>&1"
 
 rule freec_convert:
     input:

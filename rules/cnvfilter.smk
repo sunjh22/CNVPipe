@@ -8,10 +8,12 @@ rule cnvfilter_call:
         vcf = "snps/freebayes/{sample}.snp.vcf",
     output:
         "res/cnvfilter/{sample}.bed",
+    params:
+        absPath = config['params']['absPath']
     log:
         "logs/cnvfilter/{sample}.log"
     shell:
-        "Rscript ../scripts/cnvFilter.R {input.bed} {input.vcf} {output} > {log} 2>&1"
+        "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} > {log} 2>&1"
 
 localrules: all_cnvfilter
 

@@ -12,6 +12,7 @@ rule mops_call:
     params:
         resDir = "res/mops/",
         binSize = config['params']['binSize'],
+        absPath = config['params']['absPath'],
     threads:
         config['params']['mops']['threads']
     log:
@@ -21,8 +22,10 @@ rule mops_call:
     conda:
         "../envs/cnmops.yaml"
     shell:
-        "Rscript ../scripts/mopsCall.R {params.resDir} {params.binSize} "
+        "Rscript {params.absPath}/scripts/mopsCall.R {params.resDir} {params.binSize} "
         "{threads} {input.bam} > {log} 2>&1"
+    # script:
+    #     "../scripts/mopsCall.R"
 
 localrules: all_mops
 

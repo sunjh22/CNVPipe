@@ -10,6 +10,7 @@ Objectives of CNVPipe
 
     snakemake -np --directory analysis/ all_cnvfilter #--rerun-triggers mtime
     snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 100 --directory analysis/ all_cnvfilter
+    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 50 --directory ~/data3/project/CNVPipe/analysis/ all_cnvfilter
     snakemake --directory analysis/ all_cnvfilter --rulegraph | dot -Tpdf > dag.pdf
 
 CNVPipe-token: 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
@@ -148,22 +149,36 @@ The results include "CNVtype, CNVregion, CNVsize, CNVlevel, eval1, eval2, eval3,
 - `pN` - fraction of reference genome gaps (Ns) in call region - set to [0 - 0.5];
 - `dG` - distance from closest large (>100bp) gap in reference genome - set to [>100kb];
 
-Run cnvpytor
+Get read depth signal
 
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -chrom $(seq -f 'chr%g' 1 22) chrX chrY -rd sample1.bam &
+
+Assign bin size, calculate read depth histogram
+
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -his 20000 &
+
+Partition by mean-shift method
+
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -partition 20000 &
+
+Call CNV
+
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -call 20000 > ../read-depth/cnvnator/sample1.2k.tsv &
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -plot rd 20000 -o ../read-depth/cnvnator/sample1.png &
 
 ### 06.3. Control-FREEC
 
-It claims requiring control samples, but I cannot include them into analysis. Require reference genome,
-do not exclude low-map region. Call germline CNV sample by sample.
+It claims requiring control samples, but I cannot include them into analysis. Require reference 
+genome, do not exclude low-map region. Call germline CNV sample by sample.
 
-After reading developer's manual and testing for several times, I found it hard to include normal sample in this software,
-which is really weired. So now I just need to focus on step 2 and 3. Build a config file first and run the software for
-each sample.
+After reading developer's manual and testing for several times, I found it hard to include normal 
+sample in this software, which is really weired. So now I just need to focus on step 2 and 3. Build 
+a config file first and run the software for each sample.
+
+Generate GC content profile for specific size of window. In this case, `chrFiles` should be set to
+the directory with fasta sequences of single chromosomes, and `window` set to specific size.
+
+    ~/data/biosoft/FREEC/src/freec -conf analysis/temp/freec/config_WGS.txt -sample analysis/mapped/sample1.bam
 
 Run freec
 

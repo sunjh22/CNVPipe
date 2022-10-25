@@ -10,13 +10,13 @@ rule cnvkit_autobin:
     output:
         estibin = "logs/cnvkit/estimate.bin",
     params:
-        extra = config['params']['cnvkit']['extra'],
         access = config['data']['access'],
         refflat = config['data']['refflat'],
+        binSize = config['params']['binSize'],
     conda:
         "../envs/cnvkit.yaml"
     shell:
-        "cnvkit.py autobin {input.bam} {params.extra} -g {params.access} "
+        "cnvkit.py autobin {input.bam} -m wgs -b {params.binSize} -g {params.access} "
         "--annotate {params.refflat} > {output.estibin} 2>&1"
 
 # Call CNVs in samples in batch mode

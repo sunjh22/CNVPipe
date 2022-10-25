@@ -12,8 +12,13 @@ rule merge_call:
         low_map = config['data']['smoove-exclude'],
     output:
         "res/merge/{sample}.bed",
+    params:
+        absPath = config['params']['absPath']
+    log:
+        "logs/merge/{sample}.merge.log"
     shell:
-        "python ../scripts/mergeReadDepthCNV.py {input.bed} {input.low_map} {output}"
+        "python {params.absPath}/scripts/mergeReadDepthCNV.py {input.bed} {input.low_map} {output} "
+        ">{log} 2>&1"
 
 localrules: all_merge
 

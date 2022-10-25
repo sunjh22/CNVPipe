@@ -24,12 +24,16 @@ def overlapBad(region, bad):
         if s2 <= s1 <= e2:
             overlap = e2 - s1
             if overlap > regionSize * 0.3:
+                print("CNV region in {:s}:{:d}-{:d} overlaps with bad region {:d}-{:d}".format(c1, 
+                s1, e1, s2, e2))
                 return True
             else:
                 return False
         if s2 <= e1 <= e2:
             overlap = e1 - s2
             if overlap > regionSize * 0.3:
+                print("CNV region in {:s}:{:d}-{:d} overlaps with bad region {:d}-{:d}".format(c1, 
+                s1, e1, s2, e2))
                 return True
             else:
                 return False
@@ -60,7 +64,7 @@ def readFile(infile, bad):
                     flag = True
                     break
             if flag:
-                break
+                continue
             else:
                 yield x
 

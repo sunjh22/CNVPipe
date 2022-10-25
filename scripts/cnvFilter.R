@@ -12,7 +12,7 @@ if(!require("dplyr", quietly=TRUE)){
   install.packages('dplyr')
 }
 
-library(CNVfilteR)
+suppressMessages(library(CNVfilteR))
 
 options(scipen = 999)
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
 
-library(cn.mops)
+suppressMessages(library(cn.mops))
 
 if(!require(magrittr, quietly=TRUE)){
     install.package("magrittr", repos = "http://cran.us.r-project.org")
 }
 
-library(magrittr)
+suppressMessages(library(magrittr))
 
 options(scipen = 999)
 
@@ -16,6 +16,12 @@ result_dir <- args[1]
 bin_size <- as.integer(args[2])
 threads <- as.integer(args[3])
 bam_files <- tail(args, -3)
+
+# Get arguments from snakemake
+# result_dir <- snakemake@params[['resDir']]
+# bin_size <- as.integer(snakemake@params[['binSize']])
+# threads <- as.integer(snakemake@threads)
+# bam_files <- snakemake@input[['bam']]
 
 # Drop MT (fails otherwise) and get read counts in bin_size windows. Windows should contain 50-100 reads each.
 seq_names <- paste('chr', c(as.character(seq(22)), "X", "Y"), sep = '')
