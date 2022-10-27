@@ -29,7 +29,7 @@ rule prepare_configfile:
         "readCountThreshold=10\nmaxThreads={params.threads}\n"
         "GCcontentProfile={params.gcprofile}\n"
         "outputDir={params.outputDir}\n\n[sample]\ninputFormat=BAM\n"
-        "mateOrientation=0' > {output}"
+        "mateOrientation=FR' > {output}"
 
 # Run freec
 rule freec_call:

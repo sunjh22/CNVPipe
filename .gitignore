@@ -11,3 +11,4 @@ tools/
 logs/
 bundle/
 analysis2/
+scripts/__pycache__/

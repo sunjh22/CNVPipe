@@ -18,13 +18,13 @@ rule map_reads:
         ref = config['data']['genome'],
     output:
         (
-            "mapped/{sample}.bam"
+            "mapped/{sample}.raw.bam"
             if config['settings']['keep-intermediate']['bwamem']
-            else temp("mapped/{sample}.bam")
+            else temp("mapped/{sample}.raw.bam")
         )
     params:
-        extra=get_bwa_mem_extra,
-        sort_extra=config["params"]["samtools"]["sort"],
+        extra = get_bwa_mem_extra,
+        sort_extra = config["params"]["samtools"]["sort"],
     threads:
         config['params']['bwamem']['threads'],
     log:
@@ -37,6 +37,19 @@ rule map_reads:
         "(bwa mem {params.extra} -t {threads} {input.ref} {input.reads} | "
         "samtools sort {params.sort_extra} -@ {threads} -o {output}) >{log} 2>&1"
 
+rule gatk_markDuplicates:
+    input:
+        rules.map_reads.output,
+    output:
+        bam = "mapped/{sample}.bam",
+        metric = "temp/gatk/{sample}.metric",
+    log:
+        "logs/gatk/{sample}.markDuplicates.log"
+    conda:
+        "../envs/pre-processing.yaml"
+    shell:
+        "gatk MarkDuplicates -I {input} -O {output.bam} -M {output.metric} >{log} 2>&1"
+
 rule samtools_index:
     input:
         "mapped/{sample}.bam",
@@ -45,7 +58,7 @@ rule samtools_index:
     threads:
         config['params']['samtools']['threads'],
     log:
-        "logs/samtools_index/{sample}.log",
+        "logs/samtools/{sample}.index.log",
     conda:
         "../envs/pre-processing.yaml"
     shell:

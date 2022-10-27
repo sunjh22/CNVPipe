@@ -52,7 +52,7 @@ localrules: all_prep
 rule all_prep:
     input:
         ref = config["data"]["genome"],
-        ref_index = multiext(config['data']['genome'], ".amb", ".ann", ".bwt", ".pac", ".sa", ".fai"),
+        ref_idx = multiext(config['data']['genome'], ".amb", ".ann", ".bwt", ".pac", ".sa", ".fai"),
         ref_dict = genome_dict(),
 
 include: "fastp.smk"

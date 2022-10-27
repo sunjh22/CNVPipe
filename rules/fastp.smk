@@ -7,6 +7,7 @@ def unpack_fastq_files(wildcards):
 
 # Since fastp wrapper is not stable, we decide to implement it by ourselves, thus use different
 # commands for single-end and paired-end data.
+# fastp is fast but its parallel efficiency reaches limit at 6 threads
 # TODO: Write a fastp wrapper by myself.
 rule clean_reads_se:
     input:
@@ -18,7 +19,7 @@ rule clean_reads_se:
             else temp("cleaned/{sample}.fq.gz")
         ),
         html = "cleaned/{sample}-se-fastp.html",
-        json = "cleaned/{sample}-se-fastp.json",
+        json = temp("cleaned/{sample}-se-fastp.json"),
     log:
         "logs/fastp/{sample}.log"
     benchmark:
@@ -43,7 +44,7 @@ rule clean_reads_pe:
             else temp(["cleaned/{sample}_1.fq.gz", "cleaned/{sample}_2.fq.gz"])
         ),
         html = "cleaned/{sample}-pe-fastp.html",
-        json = "cleaned/{sample}-pe-fastp.json",
+        json = temp("cleaned/{sample}-pe-fastp.json"),
     log:
         "logs/fastp/{sample}.log"
     benchmark:

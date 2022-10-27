@@ -20,6 +20,7 @@ include: "rules/freec.smk"
 include: "rules/cnmops.smk"
 
 include: "rules/freebayes.smk"
+include: "rules/gatk.smk"
 
 include: "rules/smoove.smk"
 include: "rules/delly.smk"
