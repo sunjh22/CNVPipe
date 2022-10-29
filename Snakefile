@@ -2,10 +2,12 @@
 
 include: "rules/common.smk"
 
-# rule cnvs:
-# 	input:
-# 		cnvs_wgs = expand("5k/results/{tool}/{sample}.bed", tool = config["TOOLS"], sample = SAMPLES)
-# 	message: "CNV calling complete"
+# localrules: all
+
+rule all:
+    input:
+        expand("res/merge/{sample}.duphold.vcf", sample = config['global']['sample-names']),
+        expand("snps/gatk/{sample}.vqsr.vcf.gz", sample = config['global']['sample-names'])
 
 
 #SAMPLES = list(filter(lambda f: str(f).startswith('sample'), SAMPLES))
@@ -26,4 +28,5 @@ include: "rules/smoove.smk"
 include: "rules/delly.smk"
 
 include: "rules/merge.smk"
-include: "rules/cnvfilter.smk"
+
+#include: "rules/cnvfilter.smk"

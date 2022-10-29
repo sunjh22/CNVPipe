@@ -11,22 +11,29 @@ def readBadRegion(infile):
             bad.append(x)
     return bad
 
-def overlapProp(cnvRegion, badRegion):
+def overlapLen(cnvRegion, badRegion):
     c1, s1, e1 = cnvRegion[0], int(cnvRegion[1]), int(cnvRegion[2])
     c2, s2, e2 = badRegion[0], int(badRegion[1]), int(badRegion[2])
     cnvLen = e1 - s1
     assert cnvLen > 0, "The length of CNV is less than 0, wrong!"
     if c1 == c2:
-        if s2 <= s1 <= e2:
+        if s1 < s2 < e1 or s1 < e2 < e1:
             print("CNV region {:s}:{:d}-{:d} overlaps with bad region {:s}:{:d}-{:d}".format(c1, 
                 s1, e1, c2, s2, e2))
-            overlap = round((e2 - s1) * 100 / cnvLen)
+        if s2 <= s1 < e1 <= e2:
+            overlap = e1 - s1
             return overlap
-        if s2 <= e1 <= e2:
-            print("CNV region {:s}:{:d}-{:d} overlaps with bad region {:s}:{:d}-{:d}".format(c1, 
-                s1, e1, c2, s2, e2))
-            overlap = round((e1 - s2) * 100 / cnvLen)
+        elif s2 <= s1 <= e2 < e1:
+            overlap = e2 - s1
             return overlap
+        elif s1 <= s2 < e2 <= e1:
+            overlap = e2 - s2
+            return overlap
+        elif s1 < s2 <= e1 <= e2:
+            overlap = e1 - s2
+            return overlap
+        else:
+            return 0
     
     return 0
 
@@ -36,12 +43,13 @@ def overlapScore(cnvRegion, bad):
     print("A new CNV region: ", cnvRegion)
 
     for badRegion in bad:
-        overlapSize = overlapProp(cnvRegion, badRegion)
+        overlapSize = overlapLen(cnvRegion, badRegion)
         if overlapSize > 0:
             i += 1
             accumLen += overlapSize
 
-    score = 100 - accumLen
+    accumProp = round(accumLen * 100 / (int(cnvRegion[2]) - int(cnvRegion[1])))
+    score = 100 - accumProp
     print("This CNV totally overlaps with {:d} bad genomic regions\n".format(i))
     return score
 

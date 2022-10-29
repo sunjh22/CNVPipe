@@ -36,7 +36,10 @@ if __name__ == "__main__":
     print('##ALT=<ID=DEL,Description="Copy number loss">', file=Out)
     print('##INFO=<ID=END,Number=1,Type=Integer,Description="End position of CNV">', file=Out)
     print('##INFO=<ID=TOOL,Number=1,Type=String,Description="Tools used for CNV calling">', file=Out)
+    print('##INFO=<ID=SAMPLE,Number=1,Type=String,Description="Sample name">', file=Out)
     print('##FORMAT=<ID=CN,Number=1,Type=Integer,Description="Integer copy number">', file=Out)
+    print('##FORMAT=<ID=BS,Number=1,Type=Integer,Description="Proportion CNV overlap with \
+    bad genomic region">', file=Out)
     print('##reference=/data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa', file=Out)
 
     for key in chrLength.keys():
@@ -54,6 +57,8 @@ if __name__ == "__main__":
             pos = int(x[1])
             end = int(x[2])
             cn = int(x[3])
+            badScore = int(x[4])
+            spl = x[5]
             id += 1
             ref = 'N'
             alt = 'DUP' if cn > 2 else 'DEL'
@@ -61,5 +66,6 @@ if __name__ == "__main__":
             filt = 'PASS'
             tol = x[-1]
             print(chrom, pos, '{:0>3d}'.format(id), ref, alt, qual, filt, 
-            'END={:d};TOOL={:s}'.format(end, tol), 'CN', cn, sep='\t', file=Out)
+            'END={:d};TOOL={:s};SAMPLE={:s}'.format(end, tol, spl), 'CN:BS', 
+            "{:d}:{:d}".format(cn, badScore), sep='\t', file=Out)
 

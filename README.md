@@ -8,7 +8,7 @@ Objectives of CNVPipe
 
 ## Run CNVPipe snakemake
 
-    snakemake -np --directory analysis/ all_cnvfilter #--rerun-triggers mtime
+    snakemake -n --directory analysis/ all_cnvfilter #--rerun-triggers mtime
     snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 100 --directory analysis/ all_cnvfilter
     snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 50 --directory ~/data3/project/CNVPipe/analysis/ all_cnvfilter
     snakemake --directory analysis/ all_cnvfilter --rulegraph | dot -Tpdf > dag.pdf
@@ -55,7 +55,8 @@ not output ALN alignment file, `-s` standard deviation of DNA fragment size.
 
     time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 10 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/normal1_snvindelsim.fasta -o simulation/10X/control7_ 1>1.log 2>2.log &
     time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 10 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/tumor7_svcnvsim_clone_0.fasta -o simulation/10X/sample7_ >1.log 2>2.log &
-    gzip -q -1 simulation/10X/control1_* &
+    parallel -j 6 -k gzip -q -1 simulation/10X/control{}_1.fq ::: 7 8 9 10 11 12 &
+    parallel -j 6 -k gzip -q -1 simulation/10X/control{}_2.fq ::: 7 8 9 10 11 12 &
     ART Version: v2.5.8
 
 ### Use seqkit to downsample
@@ -417,6 +418,7 @@ as input. Then we use it to calculate adjacent read depth for CNV region, and de
 to score CNV regions. Transforming script is in `scripts/bed2vcf.py`.
 
     python ~/data/project/CNVPipe/scripts/bed2vcf.py sample1.bed ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa.fai sample1.vcf
+    duphold -v sample1.vcf -b analysis/mapped/sample1.bam -f ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -o sample1.duphold.vcf
 
 ## 11. Score by BAF-correction
 

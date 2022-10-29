@@ -99,6 +99,6 @@ rule gatk_applyVQSR:
 #         "--select-type-to-include SNP --exclude-filtered "
 #         "--exclude-non-variants --remove-unused-alternates >{log} 2>&1"
 
-rule all_gatk:
-    input:
-        expand("snps/gatk/{sample}.vqsr.vcf.gz", sample = config['global']['sample-names']),
+# rule all_gatk:
+#     input:
+#         expand("snps/gatk/{sample}.vqsr.vcf.gz", sample = config['global']['sample-names']),
