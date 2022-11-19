@@ -4,7 +4,7 @@
 
 rule cnvfilter_call:
     input:
-        bed = "res/merge/{sample}.bed",
+        bed = "res/merge/{sample}.duphold.score.bed",
         vcf = "snps/freebayes/{sample}.snp.vcf",
     output:
         "res/cnvfilter/{sample}.bed",

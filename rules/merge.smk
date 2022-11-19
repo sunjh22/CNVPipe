@@ -9,7 +9,7 @@ rule merge_CNVCall:
     input:
         bed = expand(
             "res/{tool}/{sample}.bed",
-            tool = ['cnvkit', 'cnvpytor', 'freec', 'mops', 'smoove', 'delly'],
+            tool = ['cnvkit', 'smoove', 'delly', 'mops', 'cnvpytor', 'freec'],
             allow_missing=True
         ),
         low_map = config['data']['smoove-exclude'],
@@ -34,6 +34,7 @@ rule convert_bed2vcf:
     shell:
         "python {params.absPath}/scripts/bed2vcf.py {input.bed} {input.fai} {output}"
 
+# Calculate DHFFC and DHBFC for CNV region by duphold
 rule duphold_score:
     input:
         "mapped/{sample}.bam.bai",
@@ -43,6 +44,7 @@ rule duphold_score:
         "res/merge/{sample}.duphold.vcf",
     params:
         genome = config['data']['genome'],
+    threads: 8
     log:
         "logs/merge/{sample}.duphold.log"
     benchmark:
@@ -50,4 +52,19 @@ rule duphold_score:
     conda:
         "../envs/smoove.yaml"
     shell:
-        "duphold -v {input.vcf} -b {input.bam} -f {params.genome} -o {output}"
+        "duphold -t {threads} -v {input.vcf} -b {input.bam} -f {params.genome} -o {output}"
+
+# Score CNV region by duphold results
+rule score_byDepth:
+    input:
+        rules.duphold_score.output.vcf,
+    output:
+        bed = "res/merge/{sample}.duphold.bed",
+        scoreBed = "res/merge/{sample}.duphold.score.bed",
+    params:
+        absPath = config['params']['absPath']
+    conda:
+        "../envs/freebayes.yaml"
+    shell:
+        "bcftools query -f '%CHROM\t%POS\t%INFO/END[\t%CN\t%BS\t%DHFFC\t%DHBFC]\t%INFO/TOOL\t%INFO/SAMPLE\n' {input} > {output.bed}; "
+        "python {params.absPath}/scripts/scoreDuphold.py {output.bed} {output.scoreBed}"

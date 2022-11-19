@@ -50,7 +50,7 @@ rule gatk_variantRecalibrator:
         "--resource:hapmap,known=false,training=true,truth=true,prior=15.0 {params.hapmap} "
         "--resource:omni,known=false,training=true,truth=false,prior=12.0 {params.omni} "
         "--resource:1000G,known=false,training=true,truth=false,prior=10.0 {params.geno1000} "
-        "-an QD -an ReadPosRankSum -an FS -an SOR -mode SNP "
+        "-an MQ -an MQRankSum -an QD -an ReadPosRankSum -an FS -an SOR -mode SNP "
         "--max-gaussians 4 "
         "-O {output.recal} --tranches-file {output.tranches} --rscript-file {output.rscript} "
         ">{log} 2>&1"

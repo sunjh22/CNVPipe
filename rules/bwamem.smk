@@ -28,7 +28,7 @@ rule map_reads:
     threads:
         config['params']['bwamem']['threads'],
     log:
-        log = "logs/bwamem/{sample}.log",
+        "logs/bwamem/{sample}.log",
     benchmark:
         "benchmarks/bwamem/{sample}.bench",
     conda:
@@ -55,8 +55,6 @@ rule samtools_index:
         "mapped/{sample}.bam",
     output:
         "mapped/{sample}.bam.bai",
-    threads:
-        config['params']['samtools']['threads'],
     log:
         "logs/samtools/{sample}.index.log",
     conda:

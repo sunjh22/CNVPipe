@@ -52,12 +52,20 @@ performance of CNV calling tools.
 HSXn - HiSeqX PCR free (150bp), HS25 - HiSeq 2500 (125bp, 150bp), HSXt - HiSeqX TruSeq (150bp); `-f`
 assigns coverage, `-l` assigns length, `-m` assigns mean size of DNA fragments in library; `-na` do 
 not output ALN alignment file, `-s` standard deviation of DNA fragment size.
+`sample1-6` are 1X-depth, while `sample7-12` are 10X-depth.
 
     time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 10 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/normal1_snvindelsim.fasta -o simulation/10X/control7_ 1>1.log 2>2.log &
     time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 10 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/tumor7_svcnvsim_clone_0.fasta -o simulation/10X/sample7_ >1.log 2>2.log &
     parallel -j 6 -k gzip -q -1 simulation/10X/control{}_1.fq ::: 7 8 9 10 11 12 &
     parallel -j 6 -k gzip -q -1 simulation/10X/control{}_2.fq ::: 7 8 9 10 11 12 &
     ART Version: v2.5.8
+
+As 10x-depth data cannot give us much SNP information, we want to simulate 30x data for samples. We 
+use `tumor7-12` genome to simulate samples `sample13-18`.
+
+    time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 30 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/tumor7_svcnvsim_clone_0.fasta -o simulation/30X/sample13_ >1.log 2>2.log &
+    parallel -j 6 -k gzip -q -1 simulation/30X/sample{}_1.fq ::: 13 14 15 16 17 18 &
+    parallel -j 6 -k gzip -q -1 simulation/30X/sample{}_2.fq ::: 13 14 15 16 17 18 &
 
 ### Use seqkit to downsample
 
@@ -73,37 +81,41 @@ not output ALN alignment file, `-s` standard deviation of DNA fragment size.
 ## 02. Prepare snakemake main file and config file
 
 Main file: include `.smk` file step by step, testing their availability during development.
-Config file: data: samples, control-samples, genome, refFlat
+
+Config file: 1. data: reference genome and resource bundle for different tools to run; 2. settings: 
+tools available for specific tasks; 3. params: parameters for running the tool.
 
 ## 03. Write common.smk
 
-Import config file, get fastq files (depending on se or pe), get patient sample and 
-control sample names and set them to be global parameter. wildcard_constraints (sample 
-names and control-sample names), valid filename and filepath.
+Import config file, get fastq files (depending on se or pe), get patient sample and control sample 
+names and set them to be global parameter. wildcard_constraints (sample names and control-sample 
+names), valid filename and filepath.
 
 ## 04. Write pre-processing.smk
 
-This script includes another two scripts:
-- `fastp.smk` for cleaning reads, use snakemake wrapper;
-- `bwamem.smk` for mapping reads using bwa-mem, also use snakemake wrapper.
+Build fasta index, bwa index (if not available) and dictionary for reference genome.
+
+Includes another two scripts:
+- `fastp.smk` for cleaning reads;
+- `bwamem.smk` for mapping reads using bwa-mem.
 
 ## 05. Write smk for Read-depth based CNV-calling methods
 
 We need to be clear about some features of these methods:
 1. require normal samples? if yes, how many?
-2. call germline CNV sample by sample or in batch
+2. call germline CNV sample by sample or in batch?
 3. exclude low-mappability region? require reference file?
 
 ### 05.1. CNVKit
 
-Require normal samples (no limit on the number), reference genome and exclude low-map region.
-Call germline CNV in batch.
+Require normal samples (no limit on the number), reference genome and exclude low-map region 
+(pre-defined). Call germline CNV in batch.
 
 Include four rules:
 - `autobin` for estimating optimal bin resolution;
 - `batch` for calling CNV for WGS data in batch mode;
 - `segmetrics` for segmenting CNVs based on confidence interval;
-- `call` for transforming log2 depth ratio to integer copy numbers.
+- `call` for transforming log2 depth ratio into integer copy numbers.
 
 And a simple shell command using `awk` to extract informative columns
 into another file. Columns include genomeic coordinates, integer CN,
@@ -128,9 +140,9 @@ which will then be used to calculate coverage of samples in these bins.
 
 ### 05.2. cnvpytor
 
-Do not require normal sample and reference genome and do not exclude low-map region.
-This method solely depends on comparing read depth between adjacent region (?) and regions
-with similar GC content. Call germline CNV sample by sample.
+Do not require normal sample and reference genome (a pre-defined GC file is in the package) and do 
+not exclude low-map region. This method solely depends on comparing read depth between adjacent 
+region (?) and regions with similar GC content. Call germline CNV sample by sample.
 
 Include one rule with four commands:
 - `rd` for extracting reads from sample bam file;
@@ -139,14 +151,17 @@ Include one rule with four commands:
 - `call` for calling CNV.
 
 The results include "CNVtype, CNVregion, CNVsize, CNVlevel, eval1, eval2, eval3, eval4, q0, pN, dG"
-- `CNVlevel` - normalized read depth value, estimated integer CN value should be `round(2*CNVlevel)`;
-- `eval1` - e-value (p-value multiplied by genome size divided by bin size) calculated using t-test statistics between RD statistics in the region and global - set to [0 - 0.00001];
-- `eval2` - e-value from the probability of RD values within the region to be in the tails of a gaussian distribution of binned RD - set to [0 - 0.00001];
-- `q0` - fraction of reads mapped with q0 quality in call region - not useful for filtering since most reads have good quality;
+- `CNVlevel` - normalized read depth value, rough integer CN value should be `round(2*CNVlevel)`;
+- `eval1` - e-value (p-value multiplied by genome size divided by bin size) calculated using t-test 
+            statistics between RD statistics in the region and global - set to [0 - 0.00001];
+- `eval2` - e-value from the probability of RD values within the region to be in the tails of a 
+            gaussian distribution of binned RD - set to [0 - 0.00001];
+- `q0` - fraction of reads mapped with q0 quality in call region - not useful for filtering since 
+         most reads have good quality;
 - `pN` - fraction of reference genome gaps (Ns) in call region - set to [0 - 0.5];
 - `dG` - distance from closest large (>100bp) gap in reference genome - set to [>100kb];
 
-Get read depth signal
+Get read depth signal in 100bp level
 
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -chrom $(seq -f 'chr%g' 1 22) chrX chrY -rd sample1.bam &
 
@@ -166,7 +181,7 @@ Plot
 
     time cnvpytor -root ../read-depth/cnvnator/sample1.pytor -plot rd 20000 -o ../read-depth/cnvnator/sample1.png &
 
-Finally use a python script to extract evalue, pN and dG into `info` column
+Finally we use a python script to extract evalue, pN and dG into `info` column
 
 `cnvpytor` accepts SNP data and call CNV based on both RD and BAF, but we want to separate them,
 just use its RD function to call CNV, and filter by BAF after merging CNV from other tools.
@@ -191,22 +206,23 @@ Merge calls over multiple regions: >50% reciprocal overlap
 
 This tool can be run in two modes: 1. for WGS data without normal reference, a directory with fasta
 of single chromosomes or a GC-content profile need to be provided; 2. for WES data, a normal 
-reference must be provided. For mode1, a `GEM` mappability file could be provided to remove bad
+reference must be provided. For mode 1, a `GEM` mappability file could be provided to remove bad
 genomic regions. In my testing, control parameter is not working even if you provide it, do not know 
 the reason.
 
 Generate GC content profile for specific size of window. In this case, `chrFiles` should be set to
-the directory with fasta sequences of single chromosomes, and `window` set to specific size.
+the directory with fasta sequences of single chromosomes, and `window` set to specific size. We can 
+use very-low-depth data to do this.
 
     ~/data/biosoft/FREEC/src/freec -conf analysis/temp/freec/config_WGS.txt -sample analysis/mapped/sample1.bam
 
-Run freec with specified GC-content profile and mappability file
+Run freec with specified GC-content profile and mappability file for high-coverage data
 
     ~/data/biosoft/FREEC/src/freec -conf analysis/temp/freec/config_WGS.txt -sample analysis/mapped/sample1.bam
 
 After checking the results, we found that even a mappability file is provided, some telomere regions 
 are called to be CNV, which either results from the problem of mappability file or from the tool
-itself. At least, this result makes its all calling result not reliable.
+itself. At least, this result makes its all calling results not reliable.
 
 #### Principle of Control-FREEC
 
@@ -237,11 +253,12 @@ increasing the sample number and coverage and test again. But now I have to stop
 Dr. Jin ask me to focus more on scCNV project. I will catch up again if I have time.
 (问心无愧即可). Catch up here at Wed Oct 12 15:47:48 CST 2022.
 
-## 06. Call CNV based on read-pair and split-read
+## 06. Call CNV based on read-pair and split-read methods
 
 ### 06.1 Lumpy
 
-Lumpy is written in C.
+`Lumpy` is written in C.
+
 Five steps to call CNV by Lumpy. 1. get discordant reads (insert size over expected size or
 mate pair mapped to different chromosomes); 2. get split reads by Lumpy script; 3. call CNV by
 lumpyexpress; 4. genotype CNV by svtypes, a quality score was given (in QUAL filed of vcf file),
@@ -264,7 +281,7 @@ Overall length of low-map region is 228,061,378.
 
 `smoove` is a Lumpy wrapper, which is easier to use and faster.
 
-An bad region file was downloaded according to the author of smoove. Overall length is 119,556,880,
+A bad region file was downloaded according to the author of smoove. Overall length is 119,556,880,
 which is almost half shorter than Heng Li's. But when we remove non-cannonical chromosomes, its 
 length became 3,042,685, which is definitely not correct. 
 The file is in `low-mappability-track/smoove/hg38.exclude.bed`.
@@ -282,19 +299,31 @@ Test `smoove` calling
 
     smoove call --outdir analysis/temp/smoove/ --exclude ~/data/refs/hg38/exclude.cnvnator_100bp.GRCh38.20170403.bed --name sample4 --fasta ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -p 1 --genotype analysis/mapped/sample4.bam
 
-After comparing the results from Lumpy and Smoove, we found no big difference, so we will use smoove 
-to replace lumpy in our CNVPipe.
+After comparing the results from Lumpy and Smoove, we found no big difference, so we will replace 
+lumpy with smoove in our CNVPipe.
+
+Note: `Lumpy` might produce multiple calls for the same region, which indicates a noisy region or 
+complex SV, we will skip such regions when merging.
+
+    python ~/data/project/CNVPipe/scripts/smooveFilter.py analysis/temp/smoove/sample17.bed analysis/res/smoove/sample17.bed
+    for x in sample{13..18}; do python ~/data/project/CNVPipe/scripts/smooveFilter.py analysis/temp/smoove/${x}.bed analysis/res/smoove/${x}.bed; done
+
+#### 06.2.1 Duphold
 
 Use `duphold` to genotype. Three additional fields will be added into `FORMAT` per sample:
-DHFC - "fold-change for the variant depth relative to the rest of the chromosome the variant was found on"
-DHFFC - "fold-change for the variant depth relative to Flanking regions"
-DHBFC - "fold-change for the variant depth relative to bins in the genome with similar GC-content"
+1. DHFC - fold-change for the variant depth relative to the rest of the chromosome where variant was
+2. DHFFC - fold-change for the variant depth relative to Flanking regions
+3. DHBFC - fold-change for the variant depth relative to bins in the genome with similar GC-content
 
-`duphold` could be directly downloaded as an exectuable binary file.
+`duphold` could be directly downloaded as an exectuable binary file, or used after installing smoove
 
     smoove genotype -d -x -p 1 --name sample4 --outdir analysis/temp/smoove-genotype/ --fasta ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa --vcf analysis/temp/smoove/sample4-smoove.genotyped.vcf.gz analysis/mapped/sample4.bam
 
     Version: Smoove 0.2.8
+
+We have changed our strategy: firstly merge CNV results from all tools without filtering, then use
+`duphold` to genotype in one step. So we directly extract columns including chrom, start, end and CN 
+from the output of `smoove`. The following steps are not included in `smoove.smk`.
 
 The authors suggest use DHFFC<0.7 to filter deletion and DHBFC>1.3 to filter duplication
 
@@ -322,7 +351,7 @@ required.
 Delly by default divide genome into 10kb-mappable bins, but we can set window size by `-i`
 parameter. `-u` is for segmentation, `-l` is for using delly SV calling to refine breakpoints.
 
-So we try to call SV first, and use its output as input for CNV calling. 
+So we try to call SV first, then use its output as input for CNV calling. 
 `delly call` only use paired-end and split-read information, read-depth is not used.
 
     delly call -g ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -x ~/data/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed -o analysis/temp/delly/sample1.sv.bcf analysis/mapped/sample1.bam
@@ -330,6 +359,9 @@ So we try to call SV first, and use its output as input for CNV calling.
 Use `delly cnv` to call CNV
 
     delly cnv -u -i 20000 -g ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -l analysis/temp/delly/sample1.sv.bcf -m ~/data/refs/hg38/bundle/delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz -c analysis/temp/delly/sample1.cov.gz -o analysis/temp/delly/sample1.cnv.bcf analysis/mapped/sample1.bam
+
+Same as `smoove`, we extract specific columns from `delly cnv` output, merge its results with that 
+of other tools, and genotype with `duphold` in single run.
 
 Use `duphold` to do genotyping
 
@@ -360,16 +392,11 @@ Some R scripts were provided for plotting CNV, which could be a reference for la
 
 ## 07. Call SNPs from data
 
-The reason we do not use GATK for this task is that it
-requires many known-variant files, which increase the
-preparation load if for clinical usages. I will consider
-add that option in future development.
-
 ### 07.1 freebayes
 
-Call SNP sample by sample (the problem is the accuracy). Then filter based on quality score
-and read depth, this is a critical step. We should set different threshold for different depth
-data. The accuracy of SNP calling will affect the correction of CNV in later step.
+Call SNPs sample by sample (the problem is the accuracy). Then filter based on quality score and 
+read depth, this is a critical step. We should set different threshold for different depth data. 
+The accuracy of SNP calling will affect the correction of CNV in later step.
 
     freebayes -f ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa mapped/sample1.bam > snps/freebayes/sample1.raw.vcf
     bcftools filter -O v -o snps/freebayes/sample1.filtered.vcf -s LOWQUAL -e 'QUAL<10 || FMT/DP <5' --SnpGap 5 --set-GTs . snps/freebayes/sample1.raw.vcf
@@ -381,52 +408,90 @@ Almost the same as freebayes.
 
 ### 07.3 GATK
 
-Download GATK bundle resource file from [here]<https://console.cloud.google.com/storage/browser/genomics-public-data/resources/broad/hg38/v0/>
+Download GATK bundle resource file from 
+[here]<https://console.cloud.google.com/storage/browser/genomics-public-data/resources/broad/hg38/v0/>
 at Thu Oct 27 11:29:27 +08 2022. I suspect bundle files in our server might have broken or I misuse
-some of files in workflow. After downloading and checking with md5sum, I found they are totally
-identical.
+some of files in workflow at first. After downloading and checking with md5sum, I found they are 
+totally identical.
 
 When runing `variantRecalibrator`, an error happened: "Bad input: Found annotations with zero 
 variance". They must be excluded before proceeding. This might be due to the very-low-coverage of
 our testing data.
 Another error is "Positive training model failed to converge.  One or more annotations (usually MQ) 
 may have insufficient variance", this is caused by too less number of SNPs identified in GATK 
-`HaplotypeCaller`. We need to consider re-simulate sequencing data with high SNP rate.
+`HaplotypeCaller`. We need to consider re-simulate sequencing data with higher SNP rate.
+
+    time gatk --java-options '-Xmx30G' HaplotypeCaller -R /data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa -I mapped/sample18.bam -O snps/gatk/sample18.raw_variants.vcf.gz --dbsnp /data/jinwf/jhsun/refs/hg38/bundle/gatk/dbsnp_146.hg38.vcf.gz 1>1.log 2>&1 &
+
+    gatk --java-options '-Xmx30G' VariantRecalibrator -R /data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa -V snps/gatk/sample18.raw_variants.vcf.gz --resource:hapmap,known=false,training=true,truth=true,prior=15.0 /data/jinwf/jhsun/refs/hg38/bundle/gatk/hapmap_3.3.hg38.vcf.gz --resource:omni,known=false,training=true,truth=false,prior=12.0 /data/jinwf/jhsun/refs/hg38/bundle/gatk/1000G_omni2.5.hg38.vcf.gz --resource:1000G,known=false,training=true,truth=false,prior=10.0 /data/jinwf/jhsun/refs/hg38/bundle/gatk/1000G_phase1.snps.high_confidence.hg38.vcf.gz -an QD -an ReadPosRankSum -an FS -an SOR -mode SNP --max-gaussians 4 -O temp/gatk/sample18.recal --tranches-file temp/gatk/sample18.tranches --rscript-file temp/gatk/sample18.plots.R 1>1.log 2>&1
+
+    gatk --java-options '-Xmx30G' ApplyVQSR -R /data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa -V snps/gatk/sample18.raw_variants.vcf.gz -O snps/gatk/sample18.vqsr.vcf.gz --truth-sensitivity-filter-level 99.9 --create-output-variant-index true --tranches-file temp/gatk/sample18.tranches --recal-file temp/gatk/sample18.recal -mode SNP
+
+    gatk v4.2.2.0
+    HTSJDK Version: 2.24.1
+    Picard Version: 2.25.4
 
 ## 08. Merge the results from all CNV calling tools
 
-    python ~/data/project/CNVPipe/scripts/mergeCNV.py analysis/res/cnvkit/sample1.bed analysis/res/cnvpytor/sample1.bed analysis/res/freec/sample1.bed analysis/res/mops/sample1.bed analysis/res/smoove/sample1.bed ~/data/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed analysis/res/delly/sample1.bed sample1.merge.bed >merge.log
+We tried to merge CNV results from all tools including cnvkit, delly, smoove, cnvpytor, freec and 
+mops. During the process, we merge two CNVs iteratively, if there is overlap between two CNV region, 
+their overlapped length will be accumulated, and the later CNV will dispear (only the first CNV 
+will be kept). After the whole merging process, there should not exist any overlap CNVs. The
+implementation is in `scripts/mergeCNV.py`. The priority to keep CNVs: cnvkit, delly, smoove, mops,
+cnvpytor, freec.
 
-Except merging the results from four calling tools, we try to remove genomic bad regions 
-(centromere, telomere and heterochromatin). The bad region file is in 
-`~/data/refs/hg38/low-mappability-track/10x//hg38.sv_blacklist.bed`. Besides, we need to make sure the 
-merged file adapt to the input format of `CNVfilteR`.
+    cd analysis/
+    python ~/data/project/CNVPipe/scripts/mergeCNV.py res/cnvkit/sample18.bed res/delly/sample18.bed res/smoove/sample18.bed res/mops/sample18.bed res/cnvpytor/sample18.bed ~/data/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed res/merge/sample18.bed >merge.log
 
-We tried to merge CNV results from all tools including cnvkit, cnvpytor, freec, mops, smoove 
-and delly.
+    for x in sample{1..18}; do python ~/data/project/CNVPipe/scripts/mergeCNV.py res/cnvkit/${x}.bed res/delly/${x}.bed res/smoove/${x}.bed res/mops/${x}.bed res/cnvpytor/${x}.bed ~/data/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed res/merge/${x}.bed > logs/merge/mergeCNV.log; done
+    (grep chromosome res/merge/sample18.bed; grep -v chromosome res/merge/sample18.bed | sort -k 7nr -k 6nr -Vk 1,1) | less
 
-? What is heterochromatin
+I created a test dataset in `~/data3/project/CNVPipe/analysis/res/merge/test/` to test this script. 
+Testing is actually very important, I fixed some bugs after testing, which may not be identified if 
+no testing because the script runs OK for real data.
+
+    cd analysis/res/merge/test/
+    python ~/data/project/CNVPipe/scripts/mergeCNV.py test1.bed test2.bed test3.bed test4.bed test5.bed test6.bed ~/data/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed test.merge.bed
 
 ## 09. Score by overlap fractions with genomic bad regions
 
-The basic idea is that the higher overlap fraction, the lower score CNV region will get.
+When merging CNV results, we also calculate the overlap fraction of CNV region and low-map region, 
+then assign a `goodScore` for each CNV, which is negativly correlated with overlap fraction. 
+The higher overlap fraction, the lower score CNV region will get.
 
 ## 10. Score by duphold results
 
-Following last step, we can transform the bed file into vcf file as `duphold` requires VCF format
+Following last step, we transform the bed file into vcf file as `duphold` requires VCF format
 as input. Then we use it to calculate adjacent read depth for CNV region, and design a strategy
 to score CNV regions. Transforming script is in `scripts/bed2vcf.py`.
 
-    python ~/data/project/CNVPipe/scripts/bed2vcf.py sample1.bed ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa.fai sample1.vcf
-    duphold -v sample1.vcf -b analysis/mapped/sample1.bam -f ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -o sample1.duphold.vcf
+    cd analysis/res/merge
+    python ~/data/project/CNVPipe/scripts/bed2vcf.py sample18.bed ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa.fai sample18.vcf
+    time duphold -t 10 -v sample18.vcf -b ../../mapped/sample18.bam -f ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -o sample18.duphold.vcf &
+
+    for x in sample{1..18}; do python ~/data/project/CNVPipe/scripts/bed2vcf.py ${x}.bed ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa.fai ${x}.vcf; done
+    parallel --dry-run duphold -t 10 -v sample{}.vcf -b ../../mapped/sample{}.bam -f ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -o sample{}.duphold.vcf ::: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 &
+
+Then use `bcftools` to extract columns out and score based on DHFFC and DHBFC.
+The authors suggest to use DHFFC<0.7 to filter deletion and DHBFC>1.3 to filter duplication.
+We score deletion with DHFFC<0.5 or duplication with DHBFC>1.5 100, and score deletion with 
+DHFFC<0.7 or duplication with DHBFC>1.3 90. In this way, we can find highly confident CNVs.
+
+`duphold` 0.2.1 keep throwing an error: "fatal.nim(49)            sysFatal
+Error: unhandled exception: index -1 not in 0 .. 159345972 [IndexDefect]".
+Version 0.2.3 works well.
+
+    bcftools query -f '%CHROM\t%POS\t%INFO/END[\t%CN\t%AS\t%GS\t%DHFFC\t%DHBFC]\t%INFO/TN\t%INFO/SAMPLE\n' sample18.duphold.vcf > sample18.duphold.bed
+    python ~/data/project/CNVPipe/scripts/scoreDuphold.py sample18.duphold.bed sample18.duphold.score.bed
+    (grep chromosome sample18.duphold.score.bed; grep -v chromosome sample18.duphold.score.bed | sort -k 7nr -k 8nr -k 6nr -Vk 1,1) | ct | less -SN
+
+    cd analysis/res/merge
+    for x in sample{1..18}; do bcftools query -f '%CHROM\t%POS\t%INFO/END[\t%CN\t%AS\t%GS\t%DHFFC\t%DHBFC]\t%INFO/TN\t%INFO/SAMPLE\n' ${x}.duphold.vcf > ${x}.duphold.bed; done
+    for x in sample{1..18}; do python ~/data/project/CNVPipe/scripts/scoreDuphold.py ${x}.duphold.bed ${x}.duphold.score.bed; done
 
 ## 11. Score by BAF-correction
 
 `CNVfilteR`
-
-How to install and use it in snakemake? Or I need to write a simplified version in Python by myself. 
-Or I need to find another tool that was implemented in Python. Directly download in R script if not 
-installed.
 
 Run CNVfilteR:
 1. load cnv file
@@ -447,8 +512,43 @@ We can rank the CNVs by score but not remove them.
 
 The script is in `scripts/cnvFilteR.R`
 
-## 12. Integrate results from different tools
+For 10X data, too few SNPs were called by freebayes, so this tool only filter several CNV regions. 
+However, for 30X data, even over 1037411 SNPs were called, this tool still only remove very few 
+CNV regions. I am not sure it is the problem of `cnvfilter` or it is due to SNP calling, I will try 
+using `GATK` to call SNPs from 30X data and check again. Use one sample to test first.
 
+## 12. Performance evaluation of simulation data
+
+Construct ground truth set: we have two truth set when simulating data - one is CNV, the other is
+SV, two types in SV - Deletion and TandemDup should also be considered as CNV, so we need to merge 
+two set and get a non-overlapped ground truth set for benchmark. Here, we do not compare precise
+copy number but their CNV type - deletion (CN<2) or duplication (CN>2). Besides, simulated CNVs that
+are smaller than 5kb were filtered. The script is in `scripts/mergeTruthSet.py`, the test set is in
+`~/data3/project/CNVPipe/simulation/simuGenome/test`.
+
+    cd ~/data3/project/CNVPipe/simulation/simuGenome/
+    for x in tumor{1..12}; do python ~/data/project/CNVPipe/scripts/mergeTruthSet.py ${x}_CNV_clone_0.bed ${x}_SV_Clone_0.txt ${x}.truth.tmp.bed; done
+    for x in tumor{1..12}; do sort -Vk 1 -k 2,3n ${x}.truth.tmp.bed > ${x}.truth.bed; rm ${x}.truth.tmp.bed; done
+
+I created another test dataset in `~/data3/project/CNVPipe/analysis/res/merge/test/` to make sure 
+`evalPerform.py` script works appropriately.
+
+    python ~/data/project/CNVPipe/scripts/evalPerform.py test/callSet.bed test/truthSet.bed single
+    python ~/data/project/CNVPipe/scripts/evalPerform.py sample13.duphold.score.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor7.truth.bed merge
+    python ~/data/project/CNVPipe/scripts/evalPerform.py ../cnvkit/sample13.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor7.truth.bed single
+
+    for x in cnvkit smoove delly mops cnvpytor; do python ~/data/project/CNVPipe/scripts/evalPerform.py ../${x}/sample13.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor7.truth.bed single; done
+
+    for y in {1..6}; do echo -e 'sample' ${y}'\n'; for x in cnvkit smoove delly mops cnvpytor freec; do python ~/data/project/CNVPipe/scripts/evalPerform.py ../${x}/sample${y}.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor${y}.truth.bed single; done; done
+    for x in {1..6}; do python ~/data/project/CNVPipe/scripts/evalPerform.py sample${x}.duphold.score.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor${x}.truth.bed merge; done
+
+For 30X-depth data, cnvkit and delly performs really good, with over 0.8 sensitivity and less than 
+0.05 FDR, mops and cnvpytor have moderate sensitivity, smoove follows, and freec perform the worse, 
+in every sample, it has 0 sensitivity and 1 FDR, which means it did not identify any true CNV, this 
+is abnormal, I need to check this.
+If freec really perfomrs so bad, then our merged result should be conteminated by it, resulting in
+low sensitivity and high FDR. In that case, we need to remove freec for merging.
+I have checked freec snakemake rule, no problem, so we might need to remove freec in our workflow.
 
 ## 13. CNV pathogenicity prediction
 

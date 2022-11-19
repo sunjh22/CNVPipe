@@ -66,13 +66,19 @@ rule smoove_convert:
     input:
         rules.smoove_call.output,
     output:
-        "res/smoove/{sample}.bed",
+        tmpBed = "temp/smoove/{sample}.bed",
+        bed = "res/smoove/{sample}.bed",
+    params:
+        absPath = config['params']['absPath']
+    log:
+        "logs/smoove/{sample}.covert.log"
     conda:
         "../envs/freebayes.yaml"
     shell:
         "bcftools query -f '%CHROM\t%POS\t%INFO/END\t%INFO/SVTYPE\t%QUAL\n' {input} | "
         "egrep 'DUP|DEL' | awk -v OFS='\t' '$4==\"DEL\" {{print $1,$2,$3,1,$5}} "
-        "$4==\"DUP\" {{print $1,$2,$3,3,$5}}' > {output}"
+        "$4==\"DUP\" {{print $1,$2,$3,3,$5}}' > {output.tmpBed}; "
+        "python {params.absPath}/scripts/smooveFilter.py {output.tmpBed} {output.bed} > {log} 2>&1"
 
 rule all_smoove:
     input:

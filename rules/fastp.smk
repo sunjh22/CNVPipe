@@ -31,7 +31,7 @@ rule clean_reads_se:
     conda:
         "../envs/fastp.yaml"
     shell:
-        "(fastp --thread {threads} {params.extra} --in1 {sample} "
+        "(fastp --thread {threads} {params.extra} --in1 {input} "
         "--out1 {output.trimmed} --html {output.html} --json {output.json}) > {log} 2>&1"
 
 rule clean_reads_pe:
