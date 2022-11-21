@@ -15,13 +15,15 @@ with open(inputFile, 'r') as f:
 
 out = open(outputFile, 'w')
 for x in cnvs:
+    cnvLen = int(x[2]) - int(x[1])
     flag = 0
     for y in cnvs:
         if x !=y:
             if overlapLen(x[:3], y[:3]) > 0:
                 flag = 1
 
-    if flag == 0:
+    # the length of identified CNV should larger than 1kb
+    if flag == 0 and cnvLen >= 1000:
         print(*x, sep='\t', file=out)
 
 out.close()

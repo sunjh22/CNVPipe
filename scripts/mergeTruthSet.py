@@ -22,69 +22,70 @@ def mergeTruthCNV(cnv1, cnv2):
     return(cnv1)
 
 
-cnvFile = sys.argv[1]   # CNV truth set
-svFile = sys.argv[2]    # SV truth set
-outputFile = sys.argv[3]
+if __name__ == '__main__':
+    cnvFile = sys.argv[1]   # CNV truth set
+    svFile = sys.argv[2]    # SV truth set
+    outputFile = sys.argv[3]
 
-cnvs = []
-with open(cnvFile, 'r') as f:
-    for line in f:
-        if line.startswith('chr'):
-            continue
-        x = line.strip().split('\t')
-        x[0] = 'chr' + x[0]
-        size = int(x[2]) - int(x[1])
-        if size < 5000:
-            continue
-        cn = int(x[-1])
-        if cn == 0:
-            continue
-        elif cn < 0:
-            x[-1] = '1'
-        else:
-            x[-1] = '3'
-        cnvs.append(x)
-# print(cnvs)
+    cnvs = []
+    with open(cnvFile, 'r') as f:
+        for line in f:
+            if line.startswith('chr'):
+                continue
+            x = line.strip().split('\t')
+            x[0] = 'chr' + x[0]
+            size = int(x[2]) - int(x[1])
+            if size < 5000:
+                continue
+            cn = int(x[-1])
+            if cn == 0:
+                continue
+            elif cn < 0:
+                x[-1] = '1'
+            else:
+                x[-1] = '3'
+            cnvs.append(x)
+    # print(cnvs)
 
-svs = []
-with open(svFile, 'r') as f:
-    for line in f:
-        if line.startswith('chr'):
-            continue
-        x = line.strip().split('\t')
-        chrom = 'chr' + x[0]
-        start = x[1]
-        end = x[3]
-        size = int(start) - int(end)
-        if size < 5000:
-            continue
-        Type = x[-1]
-        if Type == 'Deletion':
-            cn = '1'
-        elif Type == 'TandemDup':
-            cn = '3'
-        else:
-            continue
-        svs.append([chrom, start, end, cn])
-# print(svs)
+    svs = []
+    with open(svFile, 'r') as f:
+        for line in f:
+            if line.startswith('chr'):
+                continue
+            x = line.strip().split('\t')
+            chrom = 'chr' + x[0]
+            start = x[1]
+            end = x[3]
+            size = int(start) - int(end)
+            if size < 5000:
+                continue
+            Type = x[-1]
+            if Type == 'Deletion':
+                cn = '1'
+            elif Type == 'TandemDup':
+                cn = '3'
+            else:
+                continue
+            svs.append([chrom, start, end, cn])
+    # print(svs)
 
-merged = []
-svs2 = svs[:]
-while cnvs:
-    cnv1 = cnvs.pop(0)
-    count = 0
-    tmpCnv = []
-    for i, cnv2 in enumerate(svs):
-        tmpCnv = mergeTruthCNV(cnv1, cnv2)
-        if tmpCnv != cnv1:
-            svs2.pop(i-count)
-            count += 1
-            cnv1 = tmpCnv
+    merged = []
+    svs2 = svs[:]
+    while cnvs:
+        cnv1 = cnvs.pop(0)
+        count = 0
+        tmpCnv = []
+        for i, cnv2 in enumerate(svs):
+            tmpCnv = mergeTruthCNV(cnv1, cnv2)
+            if tmpCnv != cnv1:
+                svs2.pop(i-count)
+                count += 1
+                cnv1 = tmpCnv
 
-    merged.append(cnv1)
-    svs = svs2[:]
+        merged.append(cnv1)
+        svs = svs2[:]
 
-merged.extend(svs)
-with open(outputFile, 'w') as f:
-    for x in merged:
-        print(*x, sep='\t', file=f)
+    merged.extend(svs)
+    with open(outputFile, 'w') as f:
+        for x in merged:
+            print(*x, sep='\t', file=f)

@@ -99,7 +99,7 @@ Includes another two scripts:
 - `fastp.smk` for cleaning reads;
 - `bwamem.smk` for mapping reads using bwa-mem.
 
-## 05. Write smk for Read-depth based CNV-calling methods
+## 05. CNV-calling based on read-depth methods
 
 We need to be clear about some features of these methods:
 1. require normal samples? if yes, how many?
@@ -253,7 +253,7 @@ increasing the sample number and coverage and test again. But now I have to stop
 Dr. Jin ask me to focus more on scCNV project. I will catch up again if I have time.
 (问心无愧即可). Catch up here at Wed Oct 12 15:47:48 CST 2022.
 
-## 06. Call CNV based on read-pair and split-read methods
+## 06. CNV calling based on read-pair and split-read methods
 
 ### 06.1 Lumpy
 
@@ -306,7 +306,7 @@ Note: `Lumpy` might produce multiple calls for the same region, which indicates 
 complex SV, we will skip such regions when merging.
 
     python ~/data/project/CNVPipe/scripts/smooveFilter.py analysis/temp/smoove/sample17.bed analysis/res/smoove/sample17.bed
-    for x in sample{13..18}; do python ~/data/project/CNVPipe/scripts/smooveFilter.py analysis/temp/smoove/${x}.bed analysis/res/smoove/${x}.bed; done
+    for x in sample{1..18}; do python ~/data/project/CNVPipe/scripts/smooveFilter.py analysis/temp/smoove/${x}.bed analysis/res/smoove/${x}.bed; done
 
 #### 06.2.1 Duphold
 
@@ -342,7 +342,8 @@ Follow author's suggestion to filter CNV based on DHFFC and DHBFC by `awk`
 ### 06.3 Delly
 
 Delly is written in C++. It is primarily designed for calling structural variant, both germline and 
-somatic (cancers). It also supports CNV calling now.
+somatic (cancers). It also supports CNV calling now, I suspect in this mode read-depth information 
+is also used.
 
 Mappbility files are mandantory for Delly to call CNV, we downloaded map files
 from [here]<https://gear.embl.de/data/delly/> at Sat Oct 15 17:08:30 +08 2022. All three files are 
@@ -433,12 +434,12 @@ may have insufficient variance", this is caused by too less number of SNPs ident
 
 ## 08. Merge the results from all CNV calling tools
 
-We tried to merge CNV results from all tools including cnvkit, delly, smoove, cnvpytor, freec and 
-mops. During the process, we merge two CNVs iteratively, if there is overlap between two CNV region, 
+We tried to merge CNV results from all tools including cnvkit, delly, smoove, mops and cnvpytor.
+During the process, we merge two CNVs iteratively, if there is overlap between two CNV region, 
 their overlapped length will be accumulated, and the later CNV will dispear (only the first CNV 
 will be kept). After the whole merging process, there should not exist any overlap CNVs. The
 implementation is in `scripts/mergeCNV.py`. The priority to keep CNVs: cnvkit, delly, smoove, mops,
-cnvpytor, freec.
+cnvpytor.
 
     cd analysis/
     python ~/data/project/CNVPipe/scripts/mergeCNV.py res/cnvkit/sample18.bed res/delly/sample18.bed res/smoove/sample18.bed res/mops/sample18.bed res/cnvpytor/sample18.bed ~/data/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed res/merge/sample18.bed >merge.log
@@ -452,6 +453,23 @@ no testing because the script runs OK for real data.
 
     cd analysis/res/merge/test/
     python ~/data/project/CNVPipe/scripts/mergeCNV.py test1.bed test2.bed test3.bed test4.bed test5.bed test6.bed ~/data/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed test.merge.bed
+
+In `analysis/res/merge2/`, we only merge cnvkit, delly mops and cnvpytor. The script is in 
+`mergeCNV2.py`.
+
+    for x in sample{1..18}; do python ~/data/project/CNVPipe/scripts/mergeCNV2.py res/cnvkit/${x}.bed res/delly/${x}.bed res/mops/${x}.bed res/cnvpytor/${x}.bed ~/data/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed res/merge2/${x}.bed > logs/merge/mergeCNV.2.log; done
+
+We next try another merging strategy: if two CNVs have overlap, instead of taking only former one, 
+this time we really merge two CNVs - extending the breakpoints. The script is in `mergeCNV3.py`. 
+Notice that this is based on mergeCNV2.py, which means only four tools results are merged.
+
+Test first
+
+    python ~/data/project/CNVPipe/scripts/mergeCNV3.py test1.bed test2.bed test3.bed test4.bed ~/data/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed test.merge.bed
+
+Run for simulation data
+
+    for x in sample{1..18}; do python ~/data/project/CNVPipe/scripts/mergeCNV3.py res/cnvkit/${x}.bed res/delly/${x}.bed res/mops/${x}.bed res/cnvpytor/${x}.bed ~/data/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed res/merge3/${x}.bed > logs/merge/mergeCNV.3.log; done
 
 ## 09. Score by overlap fractions with genomic bad regions
 
@@ -517,7 +535,7 @@ However, for 30X data, even over 1037411 SNPs were called, this tool still only 
 CNV regions. I am not sure it is the problem of `cnvfilter` or it is due to SNP calling, I will try 
 using `GATK` to call SNPs from 30X data and check again. Use one sample to test first.
 
-## 12. Performance evaluation of simulation data
+## 12. Evaluate performance in simulation data
 
 Construct ground truth set: we have two truth set when simulating data - one is CNV, the other is
 SV, two types in SV - Deletion and TandemDup should also be considered as CNV, so we need to merge 
@@ -534,23 +552,84 @@ I created another test dataset in `~/data3/project/CNVPipe/analysis/res/merge/te
 `evalPerform.py` script works appropriately.
 
     python ~/data/project/CNVPipe/scripts/evalPerform.py test/callSet.bed test/truthSet.bed single
+
+For simulation data, sample13-18 corresponds to truth7-12, which is hard for parallel computing, 
+so we copy truth7-12 to truth13-18 in `~/data3/project/CNVPipe/simulation/simuGenome/`.
+
     python ~/data/project/CNVPipe/scripts/evalPerform.py sample13.duphold.score.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor7.truth.bed merge
     python ~/data/project/CNVPipe/scripts/evalPerform.py ../cnvkit/sample13.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor7.truth.bed single
 
-    for x in cnvkit smoove delly mops cnvpytor; do python ~/data/project/CNVPipe/scripts/evalPerform.py ../${x}/sample13.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor7.truth.bed single; done
+    for y in {1..18}; do echo -e 'sample' ${y}; for x in cnvkit smoove delly mops cnvpytor; do echo -e 'tool' ${x}; python ~/data/project/CNVPipe/scripts/evalPerform.py ../${x}/sample${y}.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor${y}.truth.bed single; echo -e '\n'; done; echo -e '\n'; done
+    for x in {1..18}; do echo -e 'sample' ${x}; python ~/data/project/CNVPipe/scripts/evalPerform.py sample${x}.duphold.score.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor${x}.truth.bed merge; echo -e '\n'; done
 
-    for y in {1..6}; do echo -e 'sample' ${y}'\n'; for x in cnvkit smoove delly mops cnvpytor freec; do python ~/data/project/CNVPipe/scripts/evalPerform.py ../${x}/sample${y}.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor${y}.truth.bed single; done; done
-    for x in {1..6}; do python ~/data/project/CNVPipe/scripts/evalPerform.py sample${x}.duphold.score.bed ~/data3/project/CNVPipe/simulation/simuGenome/tumor${x}.truth.bed merge; done
+To quickly evaluate performance under different parameters, I re-format `evalPerform.py`, only
+output file need to be assigned now.
 
-For 30X-depth data, cnvkit and delly performs really good, with over 0.8 sensitivity and less than 
-0.05 FDR, mops and cnvpytor have moderate sensitivity, smoove follows, and freec perform the worse, 
-in every sample, it has 0 sensitivity and 1 FDR, which means it did not identify any true CNV, this 
-is abnormal, I need to check this.
-If freec really perfomrs so bad, then our merged result should be conteminated by it, resulting in
-low sensitivity and high FDR. In that case, we need to remove freec for merging.
-I have checked freec snakemake rule, no problem, so we might need to remove freec in our workflow.
+    python ~/data/project/CNVPipe/scripts/evalPerform.py ~/data3/project/CNVPipe/analysis/evaluation/sensitivity-FDR.v2.txt
 
-## 13. CNV pathogenicity prediction
+Different merging strategies have corresponding evaluation scripts for them.
+
+Note:
+1. For 30X-depth data, cnvkit and delly performs really good, with over 0.8 sensitivity and less 
+than 0.05 FDR, mops and cnvpytor have moderate sensitivity, smoove follows, and freec perform the 
+worse, in every sample, it has 0 sensitivity and 1 FDR, which means it did not identify any true 
+CNV, this is abnormal, I need to check this.
+2. We decided to remove freec in our workflow, not merging or evaluating it in this part, this 
+improved the sensitivity of CNVPipe but its FDR is still higher than other tools.
+3. For CNVPipe, we have some threshold to filter CNV regions, however, loose the cutoff will
+increase sensitivity and FDR at the same time.
+4. smoove shows high FDR
+
+5. goodScore is useless in simulation study, should be set to negative infinity
+v1: cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe = 0; goodScoreThe = 0; dupholdScoreThe = 30
+v2: cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe = 0; goodScoreThe = -20; dupholdScoreThe = 0
+
+6. increase accumScoreThe by 1 (0->1) could greatly reduce FDR
+v3: cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe = 1; goodScoreThe = -20; dupholdScoreThe = 30
+
+7. it looks like filtering based on dupholdScore (>=90) could not improve performance
+v4: cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe = 1; goodScoreThe = -1000; dupholdScoreThe = 90
+v5: cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe = 1; goodScoreThe = -1000; dupholdScoreThe = 0
+
+8. Simply increase overlap proportion threshold will not improve performance
+v6: cnvProp1 > 0.45 or cnvProp2 > 0.45; accumScoreThe = 1; goodScoreThe = -1000; dupholdScoreThe = 0
+v7: cnvProp1 > 0.6 or cnvProp2 > 0.6; accumScoreThe = 1; goodScoreThe = -1000; dupholdScoreThe = 0
+
+9. When set toolNum=2, both sensitivity and FDR of CNVPipe become comparable with cnvkit and delly.
+v8: cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum = 2
+
+v9: cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe + goodScoreThe + dupholdScoreThe > 130
+
+10. Even we take all CNVs from merged results, its sensitivity is not significantly better, which
+should not be the case
+v10: cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0
+
+As beforehand results are not good enought, We next try to merge only cnvkit, delly, mops and 
+cnvpytor.
+v11: four tools, cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0
+
+    python ~/data/project/CNVPipe/scripts/evalPerform2.py ~/data3/project/CNVPipe/analysis/evaluation/sensitivity-FDR.v11.txt
+
+v12: four tools, cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum>=2
+
+We next try to merge cnvkit, delly, mops and cnvpytor by a new strategy: merge two CNVs if they
+overlap rather than take the former one. And we require the called CNV at least cover 30% of truth
+CNV.
+
+v13: four tools, cnvProp1 > 0.3; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum>=2
+
+    python ~/data/project/CNVPipe/scripts/evalPerform3.py ~/data3/project/CNVPipe/analysis/evaluation/sensitivity-FDR.v13.txt
+
+v14: four tools, cnvProp1 > 0.45; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum>=2
+
+v15: four tools, cnvProp1 > 0.6; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum>=2
+
+In v16, we got plausible result: higher sensitivity and much lower FDR for CNVPipe. We might keep
+exploring better merging and filter strategy.
+
+v16: four tools, cnvProp1 > 0.8; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum>=2
+
+## 13. Predict CNV pathogenicity
 
 ### 13.1 ClassifyCNV
 

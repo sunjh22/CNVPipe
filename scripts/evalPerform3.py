@@ -33,7 +33,7 @@ def overlap(cnv1, cnv2):
     
     cnvProp1 = round((overlap/cnvLen1), 2)
     cnvProp2 = round((overlap/cnvLen2), 2)
-    if cnvProp1 > 0.3 or cnvProp2 > 0.3:
+    if cnvProp1 > 0.8:
         return True
     else:
         return False
@@ -45,7 +45,7 @@ def evaluate(callFile, truthFile, Type):
     accumScoreThe = 0      # can be adjusted
     goodScoreThe = -1000       # can be adjusted
     dupholdScoreThe = 0    # cannot be adjusted
-    toolNumThe = 1             # CNVs called by at least how many tools
+    toolNumThe = 2             # CNVs called by at least how many tools
 
     callCnvs = []
     with open(callFile, 'r') as f:
@@ -54,14 +54,13 @@ def evaluate(callFile, truthFile, Type):
                 continue
             x = line.strip().split('\t')
             cnv = x[:4]
-            if Type == 'merge':
+            if Type == 'merge3':
                 accumScore = float(x[5])
                 goodScore = float(x[6])
-                dupholdScore = float(x[7])
-                toolNum = int(x[8])
+                # dupholdScore = float(x[7])
+                toolNum = int(x[4])
                 if accumScore >= accumScoreThe and goodScore >= goodScoreThe and \
-                dupholdScore >= dupholdScoreThe and toolNum >= toolNumThe:
-                # if accumScore+goodScore+dupholdScore > 130:
+                toolNum >= toolNumThe:
                     callCnvs.append(cnv)
             else:
                 callCnvs.append(cnv)
@@ -99,9 +98,9 @@ def evaluate(callFile, truthFile, Type):
 
 def evaluateHelper(truthFile, tools, fold, outputFile):
     for tool in tools:
-        if tool == 'merge':
+        if tool == 'merge3':
             callFile = '/home/jhsun/data3/project/CNVPipe/analysis/res/' + tool + '/sample' + \
-                str(i) + '.duphold.score.bed'
+                str(i) + '.bed'
             sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
             print(fold, 'sample'+str(i), tool, sensitivity, fdr, sep='\t', file=outputFile)
         else:
@@ -114,17 +113,11 @@ def evaluateHelper(truthFile, tools, fold, outputFile):
 
 if __name__ == "__main__":
 
-    # callFile = sys.argv[1]      # CNV callset, from merged or single tool
-    # truthFile = sys.argv[2]     # CNV ground truth file
-    # Type = sys.argv[3]          # for single-tool or merged result, could be 'single' or 'merge'
-    # print("Benchmark for call set {:s} under '{:s}' mode".format(callFile, Type))
-    # print("Sensitivity is {:.2f}, FDR is {:.2f}".format(sensitivity, fdr))
-
     outputFile = sys.argv[1]    # say sensitivity-FDR.v2.txt
     out = open(outputFile, 'w')
     print('fold', 'sample', 'tool', 'sensitivity', 'FDR', sep='\t', file=out)
 
-    tools = ['merge', 'cnvkit', 'delly', 'smoove', 'mops', 'cnvpytor']
+    tools = ['merge3', 'cnvkit', 'delly', 'mops', 'cnvpytor', 'smoove', 'freec']
     for i in range(1,19):
         truthFile = '/home/jhsun/data3/project/CNVPipe/simulation/simuGenome/tumor' + str(i) + '.truth.bed'
         if 1 <= i <= 6:

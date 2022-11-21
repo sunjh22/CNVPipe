@@ -57,7 +57,7 @@ rule duphold_score:
 # Score CNV region by duphold results
 rule score_byDepth:
     input:
-        rules.duphold_score.output.vcf,
+        rules.duphold_score.output,
     output:
         bed = "res/merge/{sample}.duphold.bed",
         scoreBed = "res/merge/{sample}.duphold.score.bed",
