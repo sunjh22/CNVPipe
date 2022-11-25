@@ -641,6 +641,99 @@ we need to figure out how to make it work in our CNVPipe.
 XCNV only supports hg19, which is outdated, so we give up using this tool to predict
 CNV pathogenicity.
 
+## 14. Benchmark by real WGS data
+
+Download and install the latest SRAtoolkit
+
+    $ wget --output-document sratoolkit.tar.gz https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/current/sratoolkit.current-centos_linux64.tar.gz
+    $ tar -xzvf sratoolkit.tar.gz
+
+Add it to PATH.
+
+Then assign the user repository which will be the location to store downloaded data.
+
+    $ vdb-config -i
+
+Test whether working
+
+    $ fastq-dump --stdout -X 2 SRR390728
+    $ prefetch -V
+    prefetch : 3.0.1
+
+Check the size of SRR
+
+    $ vdb-dump SRR3602759 --info
+    size   : 61,416,019,469
+
+### AK1 dataset
+
+The original data is from a Nature paper (De novo assembly and phasing of a Korean human genome). 
+Two WGS data are available: SRR3602738 and SRR3602759, but we will only download and analyze
+SRR3602759 because it has higher read depth, basically these two datasets are from the same sample.
+The raw data is in `~/data3/raw_data/ncbi/sra`. 
+
+AK1 benchmark CNV set is downloaded from another paper (Trost et al, 2018, AJHG), 
+at `~/data3/project/CNVPipe/analysis/truthSet/AK1_hg38_CNV_benchmark.txt`, 
+this benchmark set is specifically for SRR3602759.
+
+Start downloading SRR3602759 at Thu Nov 24 09:58:58 +08 2022
+Check downloaded state at Fri Nov 25 07:58:57 +08 2022
+
+    $ prefetch SRR3602759 --max-size 62000000000
+
+Extract fastq files
+
+    $ fasterq-dump SRR3602759
+
+### NA12878
+
+NA12878 belongs to a 17 member CEPH pedigree, and has been sequenced by a lot of big projects, like
+1000 genome project, Illumina's Platinum Genomes (50X and 200X), Broad Institute (NA12878 clone 
+reference sequences, cell line, in my understanding) and NIH GIAB.
+
+NA12878 benchmark CNV set1 is downloaded from another paper (Trost et al, 2018, AJHG), 
+at `~/data3/project/CNVPipe/analysis/truthSet/NA12878_hg38_CNV_benchmark.txt`, 
+original file is from `svclassify`, Trost filtered it to keep only deletions>1kb.
+
+NA12878 benchmark CNV set2
+
+NA12878 benchmark CNV set3
+
+
+1. 1000G NA12878 sequencing data 
+(https://www.internationalgenome.org/data-portal/sample/NA12878)
+
+    wget ftp://ftp.sra.ebi.ac.uk/vol1/run/ERR323/ERR3239334/NA12878.final.cram
+
+2. Illumina Platinum NA12878 data (50X)
+(https://www.ebi.ac.uk/ena/browser/view/PRJEB3381?show=reads)
+Note: 200X data is also available, but not useful in this project.
+Start downloading at Thu Nov 24 19:54:22 +08 2022.
+
+    wget -c -o illumina.download.log ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194147/ERR194147_1.fastq.gz &
+    wget -c -o illumina.download.log ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194147/ERR194147_2.fastq.gz &
+
+3. Broad Institute clone reference sequences (not sure it really fits our need)
+(ftp://ftp.broadinstitute.org/pub/crd/NA12878_clones/)
+    
+    wget ftp://ftp.broadinstitute.org/distribution/crd/NA12878_clones/raw_data/A2925.1.Solexa-127359.aligned.duplicates_marked.bam
+    wget ftp://ftp.broadinstitute.org/distribution/crd/NA12878_clones/raw_data/A2925.1.Solexa-127365.aligned.duplicates_marked.bam
+    
+4. NIH Genome in a Bottle (GIAB). Total reads depth reach 300X for NA12878 (14 libraries together)
+(ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/).
+`MGISEQ` under this directory might contain original fastq files of NA12878, but no README in this 
+directory.
+`BGISEQ500` contains PE50 and PE100 reads for NA12878 sequenced on BGISEQ-500 platform.
+We start downloading Illumina Hiseq reads
+
+    wget ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NIST_NA12878_HG001_HiSeq_300x/RMNISTHS_30xdownsample.bam
+    wget ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NIST_NA12878_HG001_HiSeq_300x/RMNISTHS_30xdownsample.bam.bai
+
+5. BGI (paper PMID: 33849535), two NA12878 replicates, sequenced in BGISEQ-500.
+(https://db.cngb.org/search/project/CNP0000813/)
+
+
+
 ## 14. visualization
 
 
