@@ -9,6 +9,7 @@ Objectives of CNVPipe
 ## Run CNVPipe snakemake
 
     snakemake -n --directory analysis/ all_cnvfilter #--rerun-triggers mtime
+    snakemake -n --directory ~/data3/project/CNVPipe/analysis/
     snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 100 --directory analysis/ all_cnvfilter
     snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 50 --directory ~/data3/project/CNVPipe/analysis/ all_cnvfilter
     snakemake --directory analysis/ all_cnvfilter --rulegraph | dot -Tpdf > dag.pdf
@@ -33,11 +34,12 @@ structure variation rate, `-l` assigns copy neutral LOH rate, `-c` assigns numbe
 assigns maximum size of tandem duplication, `-a` prefix.
 
 In this simulation, we need germline SNPs for later SNP calling and BAF correction, we also set
-SV rate to be very low to make sure only CNV happens in the genome, so we can fully test the
+SV rate to be relatively low to make sure only CNV happens in the genome, so we can fully test the
 performance of CNV calling tools.
 
 `normal` genome has SNP rate 0.001, while `normal1` genome has SNP rate 0.01.
-`tumor1-6` corresponds to `normal`, while `tumor7-12` corresponds to `normal1`.
+`tumor1-6` in `10X/` corresponds to `normal`, while `tumor7-12` in `10X/` corresponds to `normal1`.
+In the later reads simulation, we used `tumor7-12` as reference to simulate 1X, 10X and 30X data.
 
     curl -OL https://sourceforge.net/projects/scnvsim/files/latest/download
     unzip download
@@ -52,20 +54,29 @@ performance of CNV calling tools.
 HSXn - HiSeqX PCR free (150bp), HS25 - HiSeq 2500 (125bp, 150bp), HSXt - HiSeqX TruSeq (150bp); `-f`
 assigns coverage, `-l` assigns length, `-m` assigns mean size of DNA fragments in library; `-na` do 
 not output ALN alignment file, `-s` standard deviation of DNA fragment size.
-`sample1-6` are 1X-depth, while `sample7-12` are 10X-depth.
+
+In three different depth data simulation, we all use `tumor7-12` genome as reference.
+`sample1-6` are 1X depth
+
+    parallel --dry-run "~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 1 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/normal1_snvindelsim.fasta -o simulation/1X/control{}_ 1>1.log 2>&1" ::: 1 2 3 4 5 6 &
+    time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 1 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/tumor7_svcnvsim_clone_0.fasta -o simulation/1X/sample1_ 1>2.log 2>&1 &
+    parallel -j 6 -k gzip -q -1 simulation/1X/control{}_1.fq ::: 1 2 3 4 5 6 &
+    parallel -j 6 -k gzip -q -1 simulation/1X/sample{}_1.fq ::: 1 2 3 4 5 6 &
+    ART Version: v2.5.8
+
+`sample7-12` are 10X depth.
 
     time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 10 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/normal1_snvindelsim.fasta -o simulation/10X/control7_ 1>1.log 2>2.log &
     time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 10 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/tumor7_svcnvsim_clone_0.fasta -o simulation/10X/sample7_ >1.log 2>2.log &
     parallel -j 6 -k gzip -q -1 simulation/10X/control{}_1.fq ::: 7 8 9 10 11 12 &
-    parallel -j 6 -k gzip -q -1 simulation/10X/control{}_2.fq ::: 7 8 9 10 11 12 &
-    ART Version: v2.5.8
+    parallel -j 6 -k gzip -q -1 simulation/10X/sample{}_1.fq ::: 7 8 9 10 11 12 &
 
-As 10x-depth data cannot give us much SNP information, we want to simulate 30x data for samples. We 
-use `tumor7-12` genome to simulate samples `sample13-18`.
+`sample13-18` are 30X depth
 
+    parallel --dry-run "~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 30 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/normal1_snvindelsim.fasta -o simulation/30X/control{}_ 1>1.log 2>&1" ::: 13 14 15 16 17 18 &
     time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 30 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/tumor7_svcnvsim_clone_0.fasta -o simulation/30X/sample13_ >1.log 2>2.log &
+    parallel -j 6 -k gzip -q -1 simulation/30X/control{}_1.fq ::: 13 14 15 16 17 18 &
     parallel -j 6 -k gzip -q -1 simulation/30X/sample{}_1.fq ::: 13 14 15 16 17 18 &
-    parallel -j 6 -k gzip -q -1 simulation/30X/sample{}_2.fq ::: 13 14 15 16 17 18 &
 
 ### Use seqkit to downsample
 
@@ -233,9 +244,8 @@ both copy number and allelic frequency information, then annotates genomic alter
 
 ### 05.4. cn.MOPS
 
-Require at least 6 normal samples, do not require reference genome and do not exclude low-map 
-region. Call CNV in batch. This method call CNV by comparing read depth between patient sample and 
-control sample.
+Require at least 6 samples, do not require reference genome and do not exclude low-map 
+region. Call CNV in batch. This method call CNV by comparing read depth between samples.
 
 cn.mops is not applicable to very-low-coverage data, since Windows should contain 50-100 reads each.
 Three steps in cn.mops:
@@ -379,7 +389,7 @@ Use `bcftools` to extract informative columns
     bcftools query -f '%FILTER\t%CHROM\t%POS\t%INFO/END[\t%RDCN\t%DHFC\t%DHFFC\t%DHBFC]\n' analysis/temp/delly/sample4.duphold.vcf | grep 'PASS' | cut -f 2- > analysis/res/delly/sample4.bed
 
 In `INFO` field, `MP` means fraction of mappable positions; `GCF` means GC fraction (added by 
-duphold); these should not be used for CNV filtering.
+duphold); these will not be used for CNV filtering.
 
 We also need to filter CNV based on DHFFC and DHBFC as stated in `smoove` section.
 
@@ -461,7 +471,7 @@ In `analysis/res/merge2/`, we only merge cnvkit, delly mops and cnvpytor. The sc
 
 We next try another merging strategy: if two CNVs have overlap, instead of taking only former one, 
 this time we really merge two CNVs - extending the breakpoints. The script is in `mergeCNV3.py`. 
-Notice that this is based on mergeCNV2.py, which means only four tools results are merged.
+Notice that this is based on mergeCNV2.py, which means only four tools' results are merged.
 
 Test first
 
@@ -535,7 +545,7 @@ However, for 30X data, even over 1037411 SNPs were called, this tool still only 
 CNV regions. I am not sure it is the problem of `cnvfilter` or it is due to SNP calling, I will try 
 using `GATK` to call SNPs from 30X data and check again. Use one sample to test first.
 
-## 12. Evaluate performance in simulation data
+## 12. Evaluate performance on simulation data
 
 Construct ground truth set: we have two truth set when simulating data - one is CNV, the other is
 SV, two types in SV - Deletion and TandemDup should also be considered as CNV, so we need to merge 
@@ -569,6 +579,11 @@ output file need to be assigned now.
 
 Different merging strategies have corresponding evaluation scripts for them.
 
+I re-simulated 30x control data and re-run CNVPipe, start at Sat Dec  3 14:29:53 +08 2022 with
+120 cores, 
+
+We used 50k resolution for 1x data, 5k resolution for 10x data and 1k resolution for 30x data.
+
 Note:
 1. For 30X-depth data, cnvkit and delly performs really good, with over 0.8 sensitivity and less 
 than 0.05 FDR, mops and cnvpytor have moderate sensitivity, smoove follows, and freec perform the 
@@ -597,7 +612,6 @@ v7: cnvProp1 > 0.6 or cnvProp2 > 0.6; accumScoreThe = 1; goodScoreThe = -1000; d
 
 9. When set toolNum=2, both sensitivity and FDR of CNVPipe become comparable with cnvkit and delly.
 v8: cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum = 2
-
 v9: cnvProp1 > 0.3 or cnvProp2 > 0.3; accumScoreThe + goodScoreThe + dupholdScoreThe > 130
 
 10. Even we take all CNVs from merged results, its sensitivity is not significantly better, which
@@ -625,9 +639,11 @@ v14: four tools, cnvProp1 > 0.45; accumScoreThe = 0; goodScoreThe = -1000; dupho
 v15: four tools, cnvProp1 > 0.6; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum>=2
 
 In v16, we got plausible result: higher sensitivity and much lower FDR for CNVPipe. We might keep
-exploring better merging and filter strategy.
+exploring better merging and filtering strategy.
 
 v16: four tools, cnvProp1 > 0.8; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum>=2
+
+v17: re-simulate and analyze 1x data (50k), four tools, cnvProp1 > 0.8; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum>=2
 
 ## 13. Predict CNV pathogenicity
 
@@ -670,14 +686,14 @@ Check the size of SRR
 The original data is from a Nature paper (De novo assembly and phasing of a Korean human genome). 
 Two WGS data are available: SRR3602738 and SRR3602759, but we will only download and analyze
 SRR3602759 because it has higher read depth, basically these two datasets are from the same sample.
-The raw data is in `~/data3/raw_data/ncbi/sra`. 
+The raw data is in `~/data3/raw_data/ncbi/sra/`. 
 
 AK1 benchmark CNV set is downloaded from another paper (Trost et al, 2018, AJHG), 
 at `~/data3/project/CNVPipe/analysis/truthSet/AK1_hg38_CNV_benchmark.txt`, 
 this benchmark set is specifically for SRR3602759.
 
 Start downloading SRR3602759 at Thu Nov 24 09:58:58 +08 2022
-Check downloaded state at Fri Nov 25 07:58:57 +08 2022
+Check downloaded state at Fri Nov 25 07:58:57 +08 2022.
 
     $ prefetch SRR3602759 --max-size 62000000000
 
@@ -685,19 +701,34 @@ Extract fastq files
 
     $ fasterq-dump SRR3602759
 
+Compress fastq files
+
+    $ time gzip SRR3602759_1.fastq &
+    $ time gzip SRR3602759_2.fastq &
+    $ seqkit stats *.gz > stats.txt
+    file                   format  type     num_seqs         sum_len  min_len  avg_len  max_len
+    SRR3602759_1.fastq.gz  FASTQ   DNA   432,004,180  65,232,631,180      151      151      151
+    SRR3602759_2.fastq.gz  FASTQ   DNA   432,004,180  65,232,631,180      151      151      151
+
+Data is ready, pending for CNVPipe running.
+
 ### NA12878
 
 NA12878 belongs to a 17 member CEPH pedigree, and has been sequenced by a lot of big projects, like
 1000 genome project, Illumina's Platinum Genomes (50X and 200X), Broad Institute (NA12878 clone 
 reference sequences, cell line, in my understanding) and NIH GIAB.
 
-NA12878 benchmark CNV set1 is downloaded from another paper (Trost et al, 2018, AJHG), 
-at `~/data3/project/CNVPipe/analysis/truthSet/NA12878_hg38_CNV_benchmark.txt`, 
+NA12878 benchmark CNV set1 is downloaded from another paper (Trost et al, 2018, AJHG) into
+`~/data3/project/CNVPipe/analysis/truthSet/NA12878_hg38_CNV_benchmark1.txt`, 
 original file is from `svclassify`, Trost filtered it to keep only deletions>1kb.
 
-NA12878 benchmark CNV set2
+NA12878 benchmark CNV set2 is downloaded from Sun et al (2021, BMC Medical Genomics) additional 
+file2 table 10 Set1, but it is based on hg19, we need to use liftover to transform it into hg38 
+coordinate. We extracted set2 into 
+`~/data3/project/CNVPipe/analysis/truthSet/NA12878_hg38_CNV_benchmark2.txt`.
 
-NA12878 benchmark CNV set3
+NA12878 benchmark CNV set3 is also extracted from Sun et al (2021, BMC Medical Genomics) additional 
+file2 table 10 Set3. `~/data3/project/CNVPipe/analysis/truthSet/NA12878_hg38_CNV_benchmark3.txt`.
 
 
 1. 1000G NA12878 sequencing data 
@@ -709,11 +740,16 @@ NA12878 benchmark CNV set3
 (https://www.ebi.ac.uk/ena/browser/view/PRJEB3381?show=reads)
 Note: 200X data is also available, but not useful in this project.
 Start downloading at Thu Nov 24 19:54:22 +08 2022.
+Check downloading finished at Sat Nov 26 19:40:14 +08 2022.
 
     wget -c -o illumina.download.log ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194147/ERR194147_1.fastq.gz &
     wget -c -o illumina.download.log ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194147/ERR194147_2.fastq.gz &
+    $ seqkit stats *.gz > stats.txt
+    file                  format  type     num_seqs         sum_len  min_len  avg_len  max_len
+    ERR194147_1.fastq.gz  FASTQ   DNA   787,265,109  79,513,776,009      101      101      101
+    ERR194147_2.fastq.gz  FASTQ   DNA   787,265,109  79,513,776,009      101      101      101
 
-3. Broad Institute clone reference sequences (not sure it really fits our need)
+3. Broad Institute clone reference sequences (not sure if it fits our need)
 (ftp://ftp.broadinstitute.org/pub/crd/NA12878_clones/)
     
     wget ftp://ftp.broadinstitute.org/distribution/crd/NA12878_clones/raw_data/A2925.1.Solexa-127359.aligned.duplicates_marked.bam
@@ -729,10 +765,68 @@ We start downloading Illumina Hiseq reads
     wget ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NIST_NA12878_HG001_HiSeq_300x/RMNISTHS_30xdownsample.bam
     wget ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NIST_NA12878_HG001_HiSeq_300x/RMNISTHS_30xdownsample.bam.bai
 
-5. BGI (paper PMID: 33849535), two NA12878 replicates, sequenced in BGISEQ-500.
+5. BGI (paper PMID: 33849535), NA12878-1, sequenced in MGISEQ-2000, 197X.
 (https://db.cngb.org/search/project/CNP0000813/)
 
+TODO:
+1. 找其他的有benchmark set的WGS数据集
+2. 下载1000G中的normal sample
+3. 其他的NA12878的benchmark set？( Comprehensive performance comparison of high-resolution array platforms for
+genome-wide Copy Number Variation (CNV) analysis in humans)
 
+### 1000G-normal
+
+We decided to download 10 1000G WGS data as normal: HG00513, HG00525, HG00537, HG00556, HG00436,
+HG00443, HG00448, HG00479, HG00619, HG00657, they are all "90 Han Chinese high coverage genomes".
+In my understanding, this batch of data is generated by BGI-Shenzhen. Another batch of "Han Chinese
+South" was produced by New York Genome Center for 1000 genome project phase3. The samples for these
+two batch are the same, which are from cell lines produced by Coriell Institute.
+
+    ascp -i /home/jhsun/.aspera/connect/etc/asperaweb_id_dsa.openssh -Tr -Q -l 100M -P33001 -L- era-fasp@fasp.sra.ebi.ac.uk:vol1/fastq/ERR104/000/ERR1044780/ERR1044780_1.fastq.gz ./
+
+Unfortunately, this file only have 80M reads, cannot reach 30X coverage, do not understand why it
+is called high-coverage WGS. Over 12 paired-end fastq files for one single sample, their add-up 
+coverage should be over 30X, but it is inconvenient to download and merge them all. Then we try to
+download cram file from "Han Chinese South" of 1000G, because they only provide cram files,
+an exact identical reference is needed if we want to extract reads from cram files.
+
+    ascp -i /home/jhsun/.aspera/connect/etc/asperaweb_id_dsa.openssh -Tr -Q -l 100M -P33001 -L- era-fasp@fasp.sra.ebi.ac.uk:vol1/run/ERR323/ERR3239484/NA12778.final.cram ./ 2>download.log
+
+Download reference genome, its index, dict and bwa index used in 1000G phase3.
+
+    wget -c -o download.log ftp://ftp-trace.ncbi.nlm.nih.gov/1000genomes/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa &
+
+or use ascp
+
+    ascp -i /home/jhsun/.aspera/connect/etc/asperaweb_id_dsa.openssh -Tr -Q -l 100M -P33001 -L- fasp-g1k@fasp.1000genomes.ebi.ac.uk:vol1/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa ./ 2>download.log
+
+Transform cram to bam, then to fastq, compress with gzip. There are over 700M reads in NA12778.
+
+    samtools fastq --reference ~/data/refs/hg38/1000G-ref/GRCh38_full_analysis_set_plus_decoy_hla.fa -1 NA12778_1.fq -2 NA12778_2.fq NA12778.final.cram
+    parallel samtools fastq --reference ~/data/refs/hg38/1000G-ref/GRCh38_full_analysis_set_plus_decoy_hla.fa -1 {}_1.fq -2 {}_2.fq {}.final.cram ::: HG00557 HG00479 HG00524 HG00449 HG00421 HG00472 HG00595 HG00534 HG00580 HG00593
+
+Download all 10 control samples.
+
+    cat 1000G-CHS-10sampleList.txt | parallel -j 3 ascp -i /home/jhsun/.aspera/connect/etc/asperaweb_id_dsa.openssh -Tr -Q -l 100M -P33001 -L- era-fasp@fasp.sra.ebi.ac.uk:vol1/run/{} ./ 2>>download.{}.log
+
+### Run CNVPipe
+
+Create soft symbolic link to `~/data3/project/CNVPipe/readAnalysis/samples`, copy config file to 
+the directory, and create `samples.tsv` by `scripts/generate-table.py`, which was obtained from 
+grenepipe.
+
+    python ~/data/project/CNVPipe/scripts/generate-table.py /home/jhsun/data3/project/CNVPipe/realAnalysis/samples/ realAnalysis/samples.tsv
+
+samples : NA12878 NA12778 HG00421 HG00449 HG00472 AK1
+controls: HG00479 HG00524 HG00534 HG00557 HG00580 HG00593
+
+## 15. High-frequency CNVs in normal population
+
+I downloaded dbVar Common SV set and conflict SV set (between common and pathogenic SV) into
+`~/data/refs/hg38/genomic-variation-track/dbVar`. Then I filtered conflict SV entries in
+Common SV set to get a common sv set with only non-pathogenic CNVs (or we can call it CNVs in 
+normal population), the file is 
+`~/data/refs/hg38/genomic-variation-track/dbVar/common_global_normal.bed`.
 
 ## 14. visualization
 

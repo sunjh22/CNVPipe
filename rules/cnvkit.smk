@@ -22,10 +22,14 @@ rule cnvkit_autobin:
 # Call CNVs in samples in batch mode
 rule cnvkit_batch:
     input:
-        expand("mapped/{sample}.bam.bai", sample=config['global']['sample-names']),
-        expand("mapped/{sample}.bam.bai", sample=config['global']['control-sample-names']),
-        sample = expand("mapped/{sample}.bam", sample=config['global']['sample-names']),
-        control = expand("mapped/{sample}.bam", sample=config['global']['control-sample-names']),
+        get_sample_bai(config['global']['sample-names']),
+        get_sample_bai(config['global']['control-sample-names']),
+        sample = get_sample_bam(config['global']['sample-names']),
+        control = get_sample_bam(config['global']['control-sample-names']),
+        # expand("mapped/{sample}.bam.bai", sample=config['global']['sample-names']),
+        # expand("mapped/{sample}.bam.bai", sample=config['global']['control-sample-names']),
+        # sample = expand("mapped/{sample}.bam", sample=config['global']['sample-names']),
+        # control = expand("mapped/{sample}.bam", sample=config['global']['control-sample-names']),
     output:
         reference = "temp/cnvkit/myFlatReference.cnn",
         cns = expand("temp/cnvkit/{sample}.cns", sample=config['global']['sample-names']),

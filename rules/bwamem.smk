@@ -2,15 +2,14 @@
 #     Mapping with BWA MEM
 # =================================================================================================
 
-def get_read_group_tags(wildcards):
-    res = ["ID:" + wildcards.sample, "SM:" + wildcards.sample, "PL:" + config['params']['bwamem']['platform']]
-    return res
+# Build tags for read group used in BWA alignment
+def get_bwa_mem_rg(wildcards):
+    rg = ["ID:" + wildcards.sample, "SM:" + wildcards.sample, "PL:" + config['params']['bwamem']['platform']]
+    tmp_rg_tags = "\\t".join(rg)
+    rg_tags = "-R '@RG\\t" + tmp_rg_tags + "' "
+    return rg_tags
 
-def get_bwa_mem_extra(wildcards):
-    rg_tags = "\\t".join(get_read_group_tags(wildcards))
-    extra = "-R '@RG\\t" + rg_tags + "' " + config["params"]["bwamem"]["extra"]
-    return extra
-
+# Map reads with BWA MEM
 rule map_reads:
     input:
         reads = get_cleaned_reads,
@@ -23,20 +22,20 @@ rule map_reads:
             else temp("mapped/{sample}.raw.bam")
         )
     params:
-        extra = get_bwa_mem_extra,
-        sort_extra = config["params"]["samtools"]["sort"],
+        read_group = get_bwa_mem_rg,
     threads:
-        config['params']['bwamem']['threads'],
+        config['params']['bwamem']['threads']
     log:
-        "logs/bwamem/{sample}.log",
+        "logs/bwamem/{sample}.log"
     benchmark:
-        "benchmarks/bwamem/{sample}.bench",
+        "benchmarks/bwamem/{sample}.bench"
     conda:
         "../envs/pre-processing.yaml"
     shell:
-        "(bwa mem {params.extra} -t {threads} {input.ref} {input.reads} | "
-        "samtools sort {params.sort_extra} -@ {threads} -o {output}) >{log} 2>&1"
+        "(bwa mem -M {params.read_group} -t {threads} {input.ref} {input.reads} | "
+        "samtools sort -@ {threads} -o {output}) >{log} 2>&1"
 
+# Mark duplicates with GATK MarkDuplicates
 rule gatk_markDuplicates:
     input:
         rules.map_reads.output,
@@ -50,6 +49,7 @@ rule gatk_markDuplicates:
     shell:
         "gatk MarkDuplicates -I {input} -O {output.bam} -M {output.metric} >{log} 2>&1"
 
+# Index bam files
 rule samtools_index:
     input:
         "mapped/{sample}.bam",
@@ -68,3 +68,13 @@ rule all_bwamem:
     input:
         expand("mapped/{sample}.bam", sample=config['global']['all-sample-names']),
         expand("mapped/{sample}.bam.bai", sample=config['global']['all-sample-names'])
+
+def get_sample_bam(samples):
+    "Quickly access all sample bam file"
+    bam = ["mapped/"+sample+".bam" for sample in samples]
+    return bam
+
+def get_sample_bai(samples):
+    "Quickly access all sample bam index file"
+    bai = ["mapped/"+sample+".bam.bai" for sample in samples]
+    return bai

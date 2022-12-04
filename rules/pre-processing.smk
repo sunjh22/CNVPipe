@@ -6,9 +6,6 @@
 def genome_dict():
     return os.path.splitext(config["data"]["genome"])[0] + ".dict"
 
-# genomename=os.path.basename(config["data"]["genome"])
-# genomedir=os.path.dirname(config["data"]["genome"])
-
 # Build index for reference genome
 rule samtools_faidx:
     input:
@@ -54,7 +51,3 @@ rule all_prep:
         ref = config["data"]["genome"],
         ref_idx = multiext(config['data']['genome'], ".amb", ".ann", ".bwt", ".pac", ".sa", ".fai"),
         ref_dict = genome_dict(),
-
-include: "fastp.smk"
-
-include: "bwamem.smk"

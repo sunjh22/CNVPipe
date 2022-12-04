@@ -2,11 +2,17 @@
 #     CNV calling by cn.MOPS
 # =================================================================================================
 
-# The results from mops is already in cnv bed format
+# cn.MOPS requires at least 6 samples for one run as it call CNVs based on a mixed possion model,
+# which requires several samples to build. cn.MOPS do not use reference genome, thus do not exclude
+# black region of the genome. cn.MOPS seems to have least number of reads in one bin, therefore for
+# low coverage data, the bin size should be large enough to include enough number of reads. It is
+# written in R and is very easy to use. The results from mops is already in cnv bed format.
 rule mops_call:
     input:
-        expand("mapped/{sample}.bam.bai", sample=config['global']['sample-names']),
-        bam = expand("mapped/{sample}.bam", sample=config['global']['sample-names']),
+        get_sample_bai(config['global']['sample-names']),
+        bam = get_sample_bam(config['global']['sample-names']),
+        # expand("mapped/{sample}.bam.bai", sample=config['global']['sample-names']),
+        # bam = expand("mapped/{sample}.bam", sample=config['global']['sample-names']),
     output:
         bed = expand("res/mops/{sample}.bed", sample=config['global']['sample-names']),
     params:

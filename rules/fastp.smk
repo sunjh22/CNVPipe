@@ -2,6 +2,18 @@
 #     Cleaning
 # =================================================================================================
 
+def get_fastq(wildcards):
+    """Get fastq files of given sample."""
+    fastqs = config["global"]["samples"].loc[(wildcards.sample), ["fq1", "fq2"]].dropna()
+    if len(fastqs) == 2:
+        return {"r1": fastqs.fq1, "r2": fastqs.fq2}
+    else:
+        return {"r1": fastqs.fq1}
+
+def is_single_end( sample, **kargs ):
+    """Return True if sample-unit is single end."""
+    return pd.isnull(config["global"]["samples"].loc[(sample), "fq2"])
+
 def unpack_fastq_files(wildcards):
     return list(get_fastq(wildcards).values())
 
@@ -19,7 +31,7 @@ rule clean_reads_se:
             else temp("cleaned/{sample}.fq.gz")
         ),
         html = "cleaned/{sample}-se-fastp.html",
-        json = temp("cleaned/{sample}-se-fastp.json"),
+        json = "cleaned/{sample}-se-fastp.json",
     log:
         "logs/fastp/{sample}.log"
     benchmark:
@@ -44,7 +56,7 @@ rule clean_reads_pe:
             else temp(["cleaned/{sample}_1.fq.gz", "cleaned/{sample}_2.fq.gz"])
         ),
         html = "cleaned/{sample}-pe-fastp.html",
-        json = temp("cleaned/{sample}-pe-fastp.json"),
+        json = "cleaned/{sample}-pe-fastp.json",
     log:
         "logs/fastp/{sample}.log"
     benchmark:

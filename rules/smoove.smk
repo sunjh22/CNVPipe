@@ -2,7 +2,8 @@
 #     CNV calling by Smoove
 # =================================================================================================
 
-# This is a wrapper of Lumpy, which get discordant and split reads automatically, and very fast.
+# Smoove is a wrapper of Lumpy, which get discordant and split reads automatically, runs very fast.
+# This method uses the information of read depth, split read and read pair.
 rule smoove_call:
     input:
         "mapped/{sample}.bam.bai",
@@ -62,6 +63,8 @@ rule smoove_call:
 #         "$4==\"DUP\" && $8>1.3 {{print $1,$2,$3,3,$5\"|\"$7\"|\"$8}}' > {output}"
 
 # Extract all CNVs (DUP and DEL) and do the filtering after merging.
+# Smoove might produce some contradict calls for the same region, indicating they are noisy or 
+# complicated, we will just remove these regions before downstream filtering.
 rule smoove_convert:
     input:
         rules.smoove_call.output,

@@ -1,9 +1,17 @@
 ## Config file for CNVPipe snakemake workflow
 
 data:
-    samples:    "/home/sunjh/data3/project/CNVPipe/analysis/samples.2.tsv"
-    genome: "/home/sunjh/data3/refs/hg38/analysisSet/hg38.analysisSet.fa"
-    refFlat:    ""
+    samples:    "/data/jinwf/jhsun/project/CNVPipe/analysis/samples.tsv"
+    genome: "/data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa"
+    access:    "/data/jinwf/jhsun/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed"
+    refflat:    "/data/jinwf/jhsun/refs/hg38/bundle/CNVKit/refFlat.txt"
+    GCprofile:  "/data/jinwf/jhsun/refs/hg38/bundle/freec/GC_profile.20000bp.cnp"
+    delly-map: "/data/jinwf/jhsun/refs/hg38/bundle/delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz"
+    smoove-exclude: "/data/jinwf/jhsun/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed"
+    gatk-dbsnp: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/dbsnp_146.hg38.vcf.gz"
+    gatk-hapmap: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/hapmap_3.3.hg38.vcf.gz"
+    gatk-omni: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/1000G_omni2.5.hg38.vcf.gz"
+    gatk-1000g: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
 
 settings:
     read-depth:
@@ -17,45 +25,48 @@ settings:
         - freebayes
     
     breakpoints-detc:
-        - lumpy
         - delly
+        - smoove
     
     pathogenicity-pred:
         - toolA
         - toolB
     
     keep-intermediate:
-        fastp: True
+        fastp: False
+        bwamem: True
 
 params:
+    absPath: "/data/jinwf/jhsun/project/CNVPipe"
+    binSize:   20000
+    
     fastp:
-        threads:    10
+        threads:    6
         se: ""
         pe: ""
 
     bwamem:
         threads:    10
-        extra:  ""
         index: True
+        platform:   "ILLUMINA"
     
+    samtools:
+        threads:    4
+
     cnvkit:
-        threads:    8
-        extra:  ""
-    
-    mops:
-        threads:    8
-        extra:  ""
-    
+        threads:    10
+
     cnvpytor:
-        threads:    8
-        extra:  ""
+        threads:    10
+        
+    mops:
+        threads:    10
     
     freec:
-        threads:    8
-        extra:  ""
+        threads:    4
     
     bcftools:
-        threads: 8
+        threads: 10
         mode: "combined"
         mpileup: "--max-depth 10000"
         call: "--multiallelic-caller"
@@ -68,15 +79,6 @@ params:
         compress-threads: 2
         chunksize: 100000
     
-    fastqc:
-        input:  "samples"
-        extra:  ""
-
-
-
-## Reference genome specific files
-human_reference:        /home/jhsun/data/refs/hg38/analysisSet/hg38.analysisSet.fa
-sequence_dict:          /home/jhsun/data/refs/hg38/analysisSet/hg38.analysisSet.fa.dict
-refFlat:                /home/jhsun/data/refs/hg38/bundle/CNVKit/refFlat.txt
-access:                 /home/jhsun/data/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed
+    gatk:
+        extra: "--java-options '-Xmx30G'"
 

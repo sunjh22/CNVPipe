@@ -2,7 +2,8 @@
 #     CNV calling by Delly
 # =================================================================================================
 
-# Call structural variants first
+# Delly is written in C++ and calls CNV sample by sample.
+# Use Delly to call structural variants first, which will be used as input for CNV calling.
 rule delly_call_sv:
     input:
         "mapped/{sample}.bam.bai",
@@ -21,8 +22,7 @@ rule delly_call_sv:
     shell:
         "delly call -g {params.ref} -x {params.exclude} -o {output} {input.bam} > {log} 2>&1"
 
-# Delly by default divide genome into 10kb-mappable bins, but we can set window size by `-i`,
-# here we set window size to 20k.
+# Delly by default divide genome into 10kb-mappable bins, but we can set window size by `-i`.
 rule delly_call_cnv:
     input:
         bam = "mapped/{sample}.bam",

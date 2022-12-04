@@ -2,6 +2,10 @@
 #     CNV calling by cnvpytor
 # =================================================================================================
 
+# CNVpytor is the Python version of CNVnator.
+# CNVpytor call CNVs sample by sample, do not require control sample and reference genome, the
+# author claimed that pre-defined GC file has been included in the program, which is really 
+# user-friendly, but sometimes I doubt it's performance.
 rule cnvpytor_call:
     input:
         "mapped/{sample}.bam.bai",
@@ -25,6 +29,7 @@ rule cnvpytor_call:
         "cnvpytor -root {output.pytor} -j {threads} -partition {params.binSize}; \n"
         "cnvpytor -root {output.pytor} -j {threads} -call {params.binSize} > {output.call}) > {log} 2>&1"
 
+# Filter CNVs based on evalue and dG (distance from closest large gap)
 # Extract columns: chromosome, start, end cn, log2, evalue, pN, dG.
 rule cnvpytor_convert:
     input:

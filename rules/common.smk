@@ -127,14 +127,12 @@ ctrsmpcnt = str(len(config['global']['control-sample-names']))
 
 # Some helpful messages
 logger.info("=====================================================================================")
-# logger.info("    CNVPipe")
 logger.info("       ______  __   __ __        __ ______  ___   ______   _______ ")
 logger.info("      /   ___\/  \ /  /\ \      / /|   _  \ \  \ |   _  \ /  ____/ ")
 logger.info("     /   /    |   \|  | \ \    / / |  |_]  ||  | |  |_]  |  |___   ")
 logger.info("    |   /     |       |  \ \  / /  |   ___/ |  | |   ___/|   ___|  ")
 logger.info("     \  \_____|  |\   |   \ \/ /   |  |     |  | |  |    |  |____  ")
 logger.info("      \______/|__| \__|    \__/    |__|     \__\ |__|    \_______\ ")
-
 logger.info("")
 logger.info("    Date:               " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 logger.info("    User:               " + username)
@@ -177,15 +175,3 @@ del cmdline
 del cfgfiles
 del smpcnt
 del ctrsmpcnt
-
-def get_fastq(wildcards):
-    """Get fastq files of given sample."""
-    fastqs = config["global"]["samples"].loc[(wildcards.sample), ["fq1", "fq2"]].dropna()
-    if len(fastqs) == 2:
-        return {"r1": fastqs.fq1, "r2": fastqs.fq2}
-    else:
-        return {"r1": fastqs.fq1}
-
-def is_single_end( sample, **kargs ):
-    """Return True if sample-unit is single end."""
-    return pd.isnull(config["global"]["samples"].loc[(sample), "fq2"])
