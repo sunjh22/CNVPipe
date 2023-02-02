@@ -42,12 +42,14 @@ rule gatk_markDuplicates:
     output:
         bam = temp("mapped/{sample}.mkdup.bam"),
         metric = "temp/gatk/{sample}.metric",
+    threads: 6
     log:
         "logs/gatk/{sample}.markDuplicates.log"
     conda:
         "../envs/pre-processing.yaml"
     shell:
-        "gatk MarkDuplicates -I {input} -O {output.bam} -M {output.metric} >{log} 2>&1"
+        "gatk MarkDuplicates --java-options \"-Xms50G -Xmx50G -XX:ParallelGCThreads=6\" "
+        "-I {input} -O {output.bam} -M {output.metric} >{log} 2>&1"
 
 # Recalibrate base quality, prepare for SNP calling, theoretically this step would not affect
 # CNV calling. Only bam files produced in this step will be kept, others will be deleted.
