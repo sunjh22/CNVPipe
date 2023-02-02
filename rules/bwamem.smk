@@ -40,7 +40,7 @@ rule gatk_markDuplicates:
     input:
         rules.map_reads.output,
     output:
-        bam = "mapped/{sample}.bam",
+        bam = temp("mapped/{sample}.mkdup.bam"),
         metric = "temp/gatk/{sample}.metric",
     log:
         "logs/gatk/{sample}.markDuplicates.log"
@@ -48,6 +48,46 @@ rule gatk_markDuplicates:
         "../envs/pre-processing.yaml"
     shell:
         "gatk MarkDuplicates -I {input} -O {output.bam} -M {output.metric} >{log} 2>&1"
+
+# Recalibrate base quality, prepare for SNP calling, theoretically this step would not affect
+# CNV calling. Only bam files produced in this step will be kept, others will be deleted.
+rule gatk_BaseRecalibrator:
+    input:
+        rules.gatk_markDuplicates.output.bam,
+    output:
+        "mapped/{sample}.recal.table",
+    params:
+        ref = config['data']['genome'],
+        dbsnp = config['data']['gatk-dbsnp'],
+        hg38 = config['data']['gatk-hg38'],
+        mills = config['data']['gatk-mills'],
+    threads: 2
+    log:
+        "logs/gatk/{sample}.baseRecali.log"
+    conda:
+        "../envs/pre-processing.yaml"
+    shell:
+        "gatk --java-options \"-Xms4G -Xmx4G -XX:ParallelGCThreads=2\" BaseRecalibrator "
+        "-R {params.ref} -I {input} "
+        "-O {output} --known-sites {params.dbsnp} --known-sites {params.hg38} "
+        "--known-sites {params.mills} >{log} 2>&1"
+
+rule gatk_ApplyBQSR:
+    input:
+        bam = rules.gatk_markDuplicates.output.bam,
+        recal = rules.gatk_BaseRecalibrator.output,
+    output:
+        "mapped/{sample}.bam",
+    params:
+        ref = config['data']['genome'],
+    threads: 2
+    log:
+        "logs/gatk/{sample}.bqsr.log"
+    conda:
+        "../envs/pre-processing.yaml"
+    shell:
+        "gatk --java-options \"-Xms2G -Xmx2G -XX:ParallelGCThreads=2\" ApplyBQSR -R {params.ref} "
+        "-I {input.bam} -bqsr {input.recal} -O {output} >{log} 2>&1"
 
 # Index bam files
 rule samtools_index:

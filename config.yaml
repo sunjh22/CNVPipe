@@ -34,7 +34,7 @@ settings:
     
     keep-intermediate:
         fastp: False
-        bwamem: True
+        bwamem: False
 
 params:
     absPath: "/data/jinwf/jhsun/project/CNVPipe"

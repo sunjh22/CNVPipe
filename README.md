@@ -14,7 +14,7 @@ Objectives of CNVPipe
     snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data/biosoft/conda-env-cnvpipe --cores 50 --directory ~/data3/project/CNVPipe/analysis/ all_cnvfilter
     snakemake --directory analysis/ all_cnvfilter --rulegraph | dot -Tpdf > dag.pdf
 
-CNVPipe-token: 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
+CNVPipe-token: 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
 
     git clone https://github.com/sunjh22/CNVPipe.git
 
