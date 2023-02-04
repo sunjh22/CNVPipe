@@ -21,6 +21,9 @@ include: "rules/fastp.smk"
 # Map reads with BWA
 include: "rules/bwamem.smk"
 
+# Automatically determine bin size
+include: "rules/autobin.smk"
+
 # CNV calling by 3 read-depth based methods
 include: "rules/cnvkit.smk"
 include: "rules/cnvpytor.smk"

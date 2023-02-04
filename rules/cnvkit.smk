@@ -2,23 +2,6 @@
 #     CNV calling by CNVKit
 # =================================================================================================
 
-# Estimate optimal resolution for specific depth data, will not be triggered automatically
-rule cnvkit_autobin:
-    input:
-        expand("mapped/{sample}.bam.bai", sample=config['global']['sample-names']),
-        bam = expand("mapped/{sample}.bam", sample=config['global']['sample-names']),
-    output:
-        estibin = "logs/cnvkit/estimate.bin",
-    params:
-        access = config['data']['access'],
-        refflat = config['data']['refflat'],
-        binSize = config['params']['binSize'],
-    conda:
-        "../envs/cnvkit.yaml"
-    shell:
-        "cnvkit.py autobin {input.bam} -m wgs -b {params.binSize} -g {params.access} "
-        "--annotate {params.refflat} > {output.estibin} 2>&1"
-
 # Call CNVs in samples in batch mode
 rule cnvkit_batch:
     input:
@@ -53,6 +36,9 @@ rule cnvkit_batch:
         "--access {params.access} --target-avg-size {params.binSize} -p {threads} "
         "--annotate {params.refflat} --drop-low-coverage --output-reference {output.reference} "
         "-d {params.outdir}) > {log} 2>&1"
+
+if config['params']['binSize'] != 20000:
+    logger.info("Automatically determined bin size is " + str(config['params']['binSize']))
 
 # Segment CNVs based on confidence interval
 rule cnvkit_segmetric:

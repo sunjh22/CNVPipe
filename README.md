@@ -144,7 +144,7 @@ which includes all centromere, telomere and heterochromatin regions; 2. download
 `~/data/refs/hg38/low-mappability-track/sv_blacklist.bed`, re-format it using
 `grep -E -w "chr([0-9]+|[XY])" low-mappability-track/sv_blacklist.bed | sort -Vk 1 -k 2,3n > low-mappability-track/hg38.sv_blacklist.bed`.
 Then use `cnvkit.py access hg38.analysisSet.fa -x hg38.badRegions.bed -x hg38.sv_blacklist.bed -o access-excludes.hg38.bed`
-to get accessible regions. `cnvkit.py access` command will automatically find
+to get accessible regions, total length of these regions is 2,875,824,894. `cnvkit.py access` command will automatically find
 sequence of N's in genome and filter regions with long N's. Then we get target bin file
 by `cnvkit.py target refs/access-excludes.hg38.bed --annotate ~/data/refs/hg38/bundle/CNVKit/refFlat.txt --avg-size 20000 --split -o refs/target.bed`,
 which will then be used to calculate coverage of samples in these bins.
