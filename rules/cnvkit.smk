@@ -9,10 +9,7 @@ rule cnvkit_batch:
         get_sample_bai(config['global']['control-sample-names']),
         sample = get_sample_bam(config['global']['sample-names']),
         control = get_sample_bam(config['global']['control-sample-names']),
-        # expand("mapped/{sample}.bam.bai", sample=config['global']['sample-names']),
-        # expand("mapped/{sample}.bam.bai", sample=config['global']['control-sample-names']),
-        # sample = expand("mapped/{sample}.bam", sample=config['global']['sample-names']),
-        # control = expand("mapped/{sample}.bam", sample=config['global']['control-sample-names']),
+        binSize = "logs/autobin/binsize.txt",
     output:
         reference = "temp/cnvkit/myFlatReference.cnn",
         cns = expand("temp/cnvkit/{sample}.cns", sample=config['global']['sample-names']),
@@ -32,14 +29,12 @@ rule cnvkit_batch:
     conda:
         "../envs/cnvkit.yaml"
     shell:
+        "echo {params.binSize}; "
         "(cnvkit.py batch {input.sample} -n {input.control} -m wgs -f {params.ref} "
         "--access {params.access} --target-avg-size {params.binSize} -p {threads} "
         "--annotate {params.refflat} --drop-low-coverage --output-reference {output.reference} "
         "-d {params.outdir}) > {log} 2>&1"
-
-if config['params']['binSize'] != 20000:
-    logger.info("Automatically determined bin size is " + str(config['params']['binSize']))
-
+        
 # Segment CNVs based on confidence interval
 rule cnvkit_segmetric:
     input:

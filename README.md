@@ -112,6 +112,9 @@ Includes another two scripts:
 
 ## 05. CNV-calling based on read-depth methods
 
+If we want to estimate an optimal calling resolution (bin size) for WGS dataset by CNVPipe, we can run
+`snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data3/project/CNVPipe/envs/conda-env-cnvpipe --directory ~/data3/project/CNVPipe/analysis-bqsrTest/ autobinBydepth`. Otherwise, CNVPipe will use the resolution in config file.
+
 We need to be clear about some features of these methods:
 1. require normal samples? if yes, how many?
 2. call germline CNV sample by sample or in batch?
