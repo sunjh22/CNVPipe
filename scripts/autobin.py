@@ -21,7 +21,7 @@ def midsize_file(fnames):
     return sorted(fnames, key=lambda f: os.stat(f).st_size)[(len(fnames) - 1) // 2]
 
 
-def do_autobin(bam_fname, access=None, bp_per_bin=100000, min_size=20, max_size=50000, fasta=None):
+def do_autobin(bam_fname, access=None, bp_per_bin=37500, min_size=20, max_size=50000, fasta=None):
     """Quickly calculate reasonable bin sizes from BAM read counts.
     Parameters
     ----------

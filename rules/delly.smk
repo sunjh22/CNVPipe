@@ -44,6 +44,23 @@ rule delly_call_cnv:
         "(delly cnv -u -i {params.window} -g {params.ref} -l {input.sv} "
         "-m {params.maptrack} -c {output.cov} -o {output.cnv} {input.bam}) > {log} 2>&1"
 
+# Extract all CNVs (DUP and DEL) and do the filtering after merging.
+rule delly_convert:
+    input:
+        rules.delly_call_cnv.output.cnv,
+    output:
+        "res/delly/{sample}.bed",
+    conda:
+        "../envs/delly.yaml"
+    shell:
+        "bcftools query -f '%FILTER\t%CHROM\t%POS\t%INFO/END[\t%CN]\t%QUAL\n' {input} | "
+        "grep 'PASS' | cut -f 2- > {output}"
+
+rule all_delly:
+    input:
+        expand("res/delly/{sample}.bed", sample=config['global']['sample-names'])
+
+
 # Use duphold to genotype delly results
 # Change: move the step of duphold genotyping to after merging results
 # rule delly_genotype:
@@ -92,19 +109,3 @@ rule delly_call_cnv:
 #         "{input} | grep 'PASS' | cut -f 2- | "
 #         "awk -v OFS='\t' '$4<2 && $7<0.7 {{print $1,$2,$3,$4,$5\"|\"$7\"|\"$8}} "
 #         "$4>2 && $8>1.3 {{print $1,$2,$3,$4,$5\"|\"$7\"|\"$8}}'> {output}"
-
-# Extract all CNVs (DUP and DEL) and do the filtering after merging.
-rule delly_convert:
-    input:
-        rules.delly_call_cnv.output.cnv,
-    output:
-        "res/delly/{sample}.bed",
-    conda:
-        "../envs/delly.yaml"
-    shell:
-        "bcftools query -f '%FILTER\t%CHROM\t%POS\t%INFO/END[\t%CN]\t%QUAL\n' {input} | "
-        "grep 'PASS' | cut -f 2- > {output}"
-
-rule all_delly:
-    input:
-        expand("res/delly/{sample}.bed", sample=config['global']['sample-names'])

@@ -1,6 +1,6 @@
 channels:
+  - conda-forge
   - bioconda
 dependencies:
-  - freebayes =1.3.6
-  - bcftools =1.16
-  # - vcflib=1.0.0
+  - freebayes = 1.3.6
+  - bcftools = 1.16

@@ -3,6 +3,9 @@
 # =================================================================================================
 
 # Estimate optimal CNV calling resolution based on the sample with median number of reads
+# This rule cannot be integrated into the whole pipeline, which means if we want to use bin size
+# determined by CNVPipe, we need to run CNVPipe twice, the first step calculates the bin
+# size and store it into a file, the second step read that file and get bin size.
 rule autobinBydepth:
     input:
         expand("mapped/{sample}.bam.bai", sample=config['global']['sample-names']),

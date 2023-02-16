@@ -79,6 +79,12 @@ rule gatk_applyVQSR:
         "--truth-sensitivity-filter-level 99.9 --create-output-variant-index true "
         "--tranches-file {input.tranches} --recal-file {input.recal} -mode SNP >{log} 2>&1"
 
+localrules: all_gatk
+
+rule all_gatk:
+    input:
+        expand("snps/gatk/{sample}.vqsr.vcf.gz", sample = config['global']['sample-names']),
+
 # As we just kept SNP in vcf, this selecting step is not necessary.
 # rule gatk_selectVariants:
 #     input:
@@ -98,7 +104,3 @@ rule gatk_applyVQSR:
 #         "gatk {params.extra} SelectVariants -R {params.ref} -V {input} -O {output} "
 #         "--select-type-to-include SNP --exclude-filtered "
 #         "--exclude-non-variants --remove-unused-alternates >{log} 2>&1"
-
-# rule all_gatk:
-#     input:
-#         expand("snps/gatk/{sample}.vqsr.vcf.gz", sample = config['global']['sample-names']),

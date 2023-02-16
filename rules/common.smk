@@ -17,7 +17,7 @@ cnvpipe_version = "0.0.1" #CNVPIPE_VERSION#
 # import config file
 configfile: "config.yaml"
 #snakemake.utils.validate(config, schema="../schemas/config.schema.yaml")
-# Validate the format of config file
+# Validate the format of config file TODO
 
 # We need to clean up the file name for the reference genome.
 # The prep rule decompress_genome provides the unzipped genome as needed.
@@ -31,9 +31,8 @@ else:
     config["global"] = {}
 
 config["global"]["samples"] = pd.read_csv(
-    config["data"]["samples"], sep='\t', dtype=str).set_index(["sample"], drop=False
-)
-#snakemake.utils.validate( config["global"]["samples"], schema="../schemas/samples.schema.yaml" )
+    config["data"]["samples"], sep='\t', dtype=str).set_index(["sample"], drop=False)
+#snakemake.utils.validate( config["global"]["samples"], schema="../schemas/samples.schema.yaml" ) TODO
 
 config["global"]["sample-names"] = list()
 config["global"]["control-sample-names"] = list()
@@ -45,7 +44,6 @@ for index, row in config["global"]["samples"].iterrows():
         config["global"]["control-sample-names"].append(s)
 
 config["global"]["all-sample-names"] = config["global"]["sample-names"] + config["global"]["control-sample-names"]
-# print(config["global"]["all-sample-names"])
 
 def valid_filename(fn):
     # Only accept alnum, underscore, dash, and dot.
@@ -74,12 +72,6 @@ for index, row in config["global"]["samples"].iterrows():
     if not valid_filepath(row['fq1']) or (not pd.isnull(row['fq2']) and not valid_filepath(row['fq2'])):
         problematic_filenames += 1
 
-# wildcard_constraints:
-#     sample = "|".join(config["global"]["sample-names"]),
-#     control-sample = "|".join(config["global"]["control-sample-names"])
-
-# print('samples:', config["global"]["sample-names"])
-# print('control samples:', config["global"]["control-sample-names"])
 
 # =================================================================================================
 #     Pipeline User Output

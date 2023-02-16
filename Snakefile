@@ -12,7 +12,7 @@ rule all:
         # expand("snps/gatk/{sample}.vqsr.vcf.gz", sample = config['global']['sample-names']),
         # expand("snps/freebayes/{sample}.snp.vcf", sample = config['global']['sample-names']),
 
-# Build index, BWA index and GATK dictionary for reference genome if they are not existed
+# Build genome index, BWA index and GATK dictionary for reference genome if they are not existed
 include: "rules/pre-processing.smk"
 
 # Reads filtering by Fastp
@@ -34,7 +34,7 @@ include: "rules/smoove.smk"
 include: "rules/delly.smk"
 
 # include: "rules/freebayes.smk"
-# include: "rules/gatk.smk"
+include: "rules/gatk.smk"
 
 include: "rules/merge.smk"
 

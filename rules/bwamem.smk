@@ -48,7 +48,7 @@ rule gatk_markDuplicates:
     conda:
         "../envs/pre-processing.yaml"
     shell:
-        "gatk MarkDuplicates --java-options \"-Xms50G -Xmx50G -XX:ParallelGCThreads=6\" "
+        "gatk MarkDuplicates --java-options \"-Xms10G -Xmx10G -XX:ParallelGCThreads=6\" "
         "-I {input} -O {output.bam} -M {output.metric} >{log} 2>&1"
 
 # Recalibrate base quality, prepare for SNP calling, theoretically this step would not affect
