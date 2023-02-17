@@ -3,7 +3,7 @@
 suppressMessages(library(cn.mops))
 
 if(!require(magrittr, quietly=TRUE)){
-    install.package("magrittr", repos = "http://cran.us.r-project.org")
+    install.packages("magrittr", repos = "http://cran.us.r-project.org")
 }
 
 suppressMessages(library(magrittr))
