@@ -1,6 +1,6 @@
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
 dependencies:
   # Tools
-  - bioconductor-cn.mops =1.40.0
+  - bioconductor-cn.mops = 1.44.0
