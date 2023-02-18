@@ -1,6 +1,8 @@
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
 dependencies:
   # Tools
-  - smoove =0.2.8
+  - smoove == 0.2.8
+  - duphold == 0.2.1
+  - svtyper == 0.7.1

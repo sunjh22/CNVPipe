@@ -18,6 +18,11 @@ CNVPipe-token: github_pat_11ARXSNEY0PgWnuG0clts3_4stkHyRZlf7g5JEdecfliLrQpvF2L3v
 
     git clone https://github.com/sunjh22/CNVPipe.git
 
+The most important questions:
+1. how to merge callset from different tools
+2. how to simulate appropriate data for benchmarking
+3. how to find real WGS dataset and their CNV set for benchmarking
+
 ## 01. Prepare test data - simulation
 
 For developing pipeline, we used 1X data with 6 samples and 6 controls.
