@@ -2,31 +2,11 @@
 #     CNV calling by Delly
 # =================================================================================================
 
-# Delly is written in C++ and calls CNV sample by sample.
-# Use Delly to call structural variants first, which will be used as input for CNV calling.
-rule delly_call_sv:
-    input:
-        "mapped/{sample}.bam.bai",
-        bam = "mapped/{sample}.bam",
-    output:
-        "temp/delly/{sample}.sv.bcf",
-    params:
-        ref = config['data']['genome'],
-        exclude = config['data']['smoove-exclude'],
-    log:
-        "logs/delly/{sample}.callsv.log"
-    benchmark:
-        "benchmarks/delly/{sample}.callsv.bench"
-    conda:
-        "../envs/delly.yaml"
-    shell:
-        "delly call -g {params.ref} -x {params.exclude} -o {output} {input.bam} > {log} 2>&1"
-
 # Delly by default divide genome into 10kb-mappable bins, but we can set window size by `-i`.
 rule delly_call_cnv:
     input:
+        "mapped/{sample}.bam.bai",
         bam = "mapped/{sample}.bam",
-        sv = rules.delly_call_sv.output,
     output:
         cnv = "temp/delly/{sample}.cnv.bcf",
         cov = "temp/delly/{sample}.cov.gz",
@@ -41,8 +21,52 @@ rule delly_call_cnv:
     conda:
         "../envs/delly.yaml"
     shell:
-        "(delly cnv -u -i {params.window} -g {params.ref} -l {input.sv} "
+        "(delly cnv -u -i {params.window} -g {params.ref} "
         "-m {params.maptrack} -c {output.cov} -o {output.cnv} {input.bam}) > {log} 2>&1"
+
+#! Delly sv call is too time-consuming, we will skip this step for read WGS data analysis for now.
+# Delly is written in C++ and calls CNV sample by sample.
+# Use Delly to call structural variants first, which will be used as input for CNV calling.
+# rule delly_call_sv:
+#     input:
+#         "mapped/{sample}.bam.bai",
+#         bam = "mapped/{sample}.bam",
+#     output:
+#         "temp/delly/{sample}.sv.bcf",
+#     params:
+#         ref = config['data']['genome'],
+#         exclude = config['data']['smoove-exclude'],
+#     log:
+#         "logs/delly/{sample}.callsv.log"
+#     benchmark:
+#         "benchmarks/delly/{sample}.callsv.bench"
+#     conda:
+#         "../envs/delly.yaml"
+#     shell:
+#         "delly call -g {params.ref} -x {params.exclude} -o {output} {input.bam} > {log} 2>&1"
+
+# Delly by default divide genome into 10kb-mappable bins, but we can set window size by `-i`.
+# rule delly_call_cnv:
+#     input:
+#         "mapped/{sample}.bam.bai",
+#         bam = "mapped/{sample}.bam",
+#         sv = rules.delly_call_sv.output,
+#     output:
+#         cnv = "temp/delly/{sample}.cnv.bcf",
+#         cov = "temp/delly/{sample}.cov.gz",
+#     params:
+#         window = config['params']['binSize'],
+#         ref = config['data']['genome'],
+#         maptrack = config['data']['delly-map'],
+#     log:
+#         "logs/delly/{sample}.callcnv.log"
+#     benchmark:
+#         "benchmarks/delly/{sample}.callcnv.benchmark"
+#     conda:
+#         "../envs/delly.yaml"
+#     shell:
+#         "(delly cnv -u -i {params.window} -g {params.ref} -l {input.sv} "
+#         "-m {params.maptrack} -c {output.cov} -o {output.cnv} {input.bam}) > {log} 2>&1"
 
 # Extract all CNVs (DUP and DEL) and do the filtering after merging.
 rule delly_convert:

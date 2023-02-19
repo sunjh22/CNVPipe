@@ -23,12 +23,12 @@ The most important questions:
 2. how to simulate appropriate data for benchmarking
 3. how to find real WGS dataset and their CNV set for benchmarking
 
-## 01. Prepare test data - simulation
+## 01. Simulate data
 
 For developing pipeline, we used 1X data with 6 samples and 6 controls.
-For evaluating pipeline, we used 10X data with 6 samples and 6 controls.
+For evaluating pipeline, we used 1X, 10X and 30X data with 6 samples and 6 controls.
 
-### Use SCNVSim to simulate SV in genome
+### 01.1 SCNVSim + ART
 
 `SCNVSim` is a tool to simulate somatic SVs and CNVs in tumors, here we use it to simulate CNVs.
 It has two steps: 1. simulate germline SNV and INDELs to get a normal genome, which requires 
@@ -53,7 +53,7 @@ In the later reads simulation, we used `tumor7-12` as reference to simulate 1X, 
     time java -jar ~/data/biosoft/scnvsim_1.3.1/tumorgenomsim_1.3.1.jar -v ~/data/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -k ~/data/refs/hg38/bundle/SCNVSim/repeatmask.txt -i ./simulation/simuGenome/normal1_snvindelsim.vcf -o simulation/simuGenome -s 0.001 -l 0.001 -c 150 -m 500 -x 10000 -a tumor7 1>1.log 2>2.log &
     $ SCNVSim Version: 1.3.1
 
-### Use ART to simulate reads
+#### Use ART to simulate reads
 
 `ART` was used to simulate paired-end sequencing reads. `-ss` model Illumina sequencing system, e.g
 HSXn - HiSeqX PCR free (150bp), HS25 - HiSeq 2500 (125bp, 150bp), HSXt - HiSeqX TruSeq (150bp); `-f`
@@ -83,16 +83,26 @@ In three different depth data simulation, we all use `tumor7-12` genome as refer
     parallel -j 6 -k gzip -q -1 simulation/30X/control{}_1.fq ::: 13 14 15 16 17 18 &
     parallel -j 6 -k gzip -q -1 simulation/30X/sample{}_1.fq ::: 13 14 15 16 17 18 &
 
-### Use seqkit to downsample
+### 01.2 CNV-Sim + ART
 
-    cd data/simulation/1X
-    parallel seqkit sample -p 0.01 -s 100 control{}_1.fq.gz -o ../../../analysis/samples-control/control{}_1.fq.gz ::: 1 2 3 &
-    parallel seqkit sample -p 0.01 -s 100 control{}_2.fq.gz -o ../../../analysis/samples-control/control{}_2.fq.gz ::: 1 2 3 &
-    parallel seqkit sample -p 0.01 -s 100 sample{}_1.fq.gz -o ../../../analysis/samples/sample{}_1.fq.gz ::: 1 2 3 &
-    parallel seqkit sample -p 0.01 -s 100 sample{}_2.fq.gz -o ../../../analysis/samples/sample{}_2.fq.gz ::: 1 2 3 &
-    Seqkit Version: 0.10.1
+Create a isolated Python2.7 environment for running CNV-Sim, installing all dependencies.
 
-`seqkit stat analysis/samples-control/*`, 116619 reads in control samples, 201149 in test samples.
+    cd ~/data3/biosoft
+    git clone https://github.com/NabaviLab/CNV-Sim.git
+    mamba create -n cnvsim python=2.7
+    mamba activate cnvsim
+    mamba install -c bioconda pysam
+    mamba install -c bioconda biopython
+    mamba install -c bioconda bedtools
+    wget -O ART/art.tgz https://www.niehs.nih.gov/research/resources/assets/docs/artbingreatsmokymountains04.17.16linux64.tgz
+    tar -xvzf ART/art.tgz -C ART/
+    mkdir -p CNV-Sim/ART
+    ln -s /home/jhsun/data3/biosoft/ART/art_bin_GreatSmokyMountains/art_illumina CNV-Sim/ART/
+    mkdir ART
+
+Simulate CNV and reads. This command must be ran under `CNV-Sim` directory.
+
+    ./cnv-sim.py -o ~/data3/project/CNVPipe/simulation2/ -l 150 --coverage 1 -g 150 -r_min 5000 -r_max 5000000 -cn_min 1 -cn_max 5 genome ~/data3/refs/hg38/anal
 
 ## 02. Prepare snakemake main file and config file
 
