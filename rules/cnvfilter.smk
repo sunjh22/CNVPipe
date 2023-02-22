@@ -1,10 +1,10 @@
 # =================================================================================================
-#     Filter CNV by CNVfilteR
+#     Score CNV by CNVfilteR
 # =================================================================================================
 
 rule cnvfilter_call:
     input:
-        bed = "res/merge/{sample}.duphold.score.bed",
+        bed = "res/duphold/{sample}.duphold.score.bed",
         vcf = "snps/freebayes/{sample}.snp.vcf",
     output:
         "res/cnvfilter/{sample}.bed",

@@ -1,26 +1,24 @@
 #! /usr/bin/env python
-# Merge CNV calling results from six tools, assign accumScore.
-# And calculate overlap proportion with SV black regions, assign goodScore
+# Merge CNV calling results from 5 tools, assign 'accumulative Score' (1. AS).
 
 import sys
 import os
 from mergeTruthSet import mergeTruthCNV
 
-def readBadRegion(infile):
-    bad = []
-    with open(infile, 'r') as f:
-        for x in f:
-            x = x.strip().split('\t')[:3]
-            bad.append(x)
-    return bad
+def overlapLen(cnvRegion1, cnvRegion2):
+    """
+    Find the length of overlapped region between two CNVs
+    - cnvRegion1: a list contains chromosome, start and end
+    - cnvRegion2: a list contains chromosome, start and end
+    Return the length of overlapped region
+    """
 
-def overlapLen(cnvRegion, badRegion):
-    c1, s1, e1 = cnvRegion[0], int(cnvRegion[1]), int(cnvRegion[2])
-    c2, s2, e2 = badRegion[0], int(badRegion[1]), int(badRegion[2])
+    c1, s1, e1 = cnvRegion1[0], int(cnvRegion1[1]), int(cnvRegion1[2])
+    c2, s2, e2 = cnvRegion2[0], int(cnvRegion2[1]), int(cnvRegion2[2])
     cnvLen = e1 - s1
-    assert cnvLen > 0, "The length of CNV is less than 0, wrong!"
+    assert cnvLen > 0, "The length of CNV is less than 0, something wrong! Please check."
     if c1 == c2:
-        if s1 < s2 < e1 or s1 < e2 < e1:
+        if s1 < s2 < e1 or s1 < e2 < e1 or s2 < s1 < e1 < e2:
             print("CNV region {:s}:{:d}-{:d} overlaps with bad region {:s}:{:d}-{:d}".format(c1, 
                 s1, e1, c2, s2, e2))
         if s2 <= s1 < e1 <= e2:
@@ -40,23 +38,12 @@ def overlapLen(cnvRegion, badRegion):
     
     return 0
 
-def overlapScore(cnvRegion, bad):
-    accumLen = 0    # accumulative length of overlap region between cnv and bad
-    i = 0
-    print("A new CNV region: ", cnvRegion)
-
-    for badRegion in bad:
-        overlapSize = overlapLen(cnvRegion, badRegion)
-        if overlapSize > 0:
-            i += 1
-            accumLen += overlapSize
-
-    accumProp = round(accumLen * 100 / (int(cnvRegion[2]) - int(cnvRegion[1])))
-    score = 100 - accumProp - i * 10
-    print("This CNV totally overlaps with {:d} bad genomic regions\n".format(i))
-    return score
 
 def readFile(infile):
+    """
+    Read list of CNV result from CNV calling tools
+    # Return a list of chrom, start, end and cn
+    """
     with open(infile, 'r') as f:
         for x in f:
             if x.startswith('chromosome'):
@@ -64,7 +51,6 @@ def readFile(infile):
             x = x.strip().split('\t')
             if not x[0].startswith('chr'):
                 x[0] = 'chr' + x[0]
-            # only reserve chrom, start, end and cn
             x = x[:4]
             yield x
 
@@ -75,8 +61,7 @@ if __name__ == "__main__":
     delly = sys.argv[2]
     mops = sys.argv[3]
     cnvpytor = sys.argv[4]
-    lowMapFile = sys.argv[5]    # by default, we use blacklist from 10x
-    outputFile = sys.argv[6]
+    outputFile = sys.argv[5]
 
     sample = os.path.basename(cnvkit).split('.')[0]
 
@@ -84,7 +69,6 @@ if __name__ == "__main__":
     cnvfiles = [cnvkit, delly, mops, cnvpytor]
     print(cnvfiles)
     cnvtools = ['cnvkit', 'delly', 'mops', 'cnvpytor']
-    bad = readBadRegion(lowMapFile)
 
     cnvs = []
     for i, cnvfile in enumerate(cnvfiles):
@@ -109,7 +93,7 @@ if __name__ == "__main__":
                 updateCnv1 = mergeTruthCNV(cnv1[:4], cnv2[:4])
                 tmpCnv[:4] = updateCnv1
                 if overlapSize > 0:
-                    assert cnv1[-1] != cnv2[-1], "Overlapped CNV from same tool {:s}!".format(cnv1[-1])
+                    assert cnv1[-1] != cnv2[-1], "Overlapped CNV from same tool {:s}! Please make sure these conflicts are solved before merging".format(cnv1[-1])
                     accumLen += overlapSize
                     cnvs2.pop(i-count)
                     tmpCnv[-1] = ','.join([tmpCnv[-1], cnv2[-1]])
@@ -128,7 +112,5 @@ if __name__ == "__main__":
         print('chromosome', 'start', 'end', 'cn', 'toolNum', 'accumScore', 'goodScore', 
             'sample', sep='\t', file=f)
         for cnv in mergedCnvs:
-            # score CNVs by calculating the overlap proportion with bad regions
-            score = overlapScore(cnv[:3], bad)
-            print(*cnv, score, sample, sep='\t', file=f)
+            print(*cnv, sample, sep='\t', file=f)
 

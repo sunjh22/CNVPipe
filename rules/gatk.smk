@@ -14,7 +14,6 @@ rule gatk_haplotypeCaller:
     params:
         ref = config['data']['genome'],
         dbsnp = config['data']['gatk-dbsnp'],
-        extra = config['params']['gatk']['extra'],
     log:
         "logs/gatk/{sample}.haplotypeCaller.log"
     benchmark:
@@ -22,7 +21,8 @@ rule gatk_haplotypeCaller:
     conda:
         "../envs/pre-processing.yaml"
     shell:
-        "gatk {params.extra} HaplotypeCaller -R {params.ref} -I {input.bam} -O {output.vcf} "
+        "gatk \"-Xms20G -Xmx20G -XX:ParallelGCThreads=2\" HaplotypeCaller "
+        "-R {params.ref} -I {input.bam} -O {output.vcf} "
         "--dbsnp {params.dbsnp} >{log} 2>&1"
 
 rule gatk_variantRecalibrator:
@@ -38,7 +38,6 @@ rule gatk_variantRecalibrator:
         hapmap = config['data']['gatk-hapmap'],
         omni = config['data']['gatk-omni'],
         geno1000 = config['data']['gatk-1000g'],
-        extra = config['params']['gatk']['extra'],
     log:
         "logs/gatk/{sample}.variantRecalibrator.log"
     benchmark:
@@ -46,7 +45,8 @@ rule gatk_variantRecalibrator:
     conda:
         "../envs/pre-processing.yaml"
     shell:
-        "gatk {params.extra} VariantRecalibrator -R {params.ref} -V {input} "
+        "gatk \"-Xms4G -Xmx4G -XX:ParallelGCThreads=2\" VariantRecalibrator "
+        "-R {params.ref} -V {input} "
         "--resource:hapmap,known=false,training=true,truth=true,prior=15.0 {params.hapmap} "
         "--resource:omni,known=false,training=true,truth=false,prior=12.0 {params.omni} "
         "--resource:1000G,known=false,training=true,truth=false,prior=10.0 {params.geno1000} "
@@ -67,7 +67,6 @@ rule gatk_applyVQSR:
         "snps/gatk/{sample}.vqsr.vcf.gz",
     params:
         ref = config['data']['genome'],
-        extra = config['params']['gatk']['extra'],
     log:
         "logs/gatk/{sample}.vqsr.log"
     benchmark:
@@ -75,7 +74,8 @@ rule gatk_applyVQSR:
     conda:
         "../envs/pre-processing.yaml"
     shell:
-        "gatk {params.extra} ApplyVQSR -R {params.ref} -V {input.vcf} -O {output} "
+        "gatk \"-Xms2G -Xmx2G -XX:ParallelGCThreads=2\" ApplyVQSR "
+        "-R {params.ref} -V {input.vcf} -O {output} "
         "--truth-sensitivity-filter-level 99.9 --create-output-variant-index true "
         "--tranches-file {input.tranches} --recal-file {input.recal} -mode SNP >{log} 2>&1"
 
