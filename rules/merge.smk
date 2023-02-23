@@ -23,19 +23,42 @@ rule merge_CNVCall:
 include: "duphold.smk"
 
 # Apply cnvfilter and assign 'SNP score' (3. SS) if SNPs could be called
-include: "cnvfilter.smk"
+rule cnvfilter_call:
+    input:
+        bed = "res/duphold/{sample}.duphold.score.bed",
+        vcf = "snps/freebayes/{sample}.snp.vcf",
+    output:
+        "res/cnvfilter/{sample}.bed",
+    params:
+        absPath = config['params']['absPath']
+    log:
+        "logs/cnvfilter/{sample}.log"
+    shell:
+        "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} > {log} 2>&1"
 
 # Calculate overlap fraction with low-complexity region and assign 'good score' (4. GS)
 # Calculate overlap fraction with CNVs in normal population and assign 'normal score' (5. NS)
 rule good_normal_score:
     input:
-        rules.cnvfilter_call.output
+        rules.cnvfilter_call.output,
     output:
-        "res/merge/{sample}.goodscore.bed"
+        "res/merge/{sample}.goodscore.bed",
     params:
         absPath = config['params']['absPath']
+    log:
+        "logs/merge/{sample}.goodscore.log"
     shell:
         "python {params.absPath}/scripts/goodNormalScore.py {input.bed} {output} >{log} 2>&1"
 
 # Apply ClassifyCNV and assign 'pathogenicity score' (6. PS)
-include: "classifycnv.smk"
+rule classifycnv_predict:
+    input:
+        rules.good_normal_score.output,
+    output:
+        "res/merge/{sample}.patho.bed",
+    params:
+        absPath = config['params']['absPath']
+    log:
+        "logs/merge/{sample}.patho.log"
+    shell:
+        "python {params.absPath}/scripts/classifyCNV.py {input.bed} {output} >{log} 2>&1"

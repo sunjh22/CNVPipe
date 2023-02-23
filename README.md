@@ -846,6 +846,19 @@ Common SV set to get a common sv set with only non-pathogenic CNVs (or we can ca
 normal population), the file is 
 `~/data/refs/hg38/genomic-variation-track/dbVar/common_global_normal.bed`.
 
+    cd ~/data3/refs/hg38/genomic-variation-track/
+    wget https://ftp.ncbi.nlm.nih.gov/pub/dbVar/sandbox/dbvarhub/hg38/common_global.bed
+    wget https://ftp.ncbi.nlm.nih.gov/pub/dbVar/sandbox/dbvarhub/hg38/conflict_pathogenic.bed
+    python filterClinicalSV.py common_global.bed conflict_pathogenic.bed common_global_normal.bed
+
+948 of 1043 conflict SVs could be found in curated commom SV list, theoratically all conflict SVs
+should be in that list. This is weired.
+
+The sum length of the common global sv list is 406,138,486.
+
+    cut -f 1-3 common_global_normal.bed | CNVSum
+
+
 ## 14. visualization
 
 Tools pending for test:
