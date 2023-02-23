@@ -109,7 +109,7 @@ if __name__ == "__main__":
         cnvs = cnvs2[:]
         
     with open(outputFile, 'w') as f:
-        print('chromosome', 'start', 'end', 'cn', 'toolNum', 'accumScore', 'goodScore', 
+        print('chromosome', 'start', 'end', 'cn', 'toolNum', 'accumScore', 
             'sample', sep='\t', file=f)
         for cnv in mergedCnvs:
             print(*cnv, sample, sep='\t', file=f)

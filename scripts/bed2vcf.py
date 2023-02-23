@@ -42,8 +42,8 @@ if __name__ == "__main__":
     print('##FORMAT=<ID=CN,Number=1,Type=Integer,Description="Integer copy number">', file=Out)
     print('##FORMAT=<ID=AS,Number=1,Type=Float,Description="Accumulated overlapped \
         fraction/score, the bigger this value, the more confidence of CNV">', file=Out)
-    print('##FORMAT=<ID=GS,Number=1,Type=Integer,Description="Score for proportion of CNV overlap \
-    with bad genomic region, the bigger this value, the better CNV">', file=Out)
+    # print('##FORMAT=<ID=GS,Number=1,Type=Integer,Description="Score for proportion of CNV overlap \
+    # with bad genomic region, the bigger this value, the better CNV">', file=Out)
     print('##reference=/data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa', file=Out)
 
     for key in chrLength.keys():
@@ -63,14 +63,13 @@ if __name__ == "__main__":
             cn = int(x[3])
             toolNum = int(x[4])
             accumScore = float(x[5])
-            goodScore = int(x[6])
-            spl = x[7]
+            spl = x[6]
             id += 1
             ref = 'N'
             alt = 'DUP' if cn > 2 else 'DEL'
             qual = 1000
             filt = 'PASS'
             print(chrom, pos, '{:0>3d}'.format(id), ref, alt, qual, filt, 
-            'END={:d};TN={:d};SAMPLE={:s}'.format(end-1, toolNum, spl), 'CN:AS:GS', 
-            "{:d}:{:.1f}:{:d}".format(cn, accumScore, goodScore), sep='\t', file=Out)
+            'END={:d};TN={:d};SAMPLE={:s}'.format(end-1, toolNum, spl), 'CN:AS', 
+            "{:d}:{:.1f}".format(cn, accumScore), sep='\t', file=Out)
 

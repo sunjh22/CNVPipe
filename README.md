@@ -667,8 +667,12 @@ v17: re-simulate and analyze 1x data (50k), four tools, cnvProp1 > 0.8; accumSco
 
 ### 13.1 ClassifyCNV
 
-ClassifyCNV cannot be downloaded from bioconda, and its result directory is weired,
-we need to figure out how to make it work in our CNVPipe.
+ClassifyCNV cannot be downloaded from bioconda, and its result directory is weired, so we 
+re-configured it to adjust to CNVPipe workflow. Tested by a small list of cnvkit result.
+
+    cd ~/data3/project/CNVPipe/analysis-bqsrTest/res/cnvkit
+    head sample1.bed > test2.bed
+    python ~/data3/github-repo/CNVPipe/scripts/classifyCNV.py --absPath /home/jhsun/data3/github-repo/CNVPipe/ --infile test.classifycnv.bed --GenomeBuild hg38 --cores 1 --precise
 
 ### 13.2 X-CNV
 

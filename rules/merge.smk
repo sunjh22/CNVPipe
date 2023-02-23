@@ -55,10 +55,25 @@ rule classifycnv_predict:
     input:
         rules.good_normal_score.output,
     output:
-        "res/merge/{sample}.patho.bed",
+        "res/classifycnv/{sample}.classifycnv.txt",
     params:
         absPath = config['params']['absPath']
     log:
         "logs/merge/{sample}.patho.log"
+    conda:
+        "../envs/classifycnv.yaml"
     shell:
-        "python {params.absPath}/scripts/classifyCNV.py {input.bed} {output} >{log} 2>&1"
+        "python {params.absPath}/scripts/classifyCNV.py --absPath {params.absPath} --infile {input}"
+        " --GenomeBuild hg38 --cores 2 --precise >{log} 2>&1"
+
+rule classifycnv_convert:
+    input:
+        normal_bed = "res/merge/{sample}.goodscore.bed",
+        patho_bed = "res/classifycnv/{sample}.classifycnv.txt",
+    output:
+        "res/merge/{sample}.final.bed"
+    params:
+        absPath = config['params']['absPath']
+    shell:
+        "python {params.absPath}/scripts/classifyCNVConvert.py {input.normal_bed} {input.patho_bed}"
+        " {output}"

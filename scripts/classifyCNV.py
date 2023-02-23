@@ -2,17 +2,18 @@
 # coding=utf-8
 
 import argparse
-from resources import *
 from subprocess import Popen
 import copy
 from multiprocessing import Pool
 import time
+import os
+import sys
+from collections import OrderedDict
 
-
-__version__ = '1.1.1'
 
 parser = argparse.ArgumentParser()
 
+parser.add_argument('--absPath', required=True, help='Absolute path of CNVPipe Snakefile in')
 parser.add_argument('--infile', required=True,
                     help='Input file in BED format; the first four columns should be chromosome, start position, '
                          'end position, CNV type (DEL or DUP).')
@@ -22,28 +23,100 @@ parser.add_argument('--cores', type=int, default=1, help='Maximum number of thre
 parser.add_argument('--precise', action='store_true',
                     help='Specify this flag if the CNV breakpoints are precise. WARNING: if the breakpoints are not '
                          'precise, specifying the flag could lead to incorrect results. Default = False')
-parser.add_argument('--outdir', default=default_results_folder,
-                    help='Specify path to the run output directory. If no output directory is provided, results will '
-                         'be saved to ClassifyCNV_results/Result_dd_Mon_yyyy-hh-mm-ss-{random}')
+
 args = parser.parse_args()
 
+# Define the path of a list of resources used by ClassifyCNV
+if True:
+    # Default results path
+    home_dir = args.absPath  # from the absPath parameter, eg ~/data3/jhsun/github-repo/CNVPipe
 
-def make_results_folder():
-    """Creates a directory where all results and technical files will be saved to if it doesn't already exist.
-    """
-    # check if the main results folder already exists and if it is empty
-    # if not, create it before proceeding
-    if os.path.isdir(args.outdir):
-        assert not os.listdir(args.outdir), "Results directory is not empty"
-    else:
-        if args.outdir == default_results_folder:
-            os.makedirs(args.outdir)
-        else:
-            os.mkdir(args.outdir)
-    # change to the results directory
-    os.chdir(args.outdir)
-    # make the intermediate folder where the technical files will be saved to
-    os.mkdir(intermediate_folder)
+    main_results_folder = 'res/classifycnv'
+    os.makedirs(main_results_folder, exist_ok=True)
+
+    #intermediate_folder = 'Intermediate_files'
+    intermediate_folder = 'logs/classifycnv'
+    os.makedirs(intermediate_folder, exist_ok=True)
+    intermediate_folder = os.path.join('../..', intermediate_folder)
+    
+    # Filename for the cleaned input
+    cleaned_bed = 'infile.cleaned.bed'
+    cleaned_bed_path = os.path.join(intermediate_folder, cleaned_bed)
+
+    # Resources and databases
+    main_resources_folder = 'resources/ClassifyCNV'
+    common_resources_folder = 'common'
+    refgenes_db = 'refGenes.parsed.SelectTranscript.bed'
+    promoters_db = 'promoters.500bp.bed'
+    enhancers_db = 'Enhancers.3sources.merged.bed'
+    clingen_hi_db = 'ClinGen_haploinsufficiency_gene.bed'
+    clingen_ts_db = 'ClinGen_triplosensitivity_gene.bed'
+    clingen_regions_hi_db = 'ClinGen_region_curation_list.HI.bed'
+    clingen_regions_ts_db = 'ClinGen_region_curation_list.TS.bed'
+    gene_features_db = 'gene_features.bed'
+    penultimate_exon_50bp_db = '50bp_penultimate_exon.bed'
+    pop_freqs_db = 'population_freqs.bed'
+    decipher_HI_db = 'DECIPHER_HI_Predictions_Version3.bed'
+    pLI_db = 'ExAC_pLI.txt'
+    loeuf_db = 'gnomad.v2.1.1.lof_metrics.by_gene.txt'
+    benign_region_genes_db = 'Benign_TS_region_genelist.bed'
+
+    decipher_HI_path = os.path.join(home_dir, main_resources_folder, common_resources_folder, decipher_HI_db)
+    pLI_path = os.path.join(home_dir, main_resources_folder, common_resources_folder, pLI_db)
+    loeuf_path = os.path.join(home_dir, main_resources_folder, common_resources_folder, loeuf_db)
+
+    # Output files created by bedtools intersect
+    refgenes_intersect = 'refgenes_intersect.bed'
+    promoters_intersect = 'promoters_intersect.bed'
+    enhancers_intersect = 'enhancers_intersect.bed'
+    clingen_hi_intersect = 'clingen_hi_intersect.bed'
+    clingen_ts_intersect = 'clingen_ts_intersect.bed'
+    clingen_regions_hi_intersect = 'clingen_regions_hi_intersect.bed'
+    clingen_regions_ts_intersect = 'clingen_regions_ts_intersect.bed'
+    gene_features_intersect = 'gene_features_intersect.bed'
+    pop_freqs_intersect = 'population_freqs_intersect.bed'
+
+    refgenes_intersect_path = os.path.join(intermediate_folder, refgenes_intersect)
+    promoters_intersect_path = os.path.join(intermediate_folder, promoters_intersect)
+    enhancers_intersect_path = os.path.join(intermediate_folder, enhancers_intersect)
+    clingen_hi_intersect_path = os.path.join(intermediate_folder, clingen_hi_intersect)
+    clingen_ts_intersect_path = os.path.join(intermediate_folder, clingen_ts_intersect)
+    clingen_regions_hi_intersect_path = os.path.join(intermediate_folder, clingen_regions_hi_intersect)
+    clingen_regions_ts_intersect_path = os.path.join(intermediate_folder, clingen_regions_ts_intersect)
+    gene_features_intersect_path = os.path.join(intermediate_folder, gene_features_intersect)
+    pop_freqs_intersect_path = os.path.join(intermediate_folder, pop_freqs_intersect)
+
+    databases = {
+        'genes': {'source': refgenes_db, 'result_path': refgenes_intersect_path},
+        'promoters': {'source': promoters_db, 'result_path': promoters_intersect_path},
+        'enhancers': {'source': enhancers_db, 'result_path': enhancers_intersect_path},
+        'ClinGen_HI': {'source': clingen_hi_db, 'result_path': clingen_hi_intersect_path},
+        'ClinGen_TS': {'source': clingen_ts_db, 'result_path': clingen_ts_intersect_path},
+        'ClinGen_regions_HI': {'source': clingen_regions_hi_db, 'result_path': clingen_regions_hi_intersect_path},
+        'ClinGen_regions_TS': {'source': clingen_regions_ts_db, 'result_path': clingen_regions_ts_intersect_path},
+        'gene_features': {'source': gene_features_db, 'result_path': gene_features_intersect_path},
+        'pop_freqs': {'source': pop_freqs_db, 'result_path': pop_freqs_intersect_path}
+    }
+
+    rubric = OrderedDict([
+        ('1A-B', 0.0), ('2A', 0.0), ('2B', 0.0), ('2C', 0.0), ('2D', 0.0), ('2E', 0.0), ('2F', 0.0), ('2G', 0.0), ('2H', 0.0),
+        ('2I', 0.0), ('2J', 0.0), ('2K', 0.0), ('2L', 0.0), ('3', 0.0), ('4A', 0.0), ('4B', 0.0), ('4C', 0.0), ('4D', 0.0),
+        ('4E', 0.0), ('4F-H', 0.0), ('4I', 0.0), ('4J', 0.0), ('4K', 0.0), ('4L', 0.0), ('4M', 0.0), ('4N', 0.0),
+        ('4O', 0.0), ('5A', 0.0), ('5B', 0.0), ('5C', 0.0), ('5D', 0.0), ('5E', 0.0), ('5F', 0.0), ('5G', 0.0), ('5H', 0.0)
+    ])
+
+    # Printed results
+    scoresheet_filename = os.path.basename(args.infile).split('.')[0]
+    scoresheet_filename += '.classifycnv.txt'
+    scoresheet_header = '\t'.join(['VariantID', 'Chromosome', 'Start', 'End', 'Type', 'Classification', 'Total score']) + '\t'
+    scoresheet_header += '\t'.join(rubric.keys()) + '\t' + 'Known or predicted dosage-sensitive genes' + \
+                        '\t' + 'All protein coding genes'
+
+    # Cutoffs for pathogenicity
+    pathogenic = 0.99
+    likely_pathogenic = 0.9
+    likely_benign = -0.9
+    benign = -0.99
 
 
 def run_in_parallel(function, params_list, cores):
@@ -94,19 +167,21 @@ def parse_infile(infile):
                                  '21', '22']:
             continue
         # don't keep alternative contigs
-        if fields[0].endswith('alt'):
+        if fields[0].endswith('alt') or fields[0].startswith('chromosome'):
             continue
-        # stop execution if the fourth column does not contain the CNV type
-        if fields[3] not in ['DEL', 'DUP']:
-            sys.exit("ERROR: the 4th column of the input file does not contain the CNV type (DEL/DUP).")
+        # determine the cnv type based on the cn
+        if int(fields[3]) < 2:
+            cnvtype = 'DEL'
+        else:
+            cnvtype = 'DUP'
         # each chromosome number should start with 'chr'
         if not fields[0].startswith('chr'):
             fields[0] = 'chr' + fields[0]
         # add the CNV id to the set
-        cnv_to_add = "_".join([fields[0], fields[1], fields[2], fields[3]])
+        cnv_to_add = "_".join([fields[0], fields[1], fields[2], cnvtype])
         if cnv_to_add not in parsed_list:
             parsed_list.add(cnv_to_add)
-            parsed_outfile.write('\t'.join([fields[0], fields[1], fields[2], fields[3]]) + '\n')
+            parsed_outfile.write('\t'.join([fields[0], fields[1], fields[2], cnvtype]) + '\n')
     bed_infile.close()
     parsed_outfile.close()
     return parsed_list
@@ -142,6 +217,7 @@ def run_bedtools_intersect(file_b_type):
     db_path = os.path.join(home_dir, main_resources_folder, args.GenomeBuild, databases[file_b_type]['source'])
     intersect_command = ' '.join(['bedtools intersect -a', cleaned_bed_path, '-b', db_path, '-wo', extra_params, '>',
                                   databases[file_b_type]['result_path']])
+    # ???
     intersect_proc = Popen(['/bin/bash', '-c', intersect_command])
     intersect_proc.wait()
     if not intersect_proc.returncode == 0:
@@ -808,7 +884,6 @@ def generate_results():
 
 if __name__ == "__main__":
     t_start = time.perf_counter()  # time the run
-    print(__file__, 'Version', __version__)
 
     # initialize results dictionaries
     detailed_results = dict()  # contains a breakdown of the final pathogenicity score
@@ -817,7 +892,8 @@ if __name__ == "__main__":
         breakpoints = dict()  # stores intragenic CNVs
 
     infile_path = os.path.abspath(args.infile)
-    make_results_folder()  # create a folder where the results will be stored if it doesn't already exist
+    os.chdir(main_results_folder)
+    
     cnv_list = parse_infile(infile_path)  # save each CNV as chr_start_end_type and print a new file for BEDTools
 
     # make empty result dictionaries
@@ -837,5 +913,5 @@ if __name__ == "__main__":
 
     t_stop = time.perf_counter()
     t_fact = t_stop - t_start
-    print('Results saved to', args.outdir)
+    print('Results saved to', main_results_folder)
     print('Elapsed time:', '{0:.2f}'.format(t_fact), 'seconds')
