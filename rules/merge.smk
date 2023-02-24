@@ -44,11 +44,14 @@ rule good_normal_score:
     output:
         "res/merge/{sample}.goodscore.bed",
     params:
-        absPath = config['params']['absPath']
+        absPath = config['params']['absPath'],
+        badList = config['data']['smoove-exclude'],
+        normalList = config['data']['normal-common-cnv'],
     log:
         "logs/merge/{sample}.goodscore.log"
     shell:
-        "python {params.absPath}/scripts/goodNormalScore.py {input.bed} {output} >{log} 2>&1"
+        "python {params.absPath}/scripts/goodNormalScore.py {input} {params.badList} "
+        "{params.normalList} {output} >{log} 2>&1"
 
 # Apply ClassifyCNV and assign 'pathogenicity score' (6. PS)
 rule classifycnv_predict:

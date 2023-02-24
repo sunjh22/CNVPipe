@@ -5,7 +5,7 @@ if (!requireNamespace("BiocManager", quietly = TRUE)){
 }
 
 if(!require("CNVfilteR", quietly=TRUE)){
-    BiocManager::install("CNVfilteR")
+    BiocManager::install("CNVfilteR", force = TRUE)
 }
 
 if(!require("dplyr", quietly=TRUE)){
@@ -24,6 +24,12 @@ out_file <- args[3]
 
 # cnv_file <- "~/data/project/CNVPipe/analysis/res/merge/sample1.bed"
 # vcf_file <- "~/data/project/CNVPipe/analysis/snps/freebayes/sample1.snp.vcf"
+
+# cnv_file <- "~/data3/project/CNVPipe/analysis-bqsrTest/res/duphold/sample1.duphold.score.bed"
+# vcf_file <- "~/data3/project/CNVPipe/analysis-bqsrTest/snps/freebayes/sample1.snp.vcf"
+
+# cnv_file <- "~/data3/project/CNVPipe/analysis/res/merge3/sample18.duphold.score.bed"
+# vcf_file <- "~/data3/project/CNVPipe/analysis/snps/freebayes/sample18.snp.vcf"
 
 # Load copy number data
 cnv_gr <- loadCNVcalls(cnvs.file = cnv_file, chr.column = 'chromosome', start.column = 'start', end.column = 'end',
@@ -49,4 +55,4 @@ cnv <- dplyr::left_join(cnv, filtered0, by = c('chromosome', 'start', 'end'))
 cnv$CNVfilteR[is.na(cnv$CNVfilteR)] <- 'True'
 
 # write.table(cnv, file = "~/data/project/CNVPipe/analysis/res/cnvfilter/sample1.bed", sep = '\t', quote = F, row.names = F)
-write.table(cnv, file = out_file, sep = '\t', quote = F, row.names = F)
+write.table(subset(cnv, select=-c(sample)), file = out_file, sep = '\t', quote = F, row.names = F)

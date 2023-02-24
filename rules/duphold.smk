@@ -46,7 +46,7 @@ rule score_byDepth:
     conda:
         "../envs/freebayes.yaml"
     shell:
-        "bcftools query -f '%CHROM\t%POS\t%INFO/END[\t%CN\t%AS\t%GS\t%DHFFC\t%DHBFC]\t%INFO/TN\t%INFO/SAMPLE\n' {input} > {output.bed}; "
+        "bcftools query -f '%CHROM\t%POS\t%INFO/END[\t%CN\t%AS\t%DHFFC\t%DHBFC]\t%INFO/TN\t%INFO/SAMPLE\n' {input} > {output.bed}; "
         "python {params.absPath}/scripts/scoreDuphold.py {output.bed} {output.scoreBed}"
 
 

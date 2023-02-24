@@ -52,6 +52,8 @@ if __name__ == "__main__":
 
     with open(inputFile, 'r') as f, open(outputFile, 'w') as g:
         for x in f:
+            if x.startswith('chromosome'):
+                continue
             cnv = x.strip().split('\t')[:3]
             bad_score = calculateOverlapScore(cnv, bad_list, 0.3)
             normal_score = calculateOverlapScore(cnv, normal_list, 0.5)

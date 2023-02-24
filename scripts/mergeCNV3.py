@@ -63,7 +63,7 @@ if __name__ == "__main__":
     cnvpytor = sys.argv[4]
     outputFile = sys.argv[5]
 
-    sample = os.path.basename(cnvkit).split('.')[0]
+    # sample = os.path.basename(cnvkit).split('.')[0]
 
     # there is priority for keeping CNVs when merging
     cnvfiles = [cnvkit, delly, mops, cnvpytor]
@@ -109,8 +109,7 @@ if __name__ == "__main__":
         cnvs = cnvs2[:]
         
     with open(outputFile, 'w') as f:
-        print('chromosome', 'start', 'end', 'cn', 'toolNum', 'accumScore', 
-            'sample', sep='\t', file=f)
+        print('chromosome', 'start', 'end', 'cn', 'toolNum', 'accumScore', sep='\t', file=f)
         for cnv in mergedCnvs:
-            print(*cnv, sample, sep='\t', file=f)
+            print(*cnv, sep='\t', file=f)
 

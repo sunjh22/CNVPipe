@@ -8,6 +8,7 @@ data:
     GCprofile:  "/data/jinwf/jhsun/refs/hg38/bundle/freec/GC_profile.20000bp.cnp"
     delly-map: "/data/jinwf/jhsun/refs/hg38/bundle/delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz"
     smoove-exclude: "/data/jinwf/jhsun/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed"
+    normal-common-cnv: "/data/jinwf/jhsun/refs/hg38/genomic-variation-track/common_global_normal.bed"
     gatk-dbsnp: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/dbsnp_146.hg38.vcf.gz"
     gatk-hapmap: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/hapmap_3.3.hg38.vcf.gz"
     gatk-omni: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/1000G_omni2.5.hg38.vcf.gz"
