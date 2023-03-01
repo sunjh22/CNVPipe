@@ -5,7 +5,6 @@ data:
     genome: "/data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa"
     access:    "/data/jinwf/jhsun/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed"
     refflat:    "/data/jinwf/jhsun/refs/hg38/bundle/CNVKit/refFlat.txt"
-    GCprofile:  "/data/jinwf/jhsun/refs/hg38/bundle/freec/GC_profile.20000bp.cnp"
     delly-map: "/data/jinwf/jhsun/refs/hg38/bundle/delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz"
     smoove-exclude: "/data/jinwf/jhsun/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed"
     normal-common-cnv: "/data/jinwf/jhsun/refs/hg38/genomic-variation-track/common_global_normal.bed"
@@ -13,6 +12,8 @@ data:
     gatk-hapmap: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/hapmap_3.3.hg38.vcf.gz"
     gatk-omni: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/1000G_omni2.5.hg38.vcf.gz"
     gatk-1000g: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
+    gatk-mills: "/home/jhsun/data3/refs/hg38/bundle/gatk/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
+    gatk-hg38: "/home/jhsun/data3/refs/hg38/bundle/gatk/Homo_sapiens_assembly38.known_indels.vcf.gz"
 
 settings:
     read-depth:
@@ -43,16 +44,11 @@ params:
     
     fastp:
         threads:    6
-        se: ""
-        pe: ""
 
     bwamem:
-        threads:    10
+        threads:    26
         index: True
         platform:   "ILLUMINA"
-    
-    samtools:
-        threads:    4
 
     cnvkit:
         threads:    10

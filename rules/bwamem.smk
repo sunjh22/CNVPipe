@@ -33,7 +33,7 @@ rule map_reads:
         "../envs/pre-processing.yaml"
     shell:
         "(bwa mem -M {params.read_group} -t {threads} {input.ref} {input.reads} | "
-        "samtools sort -@ {threads} -o {output}) >{log} 2>&1"
+        "samtools sort -@ 10 -o {output}) >{log} 2>&1"
 
 # Mark duplicates with GATK MarkDuplicates
 rule gatk_markDuplicates:

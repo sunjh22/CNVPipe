@@ -14,6 +14,7 @@ rule gatk_haplotypeCaller:
     params:
         ref = config['data']['genome'],
         dbsnp = config['data']['gatk-dbsnp'],
+    threads: 2
     log:
         "logs/gatk/{sample}.haplotypeCaller.log"
     benchmark:
@@ -38,6 +39,7 @@ rule gatk_variantRecalibrator:
         hapmap = config['data']['gatk-hapmap'],
         omni = config['data']['gatk-omni'],
         geno1000 = config['data']['gatk-1000g'],
+    threads: 2
     log:
         "logs/gatk/{sample}.variantRecalibrator.log"
     benchmark:
@@ -67,6 +69,7 @@ rule gatk_applyVQSR:
         "snps/gatk/{sample}.vqsr.vcf.gz",
     params:
         ref = config['data']['genome'],
+    threads: 2
     log:
         "logs/gatk/{sample}.vqsr.log"
     benchmark:

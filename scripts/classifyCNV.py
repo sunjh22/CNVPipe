@@ -11,114 +11,6 @@ import sys
 from collections import OrderedDict
 
 
-parser = argparse.ArgumentParser()
-
-parser.add_argument('--absPath', required=True, help='Absolute path of CNVPipe Snakefile in')
-parser.add_argument('--infile', required=True,
-                    help='Input file in BED format; the first four columns should be chromosome, start position, '
-                         'end position, CNV type (DEL or DUP).')
-parser.add_argument('--GenomeBuild', required=True, choices=['hg19', 'hg38'],
-                    help='Human assembly version (hg19 or hg38).')
-parser.add_argument('--cores', type=int, default=1, help='Maximum number of threads to use. Default: 1')
-parser.add_argument('--precise', action='store_true',
-                    help='Specify this flag if the CNV breakpoints are precise. WARNING: if the breakpoints are not '
-                         'precise, specifying the flag could lead to incorrect results. Default = False')
-
-args = parser.parse_args()
-
-# Define the path of a list of resources used by ClassifyCNV
-if True:
-    # Default results path
-    home_dir = args.absPath  # from the absPath parameter, eg ~/data3/jhsun/github-repo/CNVPipe
-
-    main_results_folder = 'res/classifycnv'
-    os.makedirs(main_results_folder, exist_ok=True)
-
-    #intermediate_folder = 'Intermediate_files'
-    intermediate_folder = 'logs/classifycnv'
-    os.makedirs(intermediate_folder, exist_ok=True)
-    intermediate_folder = os.path.join('../..', intermediate_folder)
-    
-    # Filename for the cleaned input
-    cleaned_bed = 'infile.cleaned.bed'
-    cleaned_bed_path = os.path.join(intermediate_folder, cleaned_bed)
-
-    # Resources and databases
-    main_resources_folder = 'resources/ClassifyCNV'
-    common_resources_folder = 'common'
-    refgenes_db = 'refGenes.parsed.SelectTranscript.bed'
-    promoters_db = 'promoters.500bp.bed'
-    enhancers_db = 'Enhancers.3sources.merged.bed'
-    clingen_hi_db = 'ClinGen_haploinsufficiency_gene.bed'
-    clingen_ts_db = 'ClinGen_triplosensitivity_gene.bed'
-    clingen_regions_hi_db = 'ClinGen_region_curation_list.HI.bed'
-    clingen_regions_ts_db = 'ClinGen_region_curation_list.TS.bed'
-    gene_features_db = 'gene_features.bed'
-    penultimate_exon_50bp_db = '50bp_penultimate_exon.bed'
-    pop_freqs_db = 'population_freqs.bed'
-    decipher_HI_db = 'DECIPHER_HI_Predictions_Version3.bed'
-    pLI_db = 'ExAC_pLI.txt'
-    loeuf_db = 'gnomad.v2.1.1.lof_metrics.by_gene.txt'
-    benign_region_genes_db = 'Benign_TS_region_genelist.bed'
-
-    decipher_HI_path = os.path.join(home_dir, main_resources_folder, common_resources_folder, decipher_HI_db)
-    pLI_path = os.path.join(home_dir, main_resources_folder, common_resources_folder, pLI_db)
-    loeuf_path = os.path.join(home_dir, main_resources_folder, common_resources_folder, loeuf_db)
-
-    # Output files created by bedtools intersect
-    refgenes_intersect = 'refgenes_intersect.bed'
-    promoters_intersect = 'promoters_intersect.bed'
-    enhancers_intersect = 'enhancers_intersect.bed'
-    clingen_hi_intersect = 'clingen_hi_intersect.bed'
-    clingen_ts_intersect = 'clingen_ts_intersect.bed'
-    clingen_regions_hi_intersect = 'clingen_regions_hi_intersect.bed'
-    clingen_regions_ts_intersect = 'clingen_regions_ts_intersect.bed'
-    gene_features_intersect = 'gene_features_intersect.bed'
-    pop_freqs_intersect = 'population_freqs_intersect.bed'
-
-    refgenes_intersect_path = os.path.join(intermediate_folder, refgenes_intersect)
-    promoters_intersect_path = os.path.join(intermediate_folder, promoters_intersect)
-    enhancers_intersect_path = os.path.join(intermediate_folder, enhancers_intersect)
-    clingen_hi_intersect_path = os.path.join(intermediate_folder, clingen_hi_intersect)
-    clingen_ts_intersect_path = os.path.join(intermediate_folder, clingen_ts_intersect)
-    clingen_regions_hi_intersect_path = os.path.join(intermediate_folder, clingen_regions_hi_intersect)
-    clingen_regions_ts_intersect_path = os.path.join(intermediate_folder, clingen_regions_ts_intersect)
-    gene_features_intersect_path = os.path.join(intermediate_folder, gene_features_intersect)
-    pop_freqs_intersect_path = os.path.join(intermediate_folder, pop_freqs_intersect)
-
-    databases = {
-        'genes': {'source': refgenes_db, 'result_path': refgenes_intersect_path},
-        'promoters': {'source': promoters_db, 'result_path': promoters_intersect_path},
-        'enhancers': {'source': enhancers_db, 'result_path': enhancers_intersect_path},
-        'ClinGen_HI': {'source': clingen_hi_db, 'result_path': clingen_hi_intersect_path},
-        'ClinGen_TS': {'source': clingen_ts_db, 'result_path': clingen_ts_intersect_path},
-        'ClinGen_regions_HI': {'source': clingen_regions_hi_db, 'result_path': clingen_regions_hi_intersect_path},
-        'ClinGen_regions_TS': {'source': clingen_regions_ts_db, 'result_path': clingen_regions_ts_intersect_path},
-        'gene_features': {'source': gene_features_db, 'result_path': gene_features_intersect_path},
-        'pop_freqs': {'source': pop_freqs_db, 'result_path': pop_freqs_intersect_path}
-    }
-
-    rubric = OrderedDict([
-        ('1A-B', 0.0), ('2A', 0.0), ('2B', 0.0), ('2C', 0.0), ('2D', 0.0), ('2E', 0.0), ('2F', 0.0), ('2G', 0.0), ('2H', 0.0),
-        ('2I', 0.0), ('2J', 0.0), ('2K', 0.0), ('2L', 0.0), ('3', 0.0), ('4A', 0.0), ('4B', 0.0), ('4C', 0.0), ('4D', 0.0),
-        ('4E', 0.0), ('4F-H', 0.0), ('4I', 0.0), ('4J', 0.0), ('4K', 0.0), ('4L', 0.0), ('4M', 0.0), ('4N', 0.0),
-        ('4O', 0.0), ('5A', 0.0), ('5B', 0.0), ('5C', 0.0), ('5D', 0.0), ('5E', 0.0), ('5F', 0.0), ('5G', 0.0), ('5H', 0.0)
-    ])
-
-    # Printed results
-    scoresheet_filename = os.path.basename(args.infile).split('.')[0]
-    scoresheet_filename += '.classifycnv.txt'
-    scoresheet_header = '\t'.join(['VariantID', 'Chromosome', 'Start', 'End', 'Type', 'Classification', 'Total score']) + '\t'
-    scoresheet_header += '\t'.join(rubric.keys()) + '\t' + 'Known or predicted dosage-sensitive genes' + \
-                        '\t' + 'All protein coding genes'
-
-    # Cutoffs for pathogenicity
-    pathogenic = 0.99
-    likely_pathogenic = 0.9
-    likely_benign = -0.9
-    benign = -0.99
-
-
 def run_in_parallel(function, params_list, cores):
     """Runs a function in parallel.
 
@@ -195,10 +87,10 @@ def initialize_cnv_genes(cnv_list):
     Returns:
         cnv_genes: A dictionary with an empty list for each CNV (to be populated later).
     """
-    cnv_genes = dict()
+    cnv_genes_tmp = dict()
     for cnv in cnv_list:
-        cnv_genes.setdefault(cnv, [])
-    return cnv_genes
+        cnv_genes_tmp.setdefault(cnv, [])
+    return cnv_genes_tmp
 
 
 def run_bedtools_intersect(file_b_type):
@@ -225,12 +117,18 @@ def run_bedtools_intersect(file_b_type):
         sys.exit(1)
 
 
-def genes_promoters_enhancers_intersect():
+def genes_promoters_enhancers_intersect(detailed_results, cnv_genes_tmp):
     """Uses BEDTools intersect to intersect the original CNV list with 3 databases: genes, promoters, enhancers.
     Assigns points for section 1 of the rubric (based on whether or not the CNV intersects anything at all).
     Assigns points for section 3 of the rubric (points depend on how many genes the CNV intersects).
     The points are saved to the global detailed_results dictionary.
 
+    - detailed_results: a nested dictionary with key as cnv region, value as a ordered dict (key as evaluating section, value as points)
+    - cnv_genes_tmp: a dictionary with key as cnv region, value as coding genes in that region
+    
+    - breakpoints: a dictionary with key as cnv region, value as a number marking whether the gene is disrupted or deleted
+    
+    returns: cnv_genes_tmp, breakpoints, detailed_results
     """
     element_counter = dict()  # key = CNV id, value = sum of the number of genes, promoters, enhancers the CNV overlaps
     for db_type in ['genes', 'promoters', 'enhancers']:
@@ -246,10 +144,10 @@ def genes_promoters_enhancers_intersect():
                     element_counter[cnv_id] +=1
                 # store overlapping protein-coding gene names
                 if db_type == 'genes' and fields[6].startswith("NM_"):
-                    if cnv_id not in cnv_genes:
-                        cnv_genes[cnv_id] = [fields[7]]  # store the gene name
+                    if cnv_id not in cnv_genes_tmp:
+                        cnv_genes_tmp[cnv_id] = [fields[7]]  # store the gene name
                     else:
-                        cnv_genes[cnv_id].append(fields[7])  # store the gene name
+                        cnv_genes_tmp[cnv_id].append(fields[7])  # store the gene name
                     # if the precise flag is on and the variant is a duplication, check if both breakpoints are
                     # within the same protein-coding gene
                     if args.precise:
@@ -268,14 +166,16 @@ def genes_promoters_enhancers_intersect():
         res.close()
         # assign points for section 3 of the rubric
         if db_type == 'genes':
-            for cnv in cnv_genes:
+            for cnv in cnv_genes_tmp:
                 # assign points for section 3 (number of genes within the CNV) and save to final detailed results dict
-                detailed_results[cnv]['3'] = assign_section3_points(len(cnv_genes[cnv]), cnv[-3:])
+                detailed_results[cnv]['3'] = assign_section3_points(len(cnv_genes_tmp[cnv]), cnv[-3:])
 
     # after we assembled the results from all 3 databases, assign points for section 1 (did anything overlap each CNV?)
     for cnv in cnv_list:
         if cnv not in element_counter:
             detailed_results[cnv]['1A-B'] = -0.6
+
+    return detailed_results, cnv_genes_tmp
 
 
 def assign_section3_points(gene_number, cnv_type):
@@ -379,7 +279,7 @@ def load_dosage_predictors():
     return predictors
 
 
-def parse_established_regions(results_dict, cnv_type, file_regions, effect_column):
+def parse_established_regions(results_dict, cnv_type, file_regions, effect_column, sensitive_genes):
     """Parses the results of BEDTools intersect between the CNV list and the ClinGen databases.
     Checks for complete overlap with established dosage sensitive or benign regions/genes.
 
@@ -456,6 +356,8 @@ def parse_established_regions(results_dict, cnv_type, file_regions, effect_colum
 
     regions_in.close()
 
+    return results_dict, sensitive_genes
+
 
 def parse_gene_features(del_dict):
     """Analyzes which gene features are included in each CNV and saves them to the global detailed_results dictionary
@@ -465,8 +367,7 @@ def parse_gene_features(del_dict):
     Args:
         del_dict: Dosage results for deletions.
 
-    Returns:
-        Modifies the del_dict dictionary; adds gene names as inner keys and a list of features as values.
+    Returns: modified del_dict
 
     """
     # load sensitive genes
@@ -486,7 +387,9 @@ def parse_gene_features(del_dict):
                 else:
                     del_dict[cnv_id] = {}
                     del_dict[cnv_id][fields[8]] = [fields[9]]
+    
     file_in.close()
+    return del_dict
 
 
 def load_benign_regions():
@@ -513,14 +416,14 @@ def load_benign_regions():
     return region_dictionary
 
 
-def assign_dup_points_s2(results):
+def assign_dup_points_s2(results, detailed_results, cnv_genes_tmp):
     """For each duplication that has dosage information, assigns points for section 2 of the rubric.
 
     Args:
         results: A dictionary where key = CNV id, value = parsed dosage information.
+        detailed_results: a nested dictionary with key as cnv region, value as a ordered dict (key as evaluating section, value as points)
 
-    Returns:
-        Modifies the global detailed_results dictionary.
+    Returns: detailed_results
 
     """
     # for each benign TS region get a list of genes that are expected within the benign region
@@ -549,21 +452,24 @@ def assign_dup_points_s2(results):
             # go through the protein-coding genes that overlap the CNV and check if there are any that are not part
             # of the benign region
             tracker = 0
-            for gene in cnv_genes[cnv]:
+            for gene in cnv_genes_tmp[cnv]:
                 if gene not in benign_list:
                     tracker = 1
             if tracker == 0:
                 detailed_results[cnv]['2F'] = -1.0
+    
+    return detailed_results
 
 
-def assign_del_points_s2(results):
+def assign_del_points_s2(results, detailed_results, sensitive_genes):
     """For each deletion that has any dosage information, assigns points for section 2 of the rubric.
 
     Args:
         results: A dictionary where key = CNV id, value = parsed dosage information.
+        detailed_results: a nested dictionary with key as cnv region, value as a ordered dict (key as evaluating section, value as points)
+        sensitive_genes:
 
-    Returns:
-        Modifies the global detailed_results dictionary.
+    Returns: detailed_results, sensitive_genes
 
     """
     # load the names of HI genes
@@ -608,6 +514,7 @@ def assign_del_points_s2(results):
                 else:
                     sensitive_genes[cnv] = [gene_key]
 
+    return detailed_results, sensitive_genes
 
 def analyze_intragenic_deletions(dosage_sensitive_cnv):
     """For intragenic deletions checks if the reading frame is disrupted and NMD is expected.
@@ -695,13 +602,13 @@ def analyze_intragenic_deletions(dosage_sensitive_cnv):
     return intragenic_results
 
 
-def assign_points_intragenic_del_2e(pvs1_list):
+def assign_points_intragenic_del_2e(pvs1_list, detailed_results):
     """Assigns points for section 2E of gene loss rubric.
     Args:
         pvs1_list: A list of deletions that are known to cause frameshift and NMD.
+        detailed_results: a nested dictionary with key as cnv region, value as a ordered dict (key as evaluating section, value as points)
 
-    Returns:
-        Modifies the detailed_results dictionary by adding points for section 2E.
+    Returns: detailed_results
 
     """
     for variant in pvs1_list:
@@ -712,10 +619,13 @@ def assign_points_intragenic_del_2e(pvs1_list):
         if breakpoints[variant] == 2:
             detailed_results[variant]['2E'] = 0.9
 
+    return detailed_results
 
-def dosage_sensitivity():
+def dosage_sensitivity(detailed_results, sensitive_genes, cnv_genes_tmp):
     """Runs BEDTools intersect for CNVs against dosage sensitivity databases, parses results, assigns points for
     section 2 of the rubric.
+    
+    - detailed_results: a nested dictionary with key as cnv region, value as a ordered dict (key as evaluating section, value as points)
 
     """
     # run BEDTools intersect in parallel
@@ -730,44 +640,46 @@ def dosage_sensitivity():
     dosage_res_del = dict()
 
     # parse complete overlaps with established HI and TS regions and genes
-    parse_established_regions(dosage_res_del, 'DEL', clingen_regions_hi_intersect_path, 7)
-    parse_established_regions(dosage_res_dup, 'DUP', clingen_regions_ts_intersect_path, 7)
-    parse_established_regions(dosage_res_del, 'DEL', clingen_hi_intersect_path, 8)
-    parse_established_regions(dosage_res_dup, 'DUP', clingen_ts_intersect_path, 8)
+    dosage_res_del, sensitive_genes = parse_established_regions(dosage_res_del, 'DEL', clingen_regions_hi_intersect_path, 7, sensitive_genes)
+    dosage_res_dup, sensitive_genes= parse_established_regions(dosage_res_dup, 'DUP', clingen_regions_ts_intersect_path, 7, sensitive_genes)
+    dosage_res_del, sensitive_genes = parse_established_regions(dosage_res_del, 'DEL', clingen_hi_intersect_path, 8, sensitive_genes)
+    dosage_res_dup, sensitive_genes = parse_established_regions(dosage_res_dup, 'DUP', clingen_ts_intersect_path, 8, sensitive_genes)
 
     # for protein coding genes, check which gene features overlap with each CNV
-    parse_gene_features(dosage_res_del)
+    dosage_res_del= parse_gene_features(dosage_res_del)
 
     # if the --precise flag is used, check the intragenic deletions and see if reading frames are disrupted
     if args.precise:
         intragenic_deletions = analyze_intragenic_deletions(dosage_res_del)  # creates a set of PVS1 variants
-        assign_points_intragenic_del_2e(intragenic_deletions)
+        detailed_results = assign_points_intragenic_del_2e(intragenic_deletions, detailed_results)
 
     # assign points for section 2 for duplications
-    assign_dup_points_s2(dosage_res_dup)
+    detailed_results = assign_dup_points_s2(dosage_res_dup, detailed_results, cnv_genes_tmp)
     # assign points for section 2 for deletions
-    assign_del_points_s2(dosage_res_del)
+    detailed_results, sensitive_genes = assign_del_points_s2(dosage_res_del, detailed_results, sensitive_genes)
 
     # assign points for section 2H (predicted HI)
-    assign_HI_predictor_points()
+    detailed_results, sensitive_genes = assign_HI_predictor_points(detailed_results, sensitive_genes, cnv_genes_tmp)
 
+    return detailed_results, sensitive_genes
 
-def assign_HI_predictor_points():
+def assign_HI_predictor_points(detailed_results, sensitive_genes, cnv_genes_tmp):
     """Assigns points for section 2H of the deletion rubric.
     For each CNV we check if any of the genes are predicted to be haploinsufficient.
     If DECIPHER and gnomAD both consider a gene HI, points are assigned.
 
-    Returns:
-        Modifies the global detailed_results dictionary.
+    - detailed_results: a nested dictionary with key as cnv region, value as a ordered dict (key as evaluating section, value as points)
+
+    Returns: modified detailed_results, sensitive_genes
 
     """
     # load a set of genes that are predicted to be haploinsufficient by both gnomAD and DECIPHER
     predicted_hi_genes = load_dosage_predictors()
 
     # iterate through CNVs and check which ones have any of the predicted HI genes
-    for test_cnv in cnv_genes:
+    for test_cnv in cnv_genes_tmp:
         if test_cnv.endswith('DEL'):  # we are only looking at deletions
-            for test_gene in cnv_genes[test_cnv]:
+            for test_gene in cnv_genes_tmp[test_cnv]:
                 # don't evaluate if this is a known dosage sensitive gene
                 if test_cnv in sensitive_genes:
                     if test_gene in sensitive_genes[test_cnv]:
@@ -783,14 +695,16 @@ def assign_HI_predictor_points():
                     else:
                         sensitive_genes[test_cnv] = [test_gene]
 
+    return detailed_results, sensitive_genes
 
-def analyze_pop_freqs():
+def analyze_pop_freqs(detailed_results):
     """Runs BEDTools intersect against the population frequency database to identify common CNVs.
     Parses results, assigns points for section 4O. Only looks at overlaps >= 80% of the CNV.
     Doesn't analyze CNVs that contain known or predicted dosage sensitive genes.
+    
+    - detailed_results: a nested dictionary with key as cnv region, value as a ordered dict (key as evaluating section, value as points)
 
-    Returns:
-        Modifies the global detailed_results dictionary by adding points for section 4O.
+    Returns: modified detailed_results
 
     """
     # run BEDTools intersect
@@ -834,12 +748,17 @@ def analyze_pop_freqs():
             if average > 1.0:
                 detailed_results[cnv_id]['4O'] = -1.0
 
+    return detailed_results
 
-def generate_results():
+def generate_results(detailed_results, cnv_list, sensitive_genes, cnv_genes_tmp, scoresheet_filename):
     """Uses the detailed_results dictionary to calculate the final score, converts it to pathogenicity status
     and prints full results to file.
 
     """
+    
+    scoresheet_header = '\t'.join(['VariantID', 'Chromosome', 'Start', 'End', 'Type', 'Classification', 'Total score']) + '\t'
+    scoresheet_header += '\t'.join(rubric.keys()) + '\t' + 'Known or predicted dosage-sensitive genes' + \
+                        '\t' + 'All protein coding genes'
     results_out = open(scoresheet_filename, 'w')
     results_out.write(scoresheet_header + '\n')
     for cnv in sorted(cnv_list):
@@ -864,8 +783,8 @@ def generate_results():
         else:
             genes_to_print_str = ''
         # make a list of all protein coding genes contained within the CNV
-        if cnv in cnv_genes:
-            all_genes = ', '.join(cnv_genes[cnv])
+        if cnv in cnv_genes_tmp:
+            all_genes = ', '.join(cnv_genes_tmp[cnv])
         else:
             all_genes = ''
         # convert each value in the results dictionary to a string
@@ -879,10 +798,118 @@ def generate_results():
         formatted_result += '\t'.join(detailed_results[cnv].values()) + '\t'
         formatted_result += genes_to_print_str + '\t' + all_genes
         results_out.write(formatted_result + '\n')
+
     results_out.close()
 
 
 if __name__ == "__main__":
+
+    
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--absPath', required=True, help='Absolute path of CNVPipe Snakefile in')
+    parser.add_argument('--infile', required=True,
+                        help='Input file in BED format; the first four columns should be chromosome, start position, '
+                            'end position, CNV type (DEL or DUP).')
+    parser.add_argument('--GenomeBuild', required=True, choices=['hg19', 'hg38'],
+                        help='Human assembly version (hg19 or hg38).')
+    parser.add_argument('--cores', type=int, default=1, help='Maximum number of threads to use. Default: 1')
+    parser.add_argument('--precise', action='store_true',
+                        help='Specify this flag if the CNV breakpoints are precise. WARNING: if the breakpoints are not '
+                            'precise, specifying the flag could lead to incorrect results. Default = False')
+
+    args = parser.parse_args()
+
+# Define the path of a list of resources used by ClassifyCNV
+    if True:
+        
+        # Printed results
+        sample0 = os.path.basename(args.infile).split('.')[0]
+        scoresheet_filename = sample0 + '.classifycnv.txt'
+
+        # Default results path
+        home_dir = args.absPath  # from the absPath parameter, eg ~/data3/jhsun/github-repo/CNVPipe
+
+        main_results_folder = 'res/classifycnv'
+        os.makedirs(main_results_folder, exist_ok=True)
+
+        #intermediate_folder = 'Intermediate_files'
+        intermediate_folder = os.path.join('logs/classifycnv', sample0)
+        os.makedirs(intermediate_folder, exist_ok=True)
+        intermediate_folder = os.path.join('../..', intermediate_folder)
+        
+        # Filename for the cleaned input
+        cleaned_bed = 'infile.cleaned.bed'
+        cleaned_bed_path = os.path.join(intermediate_folder, cleaned_bed)
+
+        # Resources and databases
+        main_resources_folder = 'resources/ClassifyCNV'
+        common_resources_folder = 'common'
+        refgenes_db = 'refGenes.parsed.SelectTranscript.bed'
+        promoters_db = 'promoters.500bp.bed'
+        enhancers_db = 'Enhancers.3sources.merged.bed'
+        clingen_hi_db = 'ClinGen_haploinsufficiency_gene.bed'
+        clingen_ts_db = 'ClinGen_triplosensitivity_gene.bed'
+        clingen_regions_hi_db = 'ClinGen_region_curation_list.HI.bed'
+        clingen_regions_ts_db = 'ClinGen_region_curation_list.TS.bed'
+        gene_features_db = 'gene_features.bed'
+        penultimate_exon_50bp_db = '50bp_penultimate_exon.bed'
+        pop_freqs_db = 'population_freqs.bed'
+        decipher_HI_db = 'DECIPHER_HI_Predictions_Version3.bed'
+        pLI_db = 'ExAC_pLI.txt'
+        loeuf_db = 'gnomad.v2.1.1.lof_metrics.by_gene.txt'
+        benign_region_genes_db = 'Benign_TS_region_genelist.bed'
+
+        decipher_HI_path = os.path.join(home_dir, main_resources_folder, common_resources_folder, decipher_HI_db)
+        pLI_path = os.path.join(home_dir, main_resources_folder, common_resources_folder, pLI_db)
+        loeuf_path = os.path.join(home_dir, main_resources_folder, common_resources_folder, loeuf_db)
+
+        # Output files created by bedtools intersect
+        refgenes_intersect = 'refgenes_intersect.bed'
+        promoters_intersect = 'promoters_intersect.bed'
+        enhancers_intersect = 'enhancers_intersect.bed'
+        clingen_hi_intersect = 'clingen_hi_intersect.bed'
+        clingen_ts_intersect = 'clingen_ts_intersect.bed'
+        clingen_regions_hi_intersect = 'clingen_regions_hi_intersect.bed'
+        clingen_regions_ts_intersect = 'clingen_regions_ts_intersect.bed'
+        gene_features_intersect = 'gene_features_intersect.bed'
+        pop_freqs_intersect = 'population_freqs_intersect.bed'
+
+        refgenes_intersect_path = os.path.join(intermediate_folder, refgenes_intersect)
+        promoters_intersect_path = os.path.join(intermediate_folder, promoters_intersect)
+        enhancers_intersect_path = os.path.join(intermediate_folder, enhancers_intersect)
+        clingen_hi_intersect_path = os.path.join(intermediate_folder, clingen_hi_intersect)
+        clingen_ts_intersect_path = os.path.join(intermediate_folder, clingen_ts_intersect)
+        clingen_regions_hi_intersect_path = os.path.join(intermediate_folder, clingen_regions_hi_intersect)
+        clingen_regions_ts_intersect_path = os.path.join(intermediate_folder, clingen_regions_ts_intersect)
+        gene_features_intersect_path = os.path.join(intermediate_folder, gene_features_intersect)
+        pop_freqs_intersect_path = os.path.join(intermediate_folder, pop_freqs_intersect)
+
+        databases = {
+            'genes': {'source': refgenes_db, 'result_path': refgenes_intersect_path},
+            'promoters': {'source': promoters_db, 'result_path': promoters_intersect_path},
+            'enhancers': {'source': enhancers_db, 'result_path': enhancers_intersect_path},
+            'ClinGen_HI': {'source': clingen_hi_db, 'result_path': clingen_hi_intersect_path},
+            'ClinGen_TS': {'source': clingen_ts_db, 'result_path': clingen_ts_intersect_path},
+            'ClinGen_regions_HI': {'source': clingen_regions_hi_db, 'result_path': clingen_regions_hi_intersect_path},
+            'ClinGen_regions_TS': {'source': clingen_regions_ts_db, 'result_path': clingen_regions_ts_intersect_path},
+            'gene_features': {'source': gene_features_db, 'result_path': gene_features_intersect_path},
+            'pop_freqs': {'source': pop_freqs_db, 'result_path': pop_freqs_intersect_path}
+        }
+
+        rubric = OrderedDict([
+            ('1A-B', 0.0), ('2A', 0.0), ('2B', 0.0), ('2C', 0.0), ('2D', 0.0), ('2E', 0.0), ('2F', 0.0), ('2G', 0.0), ('2H', 0.0),
+            ('2I', 0.0), ('2J', 0.0), ('2K', 0.0), ('2L', 0.0), ('3', 0.0), ('4A', 0.0), ('4B', 0.0), ('4C', 0.0), ('4D', 0.0),
+            ('4E', 0.0), ('4F-H', 0.0), ('4I', 0.0), ('4J', 0.0), ('4K', 0.0), ('4L', 0.0), ('4M', 0.0), ('4N', 0.0),
+            ('4O', 0.0), ('5A', 0.0), ('5B', 0.0), ('5C', 0.0), ('5D', 0.0), ('5E', 0.0), ('5F', 0.0), ('5G', 0.0), ('5H', 0.0)
+        ])
+
+        # Cutoffs for pathogenicity
+        pathogenic = 0.99
+        likely_pathogenic = 0.9
+        likely_benign = -0.9
+        benign = -0.99
+
     t_start = time.perf_counter()  # time the run
 
     # initialize results dictionaries
@@ -899,17 +926,21 @@ if __name__ == "__main__":
     # make empty result dictionaries
     for cnv in cnv_list:
         detailed_results[cnv] = copy.deepcopy(rubric)
-    # initialize the cnv_genes dictionary which will contain a list of protein-coding genes that are included in
-    # each CNV
+
+    # initialize the cnv_genes dictionary which will contain a list of protein-coding genes that are included in each CNV
     cnv_genes = initialize_cnv_genes(cnv_list)
+
     # intersect CNVs with genes, promoters, enhancers and assign points for steps 1,3
-    genes_promoters_enhancers_intersect()
+    detailed_results, cnv_genes = genes_promoters_enhancers_intersect(detailed_results, cnv_genes)
+    
     # check if CNVs are in dosage sensitive regions and assign points for step 2
-    dosage_sensitivity()
+    detailed_results, sensitive_genes = dosage_sensitivity(detailed_results, sensitive_genes, cnv_genes)
+    
     # check if any of the CNVs are frequent and assign points for section 4O
-    analyze_pop_freqs()
+    detailed_results = analyze_pop_freqs(detailed_results)
+    
     # calculate the total score, determine pathogenicity, print results to file
-    generate_results()
+    generate_results(detailed_results, cnv_list, sensitive_genes, cnv_genes, scoresheet_filename)
 
     t_stop = time.perf_counter()
     t_fact = t_stop - t_start

@@ -104,6 +104,24 @@ Simulate CNV and reads. This command must be ran under `CNV-Sim` directory.
 
     ./cnv-sim.py -o ~/data3/project/CNVPipe/simulation2/ -l 150 --coverage 1 -g 150 -r_min 5000 -r_max 5000000 -cn_min 1 -cn_max 5 genome ~/data3/refs/hg38/anal
 
+### 01.3 CNV-simulator
+
+We wrote a CNV simulator by Python, which can simulate CNVs in whole-genome accessible regions and generate NGS reads by ART. The default CNV number is 200, average size of CNV is 200,000, amplification rate is 0.5, read length is 150. We use `art_illumina` `HSXn` (as well HiSeqX PCR free (150bp)) mode to simulate paired-end reads. Users could set coverage for read depth. The tool is in `~/data3/project/CNV-simulator`.
+
+To simulate experimental samples with CNVs.
+
+    cd ~/data3/project/CNV-simulator
+    ./cnv_simulator.py -o ~/data3/project/CNVPipe/simulation-CNVSimulator/1X -a sample1 -c 0.5 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed
+    parallel --dry-run "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/1X -a sample{} -c 0.5 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 2 3 4 5 6 &
+
+To simulate control samples.
+
+    cd ~/data3/project/CNVPipe
+    parallel --dry-run "art_illumina -ss HSXn -f 1 -l 150 -m 800 -na -p -s 10 -i ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa -o simulation-CNVSimulator/1X/control{}_ 1>1.log 2>&1" ::: 1 2 3 4 5 6 &
+    parallel -j 6 -k gzip -q -1 simulation-CNVSimulator/1X/control{}_1.fq ::: 1 2 3 4 5 6 &
+    art_illumina version 2.5.1
+    GNU parallel 20221222
+
 ## 02. Prepare snakemake main file and config file
 
 Main file: include `.smk` file step by step, testing their availability during development.
@@ -975,6 +993,13 @@ Another is issue is that rule `delly_call_sv` runs too slow - it took almost 24 
 One sample need around 4 hours
 
     snakemake --use-conda --conda-frontend mamba --conda-prefix /ubda/home/19044464r/biosoft/conda-env-cnvpipe --profile torque --directory ~/project/CNV-calling/analysis/ snps/gatk/12719.vqsr.vcf.gz --rerun-triggers mtime
+
+Call SNPs for all samples.
+
+Error occured in samples 29355,30021,28561, they all belong to previously mapped samples, while
+samples mapped in this time runs well, why? Do I need to re-align the previous samples? That's very
+resource-consuming, but it seems we have to do so.
+
 
 ## 3. Quality control
 

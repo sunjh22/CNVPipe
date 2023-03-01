@@ -11,7 +11,7 @@ rule merge_CNVCall:
             allow_missing=True
         ),
     output:
-        "res/merge/{sample}.bed",
+        "res/merge/{sample}.merged.bed",
     params:
         absPath = config['params']['absPath']
     log:
@@ -25,8 +25,8 @@ include: "duphold.smk"
 # Apply cnvfilter and assign 'SNP score' (3. SS) if SNPs could be called
 rule cnvfilter_call:
     input:
-        bed = "res/duphold/{sample}.duphold.score.bed",
-        vcf = "snps/freebayes/{sample}.snp.vcf",
+        bed = rules.score_byDepth.output.scoreBed,
+        vcf = rules.freebayes_filter.output.snp,
     output:
         "res/cnvfilter/{sample}.bed",
     params:
@@ -61,18 +61,19 @@ rule classifycnv_predict:
         "res/classifycnv/{sample}.classifycnv.txt",
     params:
         absPath = config['params']['absPath']
+    threads: 2
     log:
         "logs/merge/{sample}.patho.log"
     conda:
         "../envs/classifycnv.yaml"
     shell:
         "python {params.absPath}/scripts/classifyCNV.py --absPath {params.absPath} --infile {input}"
-        " --GenomeBuild hg38 --cores 2 --precise >{log} 2>&1"
+        " --GenomeBuild hg38 --cores {threads} >{log} 2>&1"
 
 rule classifycnv_convert:
     input:
-        normal_bed = "res/merge/{sample}.goodscore.bed",
-        patho_bed = "res/classifycnv/{sample}.classifycnv.txt",
+        normal_bed = rules.good_normal_score.output,
+        patho_bed = rules.classifycnv_predict.output,
     output:
         "res/merge/{sample}.final.bed"
     params:

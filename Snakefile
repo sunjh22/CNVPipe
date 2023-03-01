@@ -8,7 +8,7 @@ localrules: all
 rule all:
     input:
         # expand("res/merge/{sample}.duphold.vcf", sample = config['global']['sample-names']),
-        expand("res/merge3/{sample}.duphold.score.bed", sample = config['global']['sample-names']),
+        expand("res/merge/{sample}.final.bed", sample = config['global']['sample-names']),
         # expand("snps/gatk/{sample}.vqsr.vcf.gz", sample = config['global']['sample-names']),
         # expand("snps/freebayes/{sample}.snp.vcf", sample = config['global']['sample-names']),
 
@@ -33,8 +33,8 @@ include: "rules/cnmops.smk"
 include: "rules/smoove.smk"
 include: "rules/delly.smk"
 
-# include: "rules/freebayes.smk"
-include: "rules/gatk.smk"
+include: "rules/freebayes.smk"
+# include: "rules/gatk.smk"
 
 include: "rules/merge.smk"
 
