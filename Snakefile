@@ -33,7 +33,7 @@ include: "rules/cnmops.smk"
 include: "rules/smoove.smk"
 include: "rules/delly.smk"
 
-# include: "rules/freebayes.smk"
+include: "rules/freebayes.smk"
 include: "rules/gatk.smk"
 
 include: "rules/merge.smk"
