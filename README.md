@@ -122,6 +122,14 @@ To simulate control samples.
     art_illumina version 2.5.1
     GNU parallel 20221222
 
+Run CNVPipe for 1X samples
+
+    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data3/project/CNVPipe/envs/conda-env-cnvpipe --cores 50 --directory ~/data3/project/CNVPipe/analysis-CNVSimulator/ --rerun-triggers mtime
+
+Run CNVPipe for 10X samples, let CNVPipe to determine a resolution.
+
+    snakemake --use-conda --conda-frontend mamba --conda-prefix /home/jhsun/data3/project/CNVPipe/envs/conda-env-cnvpipe --cores 150 --directory ~/data3/project/CNVPipe/analysis-CNVSimulator/ autobinBydepth
+
 ## 02. Prepare snakemake main file and config file
 
 Main file: include `.smk` file step by step, testing their availability during development.
@@ -683,6 +691,16 @@ exploring better merging and filtering strategy.
 v16: four tools, cnvProp1 > 0.8; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum>=2
 
 v17: re-simulate and analyze 1x data (50k), four tools, cnvProp1 > 0.8; accumScoreThe = 0; goodScoreThe = -1000; dupholdScoreThe = 0, toolNum>=2
+
+## 12.2 Evaluate performance on CNV-simulator data
+
+For simulation data evaluation, we will only use AS and DS to refine CNV set, other scores will not
+be used. All the results are in `~/data3/project/CNVPipe/analysis-CNVSimulator/evaluation`. 
+The script is in `~/data3/github-repo/CNVPipe/scripts/evalPerform3.py`.
+
+    python ~/data3/github-repo/CNVPipe/scripts/evalPerform3.py ~/data3/project/CNVPipe/analysis-CNVSimulator/evaluation/v1.txt
+
+
 
 ## 13. Predict CNV pathogenicity
 

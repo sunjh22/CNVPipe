@@ -22,7 +22,7 @@ rule gatk_haplotypeCaller:
     conda:
         "../envs/pre-processing.yaml"
     shell:
-        "gatk \"-Xms20G -Xmx20G -XX:ParallelGCThreads=2\" HaplotypeCaller "
+        "gatk --java-options \"-Xms20G -Xmx20G -XX:ParallelGCThreads=2\" HaplotypeCaller "
         "-R {params.ref} -I {input.bam} -O {output.vcf} "
         "--dbsnp {params.dbsnp} >{log} 2>&1"
 
@@ -47,7 +47,7 @@ rule gatk_variantRecalibrator:
     conda:
         "../envs/pre-processing.yaml"
     shell:
-        "gatk \"-Xms4G -Xmx4G -XX:ParallelGCThreads=2\" VariantRecalibrator "
+        "gatk --java-options \"-Xms4G -Xmx4G -XX:ParallelGCThreads=2\" VariantRecalibrator "
         "-R {params.ref} -V {input} "
         "--resource:hapmap,known=false,training=true,truth=true,prior=15.0 {params.hapmap} "
         "--resource:omni,known=false,training=true,truth=false,prior=12.0 {params.omni} "
@@ -77,7 +77,7 @@ rule gatk_applyVQSR:
     conda:
         "../envs/pre-processing.yaml"
     shell:
-        "gatk \"-Xms2G -Xmx2G -XX:ParallelGCThreads=2\" ApplyVQSR "
+        "gatk --java-options \"-Xms2G -Xmx2G -XX:ParallelGCThreads=2\" ApplyVQSR "
         "-R {params.ref} -V {input.vcf} -O {output} "
         "--truth-sensitivity-filter-level 99.9 --create-output-variant-index true "
         "--tranches-file {input.tranches} --recal-file {input.recal} -mode SNP >{log} 2>&1"

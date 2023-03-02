@@ -7,19 +7,19 @@
 import sys
 
 def overlap(cnv1, cnv2):
-    '''Calculate overlap proportion of two CNVs, return True if it is larger than 0.3'''
+    '''Calculate overlap proportion of two CNVs, return True if it is larger than some threshold
+    - cnv1: ground truth CNV
+    - cnv2: detected CNV
+    - return: True or False for whether two CNVs overlapped
+    '''
 
     c1, s1, e1, cn1 = cnv1[0], int(cnv1[1]), int(cnv1[2]), int(cnv1[3])
     c2, s2, e2, cn2 = cnv2[0], int(cnv2[1]), int(cnv2[2]), int(cnv2[3])
-    cnvLen1 = e1 - s1
-    cnvLen2 = e2 - s2
+    cnvLen1, cnvLen2 = e1 - s1, e2 - s2
     overlap = 0
-    assert cnvLen1 > 0 and cnvLen2 > 0, "The length of CNV is less than 0, wrong!"
+    assert cnvLen1 > 0 and cnvLen2 > 0, "The length of CNV is < 0, something wrong!"
     if c1 == c2:
         if (cn1>2 and cn2>2) or (cn1<2 and cn2<2):
-            # if s1 < s2 < e1 or s1 < e2 < e1:
-            #     print("Truth CNV {:s}:{:d}-{:d} overlaps with called CNV {:s}:{:d}-{:d}".format(c1, 
-            #         s1, e1, c2, s2, e2))
             if s2 <= s1 < e1 <= e2:
                 overlap = e1 - s1
             elif s2 <= s1 <= e2 < e1:
@@ -32,21 +32,24 @@ def overlap(cnv1, cnv2):
                 pass
     
     cnvProp1 = round((overlap/cnvLen1), 2)
-    cnvProp2 = round((overlap/cnvLen2), 2)
-    if cnvProp1 > 0.8:
+    if cnvProp1 > 0.5:
         return True
     else:
         return False
 
-def evaluate(callFile, truthFile, Type):
-    '''Calculate sensitivity and FDR for single tool and merged results'''
+def evaluate(truthFile, callFile, Type):
+    '''Calculate sensitivity and FDR for single tool and merged results.
+    - truthFile: a file with ground truth CNVs
+    - callFile: a file with detected CNVs
+    - return: sensitivity and FDR
+    '''
 
     # define some threshold to filter CNV for merged result
-    accumScoreThe = 0      # can be adjusted
-    goodScoreThe = -1000       # can be adjusted
-    dupholdScoreThe = 0    # cannot be adjusted
-    toolNumThe = 2             # CNVs called by at least how many tools
+    # accumScoreThe = 0      # can be adjusted
+    dupholdScoreThe = 30    # cannot be adjusted
+    toolNumThe = 2         # CNVs called by at least how many tools, equal to accumScoreThe > 0
 
+    # read detected CNVs, read more columns for CNV filtering for merged CNV set
     callCnvs = []
     with open(callFile, 'r') as f:
         for line in f:
@@ -54,17 +57,16 @@ def evaluate(callFile, truthFile, Type):
                 continue
             x = line.strip().split('\t')
             cnv = x[:4]
-            if Type == 'merge3':
-                accumScore = float(x[5])
-                goodScore = float(x[6])
-                # dupholdScore = float(x[7])
-                toolNum = int(x[4])
-                if accumScore >= accumScoreThe and goodScore >= goodScoreThe and \
-                toolNum >= toolNumThe:
+            if Type == 'merge':
+                # accumScore = float(x[5])
+                dupholdScore = float(x[6])
+                toolNum = int(x[7])
+                if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
                     callCnvs.append(cnv)
             else:
                 callCnvs.append(cnv)
 
+    # read ground truth CNVs
     truthCnvs = []
     with open(truthFile, 'r') as f:
         for line in f:
@@ -75,8 +77,10 @@ def evaluate(callFile, truthFile, Type):
 
     truthCnvLen = len(truthCnvs)    # number of simulated CNVs
     callCnvLen = len(callCnvs)      # number of called CNVs
-    tp = []
-    observTP = []
+
+    # the reason for tp and observTP is that several called CNVs might overlap with the same truth CNV.
+    tp = []     # CNVs in truth set that can be identified by calling
+    observTP = []       # CNVs in called set that have overlap with truth-set CNVs
     callCnvs2 = callCnvs[:]
     while truthCnvs:
         cnv1 = truthCnvs.pop(0)
@@ -98,13 +102,13 @@ def evaluate(callFile, truthFile, Type):
 
 def evaluateHelper(truthFile, tools, fold, outputFile):
     for tool in tools:
-        if tool == 'merge3':
-            callFile = '/home/jhsun/data3/project/CNVPipe/analysis/res/' + tool + '/sample' + \
-                str(i) + '.bed'
+        if tool == 'merge':
+            callFile = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/res/' + tool + '/sample' + \
+                str(i) + '.final.bed'
             sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
             print(fold, 'sample'+str(i), tool, sensitivity, fdr, sep='\t', file=outputFile)
         else:
-            callFile = '/home/jhsun/data3/project/CNVPipe/analysis/res/' + tool + '/sample' + \
+            callFile = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/res/' + tool + '/sample' + \
                 str(i) + '.bed'
             sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
             print(fold, 'sample'+str(i), tool, sensitivity, fdr, sep='\t', file=outputFile)
@@ -117,12 +121,20 @@ if __name__ == "__main__":
     out = open(outputFile, 'w')
     print('fold', 'sample', 'tool', 'sensitivity', 'FDR', sep='\t', file=out)
 
-    tools = ['merge3', 'cnvkit', 'delly', 'mops', 'cnvpytor', 'smoove', 'freec']
-    for i in range(1,19):
-        truthFile = '/home/jhsun/data3/project/CNVPipe/simulation/simuGenome/tumor' + str(i) + '.truth.bed'
+    tools = ['merge', 'cnvkit', 'delly', 'mops', 'cnvpytor', 'smoove']
+    for i in range(1,13):
+        truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
         if 1 <= i <= 6:
             evaluateHelper(truthFile=truthFile, tools=tools, fold='1x', outputFile=out)
-        elif 7 <= i <= 12:
-            evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out)
         else:
-            evaluateHelper(truthFile=truthFile, tools=tools, fold='30x', outputFile=out)
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out)
+
+
+    # for i in range(1,19):
+    #     truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/tumor' + str(i) + '.truth.bed'
+    #     if 1 <= i <= 6:
+    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='1x', outputFile=out)
+    #     elif 7 <= i <= 12:
+    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out)
+    #     else:
+    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='30x', outputFile=out)
