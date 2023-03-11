@@ -61,14 +61,17 @@ if __name__ == "__main__":
     delly = sys.argv[2]
     mops = sys.argv[3]
     cnvpytor = sys.argv[4]
-    outputFile = sys.argv[5]
+    smoove = sys.argv[5]
+    outputFile = sys.argv[6]
 
     sample = os.path.basename(cnvkit).split('.')[0]
 
     # there is priority for keeping CNVs when merging
-    cnvfiles = [cnvkit, delly, mops, cnvpytor]
+    # cnvfiles = [cnvkit, delly, mops, cnvpytor]
+    cnvfiles = [smoove, delly, cnvkit, cnvpytor, mops]
     print(cnvfiles)
-    cnvtools = ['cnvkit', 'delly', 'mops', 'cnvpytor']
+    # cnvtools = ['cnvkit', 'delly', 'mops', 'cnvpytor', 'smoove']
+    cnvtools = ['smoove', 'delly', 'cnvkit', 'cnvpytor', 'mops']
 
     cnvs = []
     for i, cnvfile in enumerate(cnvfiles):

@@ -20,12 +20,6 @@ rule autobinBydepth:
     shell:
         "{params.absPath}/scripts/autobin.py {input.bam} -g {params.access} > {output} 2>&1"
 
-localrules: binSizeCal
-
-rule binSizeCal:
-    input:
-        "logs/autobin/binsize.txt"
-
 if os.path.isfile("logs/autobin/binsize.txt"):
     with open("logs/autobin/binsize.txt", 'r') as f:
         config['params']['binSize'] = int(f.readline().strip())

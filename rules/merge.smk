@@ -7,7 +7,7 @@
 rule merge_CNVCall:
     input:
         bed = expand(
-            "res/{tool}/{sample}.bed", tool = ['cnvkit', 'delly', 'mops', 'cnvpytor'],
+            "res/{tool}/{sample}.bed", tool = ['cnvkit', 'delly', 'mops', 'cnvpytor', 'smoove'],
             allow_missing=True
         ),
     output:
@@ -18,6 +18,11 @@ rule merge_CNVCall:
         "logs/merge/{sample}.merge.log"
     shell:
         "python {params.absPath}/scripts/mergeCNV3.py {input.bed} {output} >{log} 2>&1"
+
+localrules: all_merge_CNVCall
+rule all_merge_CNVCall:
+    input:
+        expand("res/merge/{sample}.merged.bed", sample = config['global']['sample-names'])
 
 # Apply duphold and assign 'depth score' (2. DS)
 include: "duphold.smk"

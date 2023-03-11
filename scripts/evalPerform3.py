@@ -32,6 +32,8 @@ def overlap(cnv1, cnv2):
                 pass
     
     cnvProp1 = round((overlap/cnvLen1), 2)
+    cnvProp2 = round((overlap/cnvLen2), 2)
+    # if cnvProp1 > 0.5 and cnvProp2 > 0.5:
     if cnvProp1 > 0.5:
         return True
     else:
@@ -59,9 +61,11 @@ def evaluate(truthFile, callFile, Type):
             cnv = x[:4]
             if Type == 'merge':
                 # accumScore = float(x[5])
-                dupholdScore = float(x[6])
-                toolNum = int(x[7])
-                if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
+                # dupholdScore = float(x[6])
+                # toolNum = int(x[7])
+                toolNum = int(x[4])
+                if toolNum >= toolNumThe:
+                # if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
                     callCnvs.append(cnv)
             else:
                 callCnvs.append(cnv)
@@ -104,7 +108,7 @@ def evaluateHelper(truthFile, tools, fold, outputFile):
     for tool in tools:
         if tool == 'merge':
             callFile = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/res/' + tool + '/sample' + \
-                str(i) + '.final.bed'
+                str(i) + '.merged.bed'
             sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
             print(fold, 'sample'+str(i), tool, sensitivity, fdr, sep='\t', file=outputFile)
         else:
@@ -117,24 +121,21 @@ def evaluateHelper(truthFile, tools, fold, outputFile):
 
 if __name__ == "__main__":
 
-    outputFile = sys.argv[1]    # say sensitivity-FDR.v2.txt
+    outputFile = sys.argv[1]    # say v1.txt
     out = open(outputFile, 'w')
     print('fold', 'sample', 'tool', 'sensitivity', 'FDR', sep='\t', file=out)
 
-    tools = ['merge', 'cnvkit', 'delly', 'mops', 'cnvpytor', 'smoove']
-    for i in range(1,13):
+    tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
+
+    for i in range(1,19):
         truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
         if 1 <= i <= 6:
             evaluateHelper(truthFile=truthFile, tools=tools, fold='1x', outputFile=out)
-        else:
+        elif 7 <= i <= 12:
             evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out)
+        else:
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='30x', outputFile=out)
 
-
-    # for i in range(1,19):
-    #     truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/tumor' + str(i) + '.truth.bed'
-    #     if 1 <= i <= 6:
-    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='1x', outputFile=out)
-    #     elif 7 <= i <= 12:
-    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out)
-    #     else:
-    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='30x', outputFile=out)
+    for i in range(25,31):
+        truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
+        evaluateHelper(truthFile=truthFile, tools=tools, fold='0.5x', outputFile=out)
