@@ -38,12 +38,12 @@ if __name__ == "__main__":
     print('##INFO=<ID=END,Number=1,Type=Integer,Description="End position of CNV">', file=Out)
     print('##INFO=<ID=TN,Number=1,Type=Integer,Description="Number of tools overlapped \
         for this CNV">', file=Out)
+    print('##INFO=<ID=TNa,Number=1,Type=String,Description="Name of tools overlapped \
+        for this CNV">', file=Out)
     print('##INFO=<ID=SAMPLE,Number=1,Type=String,Description="Sample name">', file=Out)
     print('##FORMAT=<ID=CN,Number=1,Type=Integer,Description="Integer copy number">', file=Out)
     print('##FORMAT=<ID=AS,Number=1,Type=Float,Description="Accumulated overlapped \
         fraction/score, the bigger this value, the more confidence of CNV">', file=Out)
-    # print('##FORMAT=<ID=GS,Number=1,Type=Integer,Description="Score for proportion of CNV overlap \
-    # with bad genomic region, the bigger this value, the better CNV">', file=Out)
     print('##reference=/data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa', file=Out)
 
     for key in chrLength.keys():
@@ -61,15 +61,16 @@ if __name__ == "__main__":
             pos = int(x[1])
             end = int(x[2])     # bed to vcf, end should minus 1
             cn = int(x[3])
-            toolNum = int(x[4])
-            accumScore = float(x[5])
-            spl = x[6]
+            tools = x[4]
+            toolNum = int(x[5])
+            accumScore = float(x[6])
+            spl = x[7]
             id += 1
             ref = 'N'
             alt = 'DUP' if cn > 2 else 'DEL'
             qual = 1000
             filt = 'PASS'
             print(chrom, pos, '{:0>3d}'.format(id), ref, alt, qual, filt, 
-            'END={:d};TN={:d};SAMPLE={:s}'.format(end-1, toolNum, spl), 'CN:AS', 
+            'END={:d};TNa={:s};TN={:d};SAMPLE={:s}'.format(end-1, tools, toolNum, spl), 'CN:AS', 
             "{:d}:{:.1f}".format(cn, accumScore), sep='\t', file=Out)
 

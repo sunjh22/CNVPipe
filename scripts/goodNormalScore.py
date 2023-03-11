@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 import sys
-from mergeCNV3 import overlapLen
+from mergeCNV import overlapLen
 
 def readRegionFile(infile):
     bad = []

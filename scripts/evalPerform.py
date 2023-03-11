@@ -3,6 +3,12 @@
 
 # Evaluate the performance of different tools by comparing their CNV calling results with simulated
 # ground truth set. We use false discovery rate and sensitivity to benchmark.
+# Generally, we define true positive calls as CNV has 50% or 80% reciprocal overlap with truth. For
+# CNVPipe results of high-depth data (10x and 30x), we only take those CNVs detected by more than 
+# one tool as the input. While for CNVPipe results of low-depth data (0.1x and 0.5x), we will 
+# take cn.mops results as priority as from our simulation result cn.mops performs better than other
+# tools for low-depth data.
+
 # Sensitivity = # of true positive CNVs / # of all simulated CNVs
 # FDR = # of false positive CNVs / # of all detected CNVs
 # In this case, recall = sensitivity, precision = 1 - FDR.
@@ -37,7 +43,7 @@ def overlap(cnv1, cnv2):
     
     cnvProp1 = round((overlap/cnvLen1), 2)
     cnvProp2 = round((overlap/cnvLen2), 2)
-    if cnvProp1 > 0.5 and cnvProp2 > 0.5:
+    if cnvProp1 > 0.8 and cnvProp2 > 0.8:
     # if cnvProp1 > 0.5:
         return True
     else:
@@ -45,7 +51,8 @@ def overlap(cnv1, cnv2):
 
 
 def evaluate(truthFile, callFile, Type):
-    '''Calculate sensitivity and FDR for single tool and merged results.
+    '''Calculate sensitivity and FDR for single tool and merged results. We generally take CNVs
+    detected by more than one tool in merged results as input.
     - truthFile: a file with ground truth CNVs
     - callFile: a file with detected CNVs
     - return: sensitivity and FDR
@@ -111,7 +118,8 @@ def evaluate(truthFile, callFile, Type):
 
 
 def evaluate4LowDepth(truthFile, callFile, Type):
-    '''Calculate sensitivity and FDR for single tool and merged results.
+    '''Calculate sensitivity and FDR for single tool and merged results. For low read-depth result,
+    we take cn.mops result as first priority for merged results
     - truthFile: a file with ground truth CNVs
     - callFile: a file with detected CNVs
     - return: sensitivity and FDR
@@ -131,11 +139,16 @@ def evaluate4LowDepth(truthFile, callFile, Type):
             x = line.strip().split('\t')
             cnv = x[:4]
             if Type == 'merge':
+
+                # for sample.final.bed
                 # accumScore = float(x[5])
                 # dupholdScore = float(x[6])
                 # toolNum = int(x[7])
-                toolNum = int(x[4])
-                if toolNum >= toolNumThe or :
+
+                # for sample.merged.bed
+                toolNum = int(x[5])
+                toolName = x[4].split(',')
+                if toolNum >= toolNumThe or 'mops' in toolName:
                 # if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
                     callCnvs.append(cnv)
             else:
@@ -181,7 +194,10 @@ def evaluateHelper(truthFile, tools, fold, outputFile, sampleID):
         if tool == 'merge':
             callFile = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/res/' + tool + '/sample' + \
                 sampleID + '.merged.bed'
-            sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
+            if fold in ['0.1x', '0.5x']:
+                sensitivity, fdr = evaluate4LowDepth(truthFile=truthFile, callFile=callFile, Type=tool)
+            else:
+                sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
             print(fold, 'sample'+sampleID, tool, sensitivity, fdr, sep='\t', file=outputFile)
         else:
             callFile = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/res/' + tool + '/sample' + \
@@ -189,7 +205,10 @@ def evaluateHelper(truthFile, tools, fold, outputFile, sampleID):
             if not os.path.exists(callFile):
                 print(fold, 'sample'+sampleID, tool, 0.001, 0.001, sep='\t', file=outputFile)
                 continue
-            sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
+            if fold in ['0.1x', '0.5x']:
+                sensitivity, fdr = evaluate4LowDepth(truthFile=truthFile, callFile=callFile, Type=tool)
+            else:
+                sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
             print(fold, 'sample'+sampleID, tool, sensitivity, fdr, sep='\t', file=outputFile)
     print('Finished for {:s} fold.'.format(fold))
 

@@ -104,15 +104,15 @@ if __name__ == "__main__":
                     cnv1 = tmpCnv
 
         tmpTools = set(cnv1[-1].split(','))
-        cnv1[-1] = len(tmpTools)
-        accumFold = round(accumLen * 100 / (int(cnv1[2]) - int(cnv1[1])), 1)   # percentage
+        cnv1.append(len(tmpTools))
+        accumFold = 100 - round(accumLen * 100 / (int(cnv1[2]) - int(cnv1[1])), 1)   # percentage
         cnv1.append(accumFold)
         
         mergedCnvs.append(cnv1)
         cnvs = cnvs2[:]
         
     with open(outputFile, 'w') as f:
-        print('chromosome', 'start', 'end', 'cn', 'toolNum', 'accumScore', 'sample', sep='\t', file=f)
+        print('chromosome', 'start', 'end', 'cn', 'tools', 'toolNum', 'accumScore', 'sample', sep='\t', file=f)
         for cnv in mergedCnvs:
             print(*cnv, sample, sep='\t', file=f)
 

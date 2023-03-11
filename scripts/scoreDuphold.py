@@ -7,7 +7,7 @@ inputFile = sys.argv[1]
 outputFile = sys.argv[2]
 
 with open(inputFile, 'r') as f, open(outputFile, 'w') as g:
-    print('chromosome\tstart\tend\tcn\tcnv\taccumScore\tdupholdScore\ttool\tsample', file=g)
+    print('chromosome\tstart\tend\tcn\tcnv\taccumScore\tdupholdScore\ttoolName\ttoolNum\tsample', file=g)
     for x in f:
         x = x.strip().split('\t')
         chrom, start, end = x[:3]
@@ -15,8 +15,9 @@ with open(inputFile, 'r') as f, open(outputFile, 'w') as g:
         aScore = float(x[4])
         dhffc = float(x[5])
         dhbfc = float(x[6])
-        tool = x[7]
-        spl = x[8]
+        toolName = x[7]
+        toolNum = x[8]
+        spl = x[9]
         if cn < 2:
             cnv = 'deletion'
             if dhffc <= 0.5:
@@ -33,4 +34,4 @@ with open(inputFile, 'r') as f, open(outputFile, 'w') as g:
                 score = 90
             else:
                 score = 30
-        print(chrom, start, end, cn, cnv, aScore, score, tool, spl, sep='\t', file=g)
+        print(chrom, start, end, cn, cnv, aScore, score, toolName, toolNum, spl, sep='\t', file=g)
