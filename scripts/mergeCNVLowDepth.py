@@ -1,5 +1,7 @@
 #! /usr/bin/env python
-# Merge CNV calling results from 5 tools, assign 'accumulative Score' (1. AS).
+# This merge script is used for low-depth data, as delly and smoove work not well on them. We will
+# only merge CNV calling results from cnvkit, cnvpytor and cn.mops, and assign 'accumulative Score' 
+# (1. AS).
 
 import sys
 import os
@@ -58,20 +60,18 @@ def readFile(infile):
 if __name__ == "__main__":
     
     cnvkit = sys.argv[1]
-    delly = sys.argv[2]
-    mops = sys.argv[3]
-    cnvpytor = sys.argv[4]
-    smoove = sys.argv[5]
-    outputFile = sys.argv[6]
+    mops = sys.argv[2]
+    cnvpytor = sys.argv[3]
+    outputFile = sys.argv[4]
 
     sample = os.path.basename(cnvkit).split('.')[0]
 
     # there is priority for keeping CNVs when merging
-    # cnvfiles = [cnvkit, delly, mops, cnvpytor]
-    cnvfiles = [smoove, delly, cnvkit, cnvpytor, mops]
-    print(cnvfiles)
-    # cnvtools = ['cnvkit', 'delly', 'mops', 'cnvpytor', 'smoove']
-    cnvtools = ['smoove', 'delly', 'cnvkit', 'cnvpytor', 'mops']
+    # cnvfiles = [cnvkit, mops, cnvpytor]
+    cnvfiles = [mops, cnvkit, cnvpytor]
+    # print(cnvfiles)
+    # cnvtools = ['cnvkit', 'mops', 'cnvpytor']
+    cnvtools = ['mops', 'cnvkit', 'cnvpytor']
 
     cnvs = []
     for i, cnvfile in enumerate(cnvfiles):

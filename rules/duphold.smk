@@ -5,7 +5,7 @@
 # Convert CNV bed list into vcf format
 rule convert_bed2vcf:
     input:
-        bed = rules.merge_CNVCall.output,
+        bed = "res/merge/{sample}.merged.bed",
         fai = config['data']['genome'] + ".fai",
     output:
         "res/duphold/{sample}.vcf",

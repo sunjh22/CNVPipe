@@ -1,25 +1,29 @@
 #! /urs/bin/env python
+# Usage: python evalPerform v1.txt
+
 # Evaluate the performance of different tools by comparing their CNV calling results with simulated
 # ground truth set. We use false discovery rate and sensitivity to benchmark.
 # Sensitivity = # of true positive CNVs / # of all simulated CNVs
 # FDR = # of false positive CNVs / # of all detected CNVs
+# In this case, recall = sensitivity, precision = 1 - FDR.
 
 import sys
+import os
 
 def overlap(cnv1, cnv2):
-    '''Calculate overlap proportion of two CNVs, return True if it is larger than 0.3'''
+    '''Calculate overlap proportion of two CNVs, return True if it is larger than some threshold
+    - cnv1: ground truth CNV
+    - cnv2: detected CNV
+    - return: True or False for whether two CNVs overlapped
+    '''
 
     c1, s1, e1, cn1 = cnv1[0], int(cnv1[1]), int(cnv1[2]), int(cnv1[3])
     c2, s2, e2, cn2 = cnv2[0], int(cnv2[1]), int(cnv2[2]), int(cnv2[3])
-    cnvLen1 = e1 - s1
-    cnvLen2 = e2 - s2
+    cnvLen1, cnvLen2 = e1 - s1, e2 - s2
     overlap = 0
-    assert cnvLen1 > 0 and cnvLen2 > 0, "The length of CNV is less than 0, wrong!"
+    assert cnvLen1 > 0 and cnvLen2 > 0, "The length of CNV is < 0, something wrong!"
     if c1 == c2:
         if (cn1>2 and cn2>2) or (cn1<2 and cn2<2):
-            # if s1 < s2 < e1 or s1 < e2 < e1:
-            #     print("Truth CNV {:s}:{:d}-{:d} overlaps with called CNV {:s}:{:d}-{:d}".format(c1, 
-            #         s1, e1, c2, s2, e2))
             if s2 <= s1 < e1 <= e2:
                 overlap = e1 - s1
             elif s2 <= s1 <= e2 < e1:
@@ -33,20 +37,26 @@ def overlap(cnv1, cnv2):
     
     cnvProp1 = round((overlap/cnvLen1), 2)
     cnvProp2 = round((overlap/cnvLen2), 2)
-    if cnvProp1 > 0.3 or cnvProp2 > 0.3:
+    if cnvProp1 > 0.5 and cnvProp2 > 0.5:
+    # if cnvProp1 > 0.5:
         return True
     else:
         return False
 
-def evaluate(callFile, truthFile, Type):
-    '''Calculate sensitivity and FDR for single tool and merged results'''
+
+def evaluate(truthFile, callFile, Type):
+    '''Calculate sensitivity and FDR for single tool and merged results.
+    - truthFile: a file with ground truth CNVs
+    - callFile: a file with detected CNVs
+    - return: sensitivity and FDR
+    '''
 
     # define some threshold to filter CNV for merged result
-    accumScoreThe = 0      # can be adjusted
-    goodScoreThe = -1000       # can be adjusted
-    dupholdScoreThe = 0    # cannot be adjusted
-    toolNumThe = 1             # CNVs called by at least how many tools
+    # accumScoreThe = 0      # can be adjusted
+    dupholdScoreThe = 30    # cannot be adjusted
+    toolNumThe = 2         # CNVs called by at least how many tools, equal to accumScoreThe > 0
 
+    # read detected CNVs, read more columns for CNV filtering for merged CNV set
     callCnvs = []
     with open(callFile, 'r') as f:
         for line in f:
@@ -55,17 +65,17 @@ def evaluate(callFile, truthFile, Type):
             x = line.strip().split('\t')
             cnv = x[:4]
             if Type == 'merge':
-                accumScore = float(x[5])
-                goodScore = float(x[6])
-                dupholdScore = float(x[7])
-                toolNum = int(x[8])
-                if accumScore >= accumScoreThe and goodScore >= goodScoreThe and \
-                dupholdScore >= dupholdScoreThe and toolNum >= toolNumThe:
-                # if accumScore+goodScore+dupholdScore > 130:
+                # accumScore = float(x[5])
+                # dupholdScore = float(x[6])
+                # toolNum = int(x[7])
+                toolNum = int(x[4])
+                if toolNum >= toolNumThe:
+                # if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
                     callCnvs.append(cnv)
             else:
                 callCnvs.append(cnv)
 
+    # read ground truth CNVs
     truthCnvs = []
     with open(truthFile, 'r') as f:
         for line in f:
@@ -76,8 +86,10 @@ def evaluate(callFile, truthFile, Type):
 
     truthCnvLen = len(truthCnvs)    # number of simulated CNVs
     callCnvLen = len(callCnvs)      # number of called CNVs
-    tp = []
-    observTP = []
+
+    # the reason for tp and observTP is that several called CNVs might overlap with the same truth CNV.
+    tp = []     # CNVs in truth set that can be identified by calling
+    observTP = []       # CNVs in called set that have overlap with truth-set CNVs
     callCnvs2 = callCnvs[:]
     while truthCnvs:
         cnv1 = truthCnvs.pop(0)
@@ -97,39 +109,112 @@ def evaluate(callFile, truthFile, Type):
     fdr = round((callCnvLen-len(observTP))/callCnvLen, 2)
     return(sensitivity, fdr)
 
-def evaluateHelper(truthFile, tools, fold, outputFile):
+
+def evaluate4LowDepth(truthFile, callFile, Type):
+    '''Calculate sensitivity and FDR for single tool and merged results.
+    - truthFile: a file with ground truth CNVs
+    - callFile: a file with detected CNVs
+    - return: sensitivity and FDR
+    '''
+
+    # define some threshold to filter CNV for merged result
+    # accumScoreThe = 0      # can be adjusted
+    dupholdScoreThe = 30    # cannot be adjusted
+    toolNumThe = 2         # CNVs called by at least how many tools, equal to accumScoreThe > 0
+
+    # read detected CNVs, read more columns for CNV filtering for merged CNV set
+    callCnvs = []
+    with open(callFile, 'r') as f:
+        for line in f:
+            if line.startswith('chrom'):
+                continue
+            x = line.strip().split('\t')
+            cnv = x[:4]
+            if Type == 'merge':
+                # accumScore = float(x[5])
+                # dupholdScore = float(x[6])
+                # toolNum = int(x[7])
+                toolNum = int(x[4])
+                if toolNum >= toolNumThe or :
+                # if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
+                    callCnvs.append(cnv)
+            else:
+                callCnvs.append(cnv)
+
+    # read ground truth CNVs
+    truthCnvs = []
+    with open(truthFile, 'r') as f:
+        for line in f:
+            if line.startswith('chrom'):
+                continue
+            x = line.strip().split('\t')
+            truthCnvs.append(x)
+
+    truthCnvLen = len(truthCnvs)    # number of simulated CNVs
+    callCnvLen = len(callCnvs)      # number of called CNVs
+
+    # the reason for tp and observTP is that several called CNVs might overlap with the same truth CNV.
+    tp = []     # CNVs in truth set that can be identified by calling
+    observTP = []       # CNVs in called set that have overlap with truth-set CNVs
+    callCnvs2 = callCnvs[:]
+    while truthCnvs:
+        cnv1 = truthCnvs.pop(0)
+        count = 0       # count the number of CNV in calling set that has overlap with truth CNV
+        flag = 0        # mark whether the CNV in truth set has been called
+        for i, cnv2 in enumerate(callCnvs):
+            if overlap(cnv1, cnv2):
+                observTP.append(callCnvs2.pop(i-count))
+                count += 1
+                flag = 1
+
+        if flag == 1:
+            tp.append(cnv1)
+        callCnvs = callCnvs2[:]
+
+    sensitivity = round(len(tp)/truthCnvLen, 2)
+    fdr = round((callCnvLen-len(observTP))/callCnvLen, 2)
+    return(sensitivity, fdr)
+
+
+def evaluateHelper(truthFile, tools, fold, outputFile, sampleID):
     for tool in tools:
         if tool == 'merge':
-            callFile = '/home/jhsun/data3/project/CNVPipe/analysis/res/' + tool + '/sample' + \
-                str(i) + '.duphold.score.bed'
+            callFile = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/res/' + tool + '/sample' + \
+                sampleID + '.merged.bed'
             sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
-            print(fold, 'sample'+str(i), tool, sensitivity, fdr, sep='\t', file=outputFile)
+            print(fold, 'sample'+sampleID, tool, sensitivity, fdr, sep='\t', file=outputFile)
         else:
-            callFile = '/home/jhsun/data3/project/CNVPipe/analysis/res/' + tool + '/sample' + \
-                str(i) + '.bed'
+            callFile = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/res/' + tool + '/sample' + \
+                sampleID + '.bed'
+            if not os.path.exists(callFile):
+                print(fold, 'sample'+sampleID, tool, 0.001, 0.001, sep='\t', file=outputFile)
+                continue
             sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
-            print(fold, 'sample'+str(i), tool, sensitivity, fdr, sep='\t', file=outputFile)
+            print(fold, 'sample'+sampleID, tool, sensitivity, fdr, sep='\t', file=outputFile)
     print('Finished for {:s} fold.'.format(fold))
 
 
 if __name__ == "__main__":
 
-    # callFile = sys.argv[1]      # CNV callset, from merged or single tool
-    # truthFile = sys.argv[2]     # CNV ground truth file
-    # Type = sys.argv[3]          # for single-tool or merged result, could be 'single' or 'merge'
-    # print("Benchmark for call set {:s} under '{:s}' mode".format(callFile, Type))
-    # print("Sensitivity is {:.2f}, FDR is {:.2f}".format(sensitivity, fdr))
-
-    outputFile = sys.argv[1]    # say sensitivity-FDR.v2.txt
+    outputFile = sys.argv[1]    # say v1.txt
     out = open(outputFile, 'w')
     print('fold', 'sample', 'tool', 'sensitivity', 'FDR', sep='\t', file=out)
 
-    tools = ['merge', 'cnvkit', 'delly', 'smoove', 'mops', 'cnvpytor']
-    for i in range(1,19):
-        truthFile = '/home/jhsun/data3/project/CNVPipe/simulation/simuGenome/tumor' + str(i) + '.truth.bed'
+    tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
+
+    for i in range(1,31):
+        truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
         if 1 <= i <= 6:
-            evaluateHelper(truthFile=truthFile, tools=tools, fold='1x', outputFile=out)
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='1x', outputFile=out, sampleID=str(i))
         elif 7 <= i <= 12:
-            evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out)
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out, sampleID=str(i))
+        elif 13 <= i <= 18:
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='30x', outputFile=out, sampleID=str(i))
+        elif 19 <= i <= 24:
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='0.1x', outputFile=out, sampleID=str(i))
         else:
-            evaluateHelper(truthFile=truthFile, tools=tools, fold='30x', outputFile=out)
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='0.5x', outputFile=out, sampleID=str(i))
+
+    # for i in range(25,31):
+    #     truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
+    #     evaluateHelper(truthFile=truthFile, tools=tools, fold='0.5x', outputFile=out)

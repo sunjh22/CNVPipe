@@ -2,22 +2,40 @@
 #     Assign various scores to CNV
 # =================================================================================================
 
-# Merge CNV calls from 4 tools, if two CNVs have overlaps, we extend the breakpoints.
+# Merge CNV calls from 5 tools, if two CNVs have overlaps, we extend the breakpoints.
 # Assign 'accumulative score' (1. AS)
-rule merge_CNVCall:
-    input:
-        bed = expand(
-            "res/{tool}/{sample}.bed", tool = ['cnvkit', 'delly', 'mops', 'cnvpytor', 'smoove'],
-            allow_missing=True
-        ),
-    output:
-        "res/merge/{sample}.merged.bed",
-    params:
-        absPath = config['params']['absPath']
-    log:
-        "logs/merge/{sample}.merge.log"
-    shell:
-        "python {params.absPath}/scripts/mergeCNV3.py {input.bed} {output} >{log} 2>&1"
+# If binSize is larger than 80k, which means read depth is lower than 0.5x, Delly and Smoove
+# will not work, thus we will only merge the results from cnvkit, cnvpytor and cn.mops
+if config['params']['binSize'] < 80000:
+    rule merge_CNVCall:
+        input:
+            bed = expand(
+                "res/{tool}/{sample}.bed", tool = ['cnvkit', 'delly', 'mops', 'cnvpytor', 'smoove'],
+                allow_missing=True
+            ),
+        output:
+            "res/merge/{sample}.merged.bed",
+        params:
+            absPath = config['params']['absPath']
+        log:
+            "logs/merge/{sample}.merge.log"
+        shell:
+            "python {params.absPath}/scripts/mergeCNV.py {input.bed} {output} >{log} 2>&1"
+else:
+    rule merge_CNVCall_lowDepth:
+        input:
+            bed = expand(
+                "res/{tool}/{sample}.bed", tool = ['cnvkit', 'mops', 'cnvpytor'],
+                allow_missing=True
+            ),
+        output:
+            "res/merge/{sample}.merged.bed",
+        params:
+            absPath = config['params']['absPath']
+        log:
+            "logs/merge/{sample}.merge.log"
+        shell:
+            "python {params.absPath}/scripts/mergeCNVLowDepth.py {input.bed} {output} >{log} 2>&1"
 
 localrules: all_merge_CNVCall
 rule all_merge_CNVCall:
