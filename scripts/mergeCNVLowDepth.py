@@ -67,10 +67,8 @@ if __name__ == "__main__":
     sample = os.path.basename(cnvkit).split('.')[0]
 
     # there is priority for keeping CNVs when merging
-    # cnvfiles = [cnvkit, mops, cnvpytor]
     cnvfiles = [mops, cnvkit, cnvpytor]
-    # print(cnvfiles)
-    # cnvtools = ['cnvkit', 'mops', 'cnvpytor']
+
     cnvtools = ['mops', 'cnvkit', 'cnvpytor']
 
     cnvs = []

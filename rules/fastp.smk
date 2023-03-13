@@ -72,6 +72,21 @@ rule clean_reads_pe:
         "--out1 {output.trimmed[0]} --out2 {output.trimmed[1]} "
         "--html {output.html} --json {output.json}) > {log} 2>&1"
 
+rule multiqc_report:
+    input:
+        json = (
+            expand("cleaned/{sample}-se-fastp.json", sample=config["global"]["sample-names"]) 
+            if is_single_end(config["global"]["all-sample-names"][0])
+            else expand("cleaned/{sample}-pe-fastp.json", sample = config["global"]["sample-names"])
+            ),
+    output:
+        "cleaned/multiqc-report.html",
+    conda:
+        "../envs/multiqc.yaml"
+    shell:
+        "multiqc --force -d cleaned/ -n multiqc-report -o cleaned/ -q"
+
+
 localrules: all_fastp
 
 rule all_fastp:
@@ -83,6 +98,7 @@ rule all_fastp:
                 "cleaned/{sample}_{pair}.fq.gz", pair=[1, 2], 
                 sample=config["global"]["all-sample-names"])
         ),
+        report = "cleaned/multiqc-report.html",
 
 # Get cleaned reads no matter single-end or paired-end
 def get_cleaned_reads(wildcards):

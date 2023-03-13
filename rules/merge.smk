@@ -4,9 +4,9 @@
 
 # Merge CNV calls from 5 tools, if two CNVs have overlaps, we extend the breakpoints.
 # Assign 'accumulative score' (1. AS)
-# If binSize is larger than 80k, which means read depth is lower than 0.5x, Delly and Smoove
-# will not work, thus we will only merge the results from cnvkit, cnvpytor and cn.mops
-if config['params']['binSize'] < 80000:
+# If binSize is larger than 80k, which means read depth is lower than 1x, Delly and Smoove
+# works not well, thus we will only merge the results from cnvkit, cnvpytor and cn.mops
+if config['params']['binSize'] < 40000:
     rule merge_CNVCall:
         input:
             bed = expand(
