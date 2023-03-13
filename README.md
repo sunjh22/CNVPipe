@@ -119,13 +119,16 @@ The tool is in `~/data3/project/CNV-simulator`.
 To simulate experimental samples with CNVs. This will simulate sample genomes and NGS reads,
 concatenate and compress reads automatically.
 
-Sample1-6 are 1X; sample7-12 are 10X; sample13-18 are 30X; sample19-24 are 0.1X; sample25-30 are 0.2X.
+Sample1-6 are 1X; sample7-12 are 10X; sample13-18 are 30X; sample19-24 are 0.1X; 
+sample25-30 are 0.5X. sample31-36 are 5X.
 
     cd ~/data3/project/CNV-simulator
     ./cnv_simulator.py -o ~/data3/project/CNVPipe/simulation-CNVSimulator/1X -a sample1 -c 0.5 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed
     parallel --dry-run "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/1X -a sample{} -c 0.5 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 1 2 3 4 5 6 &
 
     parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/0.1X -a sample{} -c 0.05 -e 1000000 -b 500000 -B 3000000 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 19 20 21 22 23 24
+
+    parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/5X -a sample{} -c 2.5 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 31 32 33 34 35 36 &
 
 To simulate control samples, directly use reference genome.
 
@@ -996,9 +999,9 @@ later one. Therefore, here we will only include deletions and duplications
         420 sva deletion
         110 herv deletion
         99 herv insertion
-    grep --color=never HG00514 nstd152.GRCh38.variant_call.tsv | cut -f 3,8,11,14 | grep --color=never -e '^[deletion|duplication]' | awk '$4-$3>1000 {OFS="\t"; print "chr"$2,$3,$4,$1}' | sort -Vk 1 -k 2,3n | grep -v inversion > HG00514-SVset.1kb.bed
-    grep --color=never HG00733 nstd152.GRCh38.variant_call.tsv | cut -f 3,8,11,14 | grep --color=never -e '^[deletion|duplication]' | awk '$4-$3>1000 {OFS="\t"; print "chr"$2,$3,$4,$1}' | sort -Vk 1 -k 2,3n | grep -v inversion > HG00733-SVset.1kb.bed
-    grep --color=never NA19240 nstd152.GRCh38.variant_call.tsv | cut -f 3,8,11,14 | grep --color=never -e '^[deletion|duplication]' | awk '$4-$3>1000 {OFS="\t"; print "chr"$2,$3,$4,$1}' | sort -Vk 1 -k 2,3n | grep -v inversion > NA19240-SVset.1kb.bed
+    grep --color=never HG00514 nstd152.GRCh38.variant_call.tsv | cut -f 3,8,11,14 | egrep --color=never '^(deletion|duplication)' | awk '$4-$3>1000 {OFS="\t"; print "chr"$2,$3,$4,$1}' | sort -Vk 1 -k 2,3n | grep -v inversion > HG00514-SVset.1kb.bed
+    grep --color=never HG00733 nstd152.GRCh38.variant_call.tsv | cut -f 3,8,11,14 | egrep --color=never '^(deletion|duplication)' | awk '$4-$3>1000 {OFS="\t"; print "chr"$2,$3,$4,$1}' | sort -Vk 1 -k 2,3n | grep -v inversion > HG00733-SVset.1kb.bed
+    grep --color=never NA19240 nstd152.GRCh38.variant_call.tsv | cut -f 3,8,11,14 | egrep --color=never '^(deletion|duplication)' | awk '$4-$3>1000 {OFS="\t"; print "chr"$2,$3,$4,$1}' | sort -Vk 1 -k 2,3n | grep -v inversion > NA19240-SVset.1kb.bed
 
 
 ### Run CNVPipe

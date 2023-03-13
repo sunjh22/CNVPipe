@@ -4,9 +4,9 @@
 
 # Merge CNV calls from 5 tools, if two CNVs have overlaps, we extend the breakpoints.
 # Assign 'accumulative score' (1. AS)
-# If binSize is larger than 80k, which means read depth is lower than 1x, Delly and Smoove
+# If binSize is larger than 8k, which means read depth is lower than 5x, Delly and Smoove
 # works not well, thus we will only merge the results from cnvkit, cnvpytor and cn.mops
-if config['params']['binSize'] < 40000:
+if config['params']['binSize'] < 8000:
     rule merge_CNVCall:
         input:
             bed = expand(
@@ -46,24 +46,38 @@ rule all_merge_CNVCall:
 include: "duphold.smk"
 
 # Apply cnvfilter and assign 'SNP score' (3. SS) if SNPs could be called
-rule cnvfilter_call:
-    input:
-        bed = rules.score_byDepth.output.scoreBed,
-        vcf = rules.freebayes_filter.output.snp,
-    output:
-        "res/cnvfilter/{sample}.bed",
-    params:
-        absPath = config['params']['absPath']
-    log:
-        "logs/cnvfilter/{sample}.log"
-    shell:
-        "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} > {log} 2>&1"
+if config['settings']['gatk'] and config['params']['binSize'] < 4000:
+    rule cnvfilter_call_gatk:
+        input:
+            bed = rules.score_byDepth.output.scoreBed,
+            vcf = rules.gatk_applyVQSR.output,
+        output:
+            "res/cnvfilter/{sample}.bed",
+        params:
+            absPath = config['params']['absPath']
+        log:
+            "logs/cnvfilter/{sample}.log"
+        shell:
+            "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} > {log} 2>&1"
+else:
+    rule cnvfilter_call_freebayes:
+        input:
+            bed = rules.score_byDepth.output.scoreBed,
+            vcf = rules.freebayes_filter.output.snp,
+        output:
+            "res/cnvfilter/{sample}.bed",
+        params:
+            absPath = config['params']['absPath']
+        log:
+            "logs/cnvfilter/{sample}.log"
+        shell:
+            "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} > {log} 2>&1"
 
 # Calculate overlap fraction with low-complexity region and assign 'good score' (4. GS)
 # Calculate overlap fraction with CNVs in normal population and assign 'normal score' (5. NS)
 rule good_normal_score:
     input:
-        rules.cnvfilter_call.output,
+        "res/cnvfilter/{sample}.bed",
     output:
         "res/merge/{sample}.goodscore.bed",
     params:

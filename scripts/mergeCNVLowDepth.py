@@ -79,6 +79,7 @@ if __name__ == "__main__":
 
     cnvs2 = cnvs[:]
     mergedCnvs = []
+    # we designed a strategy to recursively merging overlapped CNVs and extending their breakpoints
     while cnvs:
         cnv1 = cnvs.pop(0)
         tmpCnv = cnvs2.pop(0)

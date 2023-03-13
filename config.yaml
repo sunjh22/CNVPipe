@@ -16,24 +16,8 @@ data:
     gatk-hg38: "/home/jhsun/data3/refs/hg38/bundle/gatk/Homo_sapiens_assembly38.known_indels.vcf.gz"
 
 settings:
-    read-depth:
-        - cnvkit
-        - mops
-        - cnvpytor
-        - freec
-    
-    snp-calling:
-        - bcftools
-        - freebayes
-    
-    breakpoints-detc:
-        - delly
-        - smoove
-    
-    pathogenicity-pred:
-        - toolA
-        - toolB
-    
+    gatk: False
+
     keep-intermediate:
         fastp: False
         bwamem: False
@@ -58,23 +42,12 @@ params:
         
     mops:
         threads:    10
-    
-    freec:
-        threads:    4
-    
+
     bcftools:
         threads: 10
-        mode: "combined"
-        mpileup: "--max-depth 10000"
-        call: "--multiallelic-caller"
-        stats: ""
-        stats-plot: ""
-    
+
     freebayes:
-        extra: ""
         threads: 8
-        compress-threads: 2
-        chunksize: 100000
     
     gatk:
         extra: "--java-options '-Xmx30G'"
