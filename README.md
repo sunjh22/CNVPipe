@@ -126,7 +126,7 @@ Sample1-6 are 1X; sample7-12 are 10X; sample13-18 are 30X; sample19-24 are 0.1X;
     parallel --dry-run "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/1X -a sample{} -c 0.5 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 1 2 3 4 5 6 &
 
     parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/0.1X -a sample{} -c 0.05 -e 1000000 -b 500000 -B 3000000 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 19 20 21 22 23 24
-    
+
 To simulate control samples, directly use reference genome.
 
     cd ~/data3/project/CNVPipe
@@ -1119,7 +1119,8 @@ Another is issue is that rule `delly_call_sv` runs too slow - it took almost 24 
 
 When using GATK VariantRecalibrator, sample 22562 has an error: A USER ERROR has occurred: Positive training model failed to converge. Basic idea is that the variance is not big enough, other samples work well, I think if we use gVCF calling, there will be no problem. I am trying to use less gaussians cores and see whether it can work.
 
-I worked when I use `--max-gaussians 3`.
+It worked when I use `--max-gaussians 3`.
+
 
 ### 05.3 Test for SNP calling
 

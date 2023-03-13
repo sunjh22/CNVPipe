@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
         tmpTools = set(cnv1[-1].split(','))
         cnv1.append(len(tmpTools))
-        accumFold = 100 - round(accumLen * 100 / (int(cnv1[2]) - int(cnv1[1])), 1)   # percentage
+        accumFold = round(accumLen * 100 / (int(cnv1[2]) - int(cnv1[1])), 1)   # percentage
         cnv1.append(accumFold)
         
         mergedCnvs.append(cnv1)
