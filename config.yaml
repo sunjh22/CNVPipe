@@ -16,7 +16,7 @@ data:
     gatk-hg38: "/home/jhsun/data3/refs/hg38/bundle/gatk/Homo_sapiens_assembly38.known_indels.vcf.gz"
 
 settings:
-    gatk: False
+    gatk-snp: False
 
     keep-intermediate:
         fastp: False
@@ -43,12 +43,5 @@ params:
     mops:
         threads:    10
 
-    bcftools:
-        threads: 10
-
     freebayes:
-        threads: 8
-    
-    gatk:
-        extra: "--java-options '-Xmx30G'"
-
+        threads:    8

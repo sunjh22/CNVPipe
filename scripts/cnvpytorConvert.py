@@ -1,4 +1,6 @@
 #! /usr/bin/env python
+# The script is written for converting cnvpytor output into a bed format cnv list, do some simple
+# filtering at the same time.
 
 # from logging.config import fileConfig
 

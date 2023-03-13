@@ -24,7 +24,7 @@ rule delly_call_cnv:
         "(delly cnv -u -i {params.window} -g {params.ref} "
         "-m {params.maptrack} -c {output.cov} -o {output.cnv} {input.bam}) > {log} 2>&1"
 
-#! Delly sv call is too time-consuming, we will skip this step for read WGS data analysis for now.
+#! Delly sv call is too time-consuming, we will skip this step for real WGS data analysis for now.
 # Delly is written in C++ and calls CNV sample by sample.
 # Use Delly to call structural variants first, which will be used as input for CNV calling.
 # rule delly_call_sv:
@@ -78,7 +78,7 @@ rule delly_convert:
         "../envs/delly.yaml"
     shell:
         "bcftools query -f '%FILTER\t%CHROM\t%POS\t%INFO/END[\t%CN]\t%QUAL\n' {input} | "
-        "grep 'PASS' | cut -f 2- > {output}"
+        "grep 'PASS' | cut -f 2- | awk '$4 !=2 {print$0}' > {output}"
 
 rule all_delly:
     input:

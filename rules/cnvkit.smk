@@ -5,8 +5,7 @@
 # Call CNVs in samples in batch mode
 rule cnvkit_batch:
     input:
-        get_sample_bai(config['global']['sample-names']),
-        get_sample_bai(config['global']['control-sample-names']),
+        get_sample_bai(config['global']['all-sample-names']),
         sample = get_sample_bam(config['global']['sample-names']),
         control = get_sample_bam(config['global']['control-sample-names']),
     output:

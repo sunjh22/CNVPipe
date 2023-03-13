@@ -46,7 +46,7 @@ rule all_merge_CNVCall:
 include: "duphold.smk"
 
 # Apply cnvfilter and assign 'SNP score' (3. SS) if SNPs could be called
-if config['settings']['gatk'] and config['params']['binSize'] < 4000:
+if config['settings']['gatk-snp'] and config['params']['binSize'] < 4000:
     rule cnvfilter_call_gatk:
         input:
             bed = rules.score_byDepth.output.scoreBed,

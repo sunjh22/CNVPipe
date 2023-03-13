@@ -14,7 +14,7 @@ basedir = workflow.basedir
 
 cnvpipe_version = "0.0.1" #CNVPIPE_VERSION#
 
-# import config file
+# Import config file
 configfile: "config.yaml"
 #snakemake.utils.validate(config, schema="../schemas/config.schema.yaml")
 # Validate the format of config file TODO
@@ -24,7 +24,7 @@ configfile: "config.yaml"
 if config["data"]["genome"].endswith(".gz"):
     config["data"]["genome"] = os.path.splitext(config["data"]["genome"])[0]
 
-# store samples in config['global']
+# Store sample names into config['global']
 if "global" in config:
     raise Exception("Config key 'global' already defined. Someone messed with our setup.")
 else:
@@ -54,7 +54,7 @@ def valid_filepath(fn):
     clean = fn.replace('_', '').replace('-', '').replace('.', '').replace('/', '').replace('\\', '')
     return clean.isalnum() and clean.isascii()
 
-# check filename and filepath are valid
+# Check whether filename and filepath are valid
 problematic_filenames = 0
 for index, row in config["global"]["samples"].iterrows():
     if not valid_filename(row['sample']):

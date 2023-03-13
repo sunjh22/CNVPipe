@@ -26,7 +26,7 @@ include: "rules/delly.smk"
 
 # SNP calling by freebayes or gatk based on read depth
 # 4k binSize generally equals to 10X read depth
-if config['settings']['gatk'] and config['params']['binSize'] < 4000:
+if config['settings']['gatk-snp'] and config['params']['binSize'] < 4000:
     include: "rules/gatk.smk"
 else:
     include: "rules/freebayes.smk"

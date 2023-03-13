@@ -1,5 +1,5 @@
 # =================================================================================================
-#     Determine optimal bin size by read depth
+#     Determine optimal bin size for CNV calling by read depth
 # =================================================================================================
 
 # Estimate optimal CNV calling resolution based on the sample with median number of reads
