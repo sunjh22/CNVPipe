@@ -5,41 +5,7 @@
 
 import sys
 import os
-from mergeTruthSet import mergeTruthCNV
-
-def overlapLen(cnvRegion1, cnvRegion2):
-    """
-    Find the length of overlapped region between two CNVs
-    - cnvRegion1: a list contains chromosome, start and end
-    - cnvRegion2: a list contains chromosome, start and end
-    Return the length of overlapped region
-    """
-
-    c1, s1, e1 = cnvRegion1[0], int(cnvRegion1[1]), int(cnvRegion1[2])
-    c2, s2, e2 = cnvRegion2[0], int(cnvRegion2[1]), int(cnvRegion2[2])
-    cnvLen = e1 - s1
-    assert cnvLen > 0, "The length of CNV is less than 0, something wrong! Please check."
-    if c1 == c2:
-        if s1 < s2 < e1 or s1 < e2 < e1 or s2 < s1 < e1 < e2:
-            print("CNV region {:s}:{:d}-{:d} overlaps with bad region {:s}:{:d}-{:d}".format(c1, 
-                s1, e1, c2, s2, e2))
-        if s2 <= s1 < e1 <= e2:
-            overlap = e1 - s1
-            return overlap
-        elif s2 <= s1 <= e2 < e1:
-            overlap = e2 - s1
-            return overlap
-        elif s1 <= s2 < e2 <= e1:
-            overlap = e2 - s2
-            return overlap
-        elif s1 < s2 <= e1 <= e2:
-            overlap = e1 - s2
-            return overlap
-        else:
-            return 0
-    
-    return 0
-
+from mergeCNV import overlap
 
 def readFile(infile):
     """
@@ -59,12 +25,12 @@ def readFile(infile):
 
 if __name__ == "__main__":
     
-    cnvkit = sys.argv[1]
-    mops = sys.argv[2]
+    mops = sys.argv[1]
+    cnvkit = sys.argv[2]
     cnvpytor = sys.argv[3]
     outputFile = sys.argv[4]
 
-    sample = os.path.basename(cnvkit).split('.')[0]
+    sample = os.path.basename(mops).split('.')[0]
 
     # there is priority for keeping CNVs when merging
     cnvfiles = [mops, cnvkit, cnvpytor]
@@ -89,18 +55,23 @@ if __name__ == "__main__":
         cn1 = int(cnv1[3])
         overlapSize = 0
         for i, cnv2 in enumerate(cnvs3):
-            cn2 = int(cnv2[3])
-            if (cn1>2 and cn2>2) or (cn1<2 and cn2<2):
-                overlapSize = overlapLen(cnv1[:3], cnv2[:3])
-                updateCnv1 = mergeTruthCNV(cnv1[:4], cnv2[:4])
-                tmpCnv[:4] = updateCnv1
-                if overlapSize > 0:
-                    assert cnv1[-1] != cnv2[-1], "Overlapped CNV from same tool {:s}! Please make sure these conflicts are solved before merging".format(cnv1[-1])
-                    accumLen += overlapSize
-                    cnvs2.pop(i-count)
-                    tmpCnv[-1] = ','.join([tmpCnv[-1], cnv2[-1]])
-                    count += 1
-                    cnv1 = tmpCnv
+            # see if two cnvs have overlap
+            overlapSize, overlapProp = overlap(cnv1[:4], cnv2[:4])
+            if overlapProp == 0:
+                continue
+            # if yes but overlap proportion is less than 0.5, keep former one and pop out later one
+            elif 0 < overlapProp < 0.5:
+                cnvs2.pop(i-count)
+                count += 1
+            # if overlap proportion is larger than 0.5, extend breakpoints
+            else:
+                assert cnv1[-1] != cnv2[-1], "Overlapped CNV from same tool {:s}! Please make sure these conflicts are solved before merging".format(cnv1[-1])
+                tmpCnv[1:3] = [min(cnv1[1], cnv2[1]), max(cnv1[2], cnv2[2])]
+                accumLen += overlapSize
+                cnvs2.pop(i-count)
+                tmpCnv[-1] = ','.join([tmpCnv[-1], cnv2[-1]])
+                count += 1
+                cnv1 = tmpCnv
 
         tmpTools = set(cnv1[-1].split(','))
         cnv1.append(len(tmpTools))

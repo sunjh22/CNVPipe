@@ -10,7 +10,7 @@ if config['params']['binSize'] < 8000:
     rule merge_CNVCall:
         input:
             bed = expand(
-                "res/{tool}/{sample}.bed", tool = ['cnvkit', 'delly', 'mops', 'cnvpytor', 'smoove'],
+                "res/{tool}/{sample}.bed", tool = ['smoove', 'delly', 'cnvkit', 'cnvpytor', 'mops'],
                 allow_missing=True
             ),
         output:
@@ -25,7 +25,7 @@ else:
     rule merge_CNVCall_lowDepth:
         input:
             bed = expand(
-                "res/{tool}/{sample}.bed", tool = ['cnvkit', 'mops', 'cnvpytor'],
+                "res/{tool}/{sample}.bed", tool = ['mops', 'cnvkit', 'cnvpytor'],
                 allow_missing=True
             ),
         output:
