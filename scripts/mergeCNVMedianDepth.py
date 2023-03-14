@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-# This merge script is used for low-depth data, as delly and smoove work not well on them. We will
-# only merge CNV calling results from cnvkit, cnvpytor and cn.mops, and assign 'accumulative Score' 
-# (1. AS).
+# This merge script is used for median-depth data (between 0.5x and 5x depth).
+# We will merge CNV calling results from mops, cnvkit, delly, cnvpytor and smoove. 
+# Assign 'accumulative Score'(1. AS).
 
 import sys
 import os
@@ -27,15 +27,17 @@ if __name__ == "__main__":
     
     mops = sys.argv[1]
     cnvkit = sys.argv[2]
-    cnvpytor = sys.argv[3]
-    outputFile = sys.argv[4]
+    delly = sys.argv[3]
+    cnvpytor = sys.argv[4]
+    smoove = sys.argv[5]
+    outputFile = sys.argv[6]
 
     sample = os.path.basename(mops).split('.')[0]
 
     # there is priority for keeping CNVs when merging
-    cnvfiles = [mops, cnvkit, cnvpytor]
+    cnvfiles = [mops, cnvkit, delly, cnvpytor, smoove]
     print('Merging CNV results from: ', cnvfiles)
-    cnvtools = ['mops', 'cnvkit', 'cnvpytor']
+    cnvtools = ['mops', 'cnvkit', 'delly', 'cnvpytor', 'smoove']
 
     overlapPropThreshold = 0.3
     cnvs = []

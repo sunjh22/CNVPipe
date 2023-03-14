@@ -78,7 +78,7 @@ rule delly_convert:
         "../envs/delly.yaml"
     shell:
         "bcftools query -f '%FILTER\t%CHROM\t%POS\t%INFO/END[\t%CN]\t%QUAL\n' {input} | "
-        "grep 'PASS' | cut -f 2- | awk '$4 !=2 {print$0}' > {output}"
+        "grep 'PASS' | cut -f 2- | awk '$4 !=2 {{print$0}}' > {output}"
 
 rule all_delly:
     input:

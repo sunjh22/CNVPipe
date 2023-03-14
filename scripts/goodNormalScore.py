@@ -1,7 +1,32 @@
 #! /usr/bin/env python
 
 import sys
-from mergeCNV import overlapLen
+
+def overlap(cnv1, cnv2):
+    '''Calculate overlap proportion of two CNVs, return True if it is larger than some threshold
+    - cnv1: ground truth CNV
+    - cnv2: detected CNV
+    - return: size of overlapped region between two CNVs
+    '''
+
+    c1, s1, e1 = cnv1[0], int(cnv1[1]), int(cnv1[2])
+    c2, s2, e2 = cnv2[0], int(cnv2[1]), int(cnv2[2])
+    cnvLen1, cnvLen2 = e1 - s1, e2 - s2
+    overlap = 0
+    assert cnvLen1 > 0 and cnvLen2 > 0, "The length of CNV is < 0, something wrong!"
+    if c1 == c2:
+        if s2 <= s1 < e1 <= e2:
+            overlap = e1 - s1
+        elif s2 <= s1 <= e2 < e1:
+            overlap = e2 - s1
+        elif s1 <= s2 < e2 <= e1:
+            overlap = e2 - s2
+        elif s1 < s2 <= e1 <= e2:
+            overlap = e1 - s2
+        else:
+            pass
+
+    return overlap
 
 def readRegionFile(infile):
     bad = []
@@ -28,7 +53,7 @@ def calculateOverlapScore(target_cnv, cnv_list, reciprocal_prop):
 
     for cnv in cnv_list:
         cnvSize = int(cnv[2]) - int(cnv[1])
-        overlapSize = overlapLen(target_cnv, cnv)
+        overlapSize = overlap(target_cnv, cnv)
         overlapProp = max(overlapSize/targetSize, overlapSize/cnvSize)
         if overlapProp > reciprocal_prop:
             i += 1

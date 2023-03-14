@@ -128,6 +128,8 @@ sample25-30 are 0.5X. sample31-36 are 5X.
 
     parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/0.1X -a sample{} -c 0.05 -e 1000000 -b 500000 -B 3000000 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 19 20 21 22 23 24
 
+    parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/0.5X -a sample{} -c 0.25 -e 500000 -b 50000 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 25 26 27 28 29 30 &
+
     parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/5X -a sample{} -c 2.5 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 31 32 33 34 35 36 &
 
 To simulate control samples, directly use reference genome.
@@ -670,6 +672,9 @@ The final CNV set file is in `res/merge/sample.final.bed`.
 Tools pending for test:
 1. wally - https://github.com/tobiasrausch/wally
 
+    mamba install -c bioconda samplot
+    time samplot plot -n sample7 sample8 sample9 -b mapped/sample7.bam mapped/sample8.bam mapped/sample9.bam -o test.png -c chr1 -s 8571601 -e 8697599 -t DEL
+    time samplot plot -n sample7 sample8 sample9 -b mapped/sample7.bam mapped/sample8.bam mapped/sample9.bam -c chr1 -s 8571601 -e 8697599 -t DEL -w 10000 -T ~/data3/refs/hg38/annotations/Homo_sapiens.GRCh38.109.sort.gff3.gz -A ~/data3/refs/hg38/annotations/rmsk.bed.gz ~/data3/refs/hg38/annotations/k100.Umap.MultiTrackMappability.bed.gz -o test4.png
 
 ## 03. Evaluate performance on simulation data
 
@@ -1003,6 +1008,28 @@ later one. Therefore, here we will only include deletions and duplications
     grep --color=never HG00733 nstd152.GRCh38.variant_call.tsv | cut -f 3,8,11,14 | egrep --color=never '^(deletion|duplication)' | awk '$4-$3>1000 {OFS="\t"; print "chr"$2,$3,$4,$1}' | sort -Vk 1 -k 2,3n | grep -v inversion > HG00733-SVset.1kb.bed
     grep --color=never NA19240 nstd152.GRCh38.variant_call.tsv | cut -f 3,8,11,14 | egrep --color=never '^(deletion|duplication)' | awk '$4-$3>1000 {OFS="\t"; print "chr"$2,$3,$4,$1}' | sort -Vk 1 -k 2,3n | grep -v inversion > NA19240-SVset.1kb.bed
 
+### Downsample all real WGS data into 10x
+
+    seqkit sample -s 110 -p 0.33 samples/CHM13_1.fq.gz -o ../realAnalysis-10x/samples/CHM13_1.fq.gz &
+    seqkit sample -s 110 -p 0.33 samples/CHM13_2.fq.gz -o ../realAnalysis-10x/samples/CHM13_2.fq.gz &
+    seqkit sample -s 110 -p 0.23 samples/AK1_1.fq.gz -o ../realAnalysis-10x/samples/AK1_1.fq.gz &
+    seqkit sample -s 110 -p 0.23 samples/AK1_2.fq.gz -o ../realAnalysis-10x/samples/AK1_2.fq.gz &
+    seqkit sample -s 110 -p 0.3 samples/NA12878-1_1.fq.gz -o ../realAnalysis-10x/samples/NA12878-1_1.fq.gz &
+    seqkit sample -s 110 -p 0.3 samples/NA12878-1_2.fq.gz -o ../realAnalysis-10x/samples/NA12878-1_2.fq.gz &
+    seqkit sample -s 110 -p 0.25 samples/NA12878-2_1.fq.gz -o ../realAnalysis-10x/samples/NA12878-2_1.fq.gz &
+    seqkit sample -s 110 -p 0.25 samples/NA12878-2_2.fq.gz -o ../realAnalysis-10x/samples/NA12878-2_2.fq.gz &
+    seqkit sample -s 110 -p 0.37 samples/HG002_1.fq.gz -o ../realAnalysis-10x/samples/HG002_1.fq.gz &
+    seqkit sample -s 110 -p 0.37 samples/HG002_2.fq.gz -o ../realAnalysis-10x/samples/HG002_2.fq.gz &
+    seqkit sample -s 110 -p 0.23 samples/HG00514_1.fq.gz -o ../realAnalysis-10x/samples/HG00514_1.fq.gz &
+    seqkit sample -s 110 -p 0.23 samples/HG00514_2.fq.gz -o ../realAnalysis-10x/samples/HG00514_2.fq.gz &
+    seqkit sample -s 110 -p 0.3 samples/HG00733_1.fq.gz -o ../realAnalysis-10x/samples/HG00733_1.fq.gz &
+    seqkit sample -s 110 -p 0.3 samples/HG00733_2.fq.gz -o ../realAnalysis-10x/samples/HG00733_2.fq.gz &
+    seqkit sample -s 110 -p 0.23 samples/NA19240_1.fq.gz -o ../realAnalysis-10x/samples/NA19240_1.fq.gz &
+    seqkit sample -s 110 -p 0.23 samples/NA19240_2.fq.gz -o ../realAnalysis-10x/samples/NA19240_2.fq.gz &
+    seqkit sample -s 110 -p 0.33 samples/sample13_1.fq.gz -o ../realAnalysis-10x/samples/sample13_1.fq.gz &
+    seqkit sample -s 110 -p 0.33 samples/sample13_2.fq.gz -o ../realAnalysis-10x/samples/sample13_2.fq.gz &
+    seqkit sample -s 110 -p 0.33 samples/sample14_1.fq.gz -o ../realAnalysis-10x/samples/sample14_1.fq.gz &
+    seqkit sample -s 110 -p 0.33 samples/sample14_2.fq.gz -o ../realAnalysis-10x/samples/sample14_2.fq.gz &
 
 ### Run CNVPipe
 

@@ -2,12 +2,13 @@
 #     Assign various scores to CNV
 # =================================================================================================
 
-# Merge CNV calls from 5 tools, if two CNVs have overlaps, we extend the breakpoints.
+# Merge CNV calls from 5 tools according to the read depth.
+# if RD < 0.5x: merge cn.mops, cnvkit and cnvpytor
+# if 0.5x < RD < 5x: merge cn.mops, cnvkit, delly, cnvpytor and smoove
+# if RD > 5x: merge smoove, delly, cnvkit, cnvpytor, mops
 # Assign 'accumulative score' (1. AS)
-# If binSize is larger than 8k, which means read depth is lower than 5x, Delly and Smoove
-# works not well, thus we will only merge the results from cnvkit, cnvpytor and cn.mops
 if config['params']['binSize'] < 8000:
-    rule merge_CNVCall:
+    rule merge_CNVCall_highDepth:
         input:
             bed = expand(
                 "res/{tool}/{sample}.bed", tool = ['smoove', 'delly', 'cnvkit', 'cnvpytor', 'mops'],
@@ -21,6 +22,21 @@ if config['params']['binSize'] < 8000:
             "logs/merge/{sample}.merge.log"
         shell:
             "python {params.absPath}/scripts/mergeCNV.py {input.bed} {output} >{log} 2>&1"
+elif 8000 < config['params']['binSize'] < 80000:
+    rule merge_CNVCall_medianDepth:
+        input:
+            bed = expand(
+                "res/{tool}/{sample}.bed", tool = ['mops', 'cnvkit', 'delly', 'cnvpytor', 'smoove'],
+                allow_missing=True
+            ),
+        output:
+            "res/merge/{sample}.merged.bed",
+        params:
+            absPath = config['params']['absPath']
+        log:
+            "logs/merge/{sample}.merge.log"
+        shell:
+            "python {params.absPath}/scripts/mergeCNVMedianDepth.py {input.bed} {output} >{log} 2>&1"
 else:
     rule merge_CNVCall_lowDepth:
         input:

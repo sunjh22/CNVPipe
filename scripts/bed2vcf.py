@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Transform merged CNV from bed format to vcf format for duphold analysis
+# Transform merged CNV list from bed format into vcf format for duphold analysis
 
 import sys
 from datetime import date

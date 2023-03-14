@@ -205,10 +205,7 @@ def evaluateHelper(truthFile, tools, fold, outputFile, sampleID):
             if not os.path.exists(callFile):
                 print(fold, 'sample'+sampleID, tool, 0.001, 0.001, sep='\t', file=outputFile)
                 continue
-            if fold in ['0.1x', '0.5x']:
-                sensitivity, fdr = evaluate4LowDepth(truthFile=truthFile, callFile=callFile, Type=tool)
-            else:
-                sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
+            sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
             print(fold, 'sample'+sampleID, tool, sensitivity, fdr, sep='\t', file=outputFile)
     print('Finished for {:s} fold.'.format(fold))
 
@@ -221,7 +218,7 @@ if __name__ == "__main__":
 
     tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
 
-    for i in range(1,31):
+    for i in range(1,37):
         truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
         if 1 <= i <= 6:
             evaluateHelper(truthFile=truthFile, tools=tools, fold='1x', outputFile=out, sampleID=str(i))
@@ -231,9 +228,8 @@ if __name__ == "__main__":
             evaluateHelper(truthFile=truthFile, tools=tools, fold='30x', outputFile=out, sampleID=str(i))
         elif 19 <= i <= 24:
             evaluateHelper(truthFile=truthFile, tools=tools, fold='0.1x', outputFile=out, sampleID=str(i))
-        else:
+        elif 25 <= i <= 30:
             evaluateHelper(truthFile=truthFile, tools=tools, fold='0.5x', outputFile=out, sampleID=str(i))
+        else:
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='5x', outputFile=out, sampleID=str(i))
 
-    # for i in range(25,31):
-    #     truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
-    #     evaluateHelper(truthFile=truthFile, tools=tools, fold='0.5x', outputFile=out)

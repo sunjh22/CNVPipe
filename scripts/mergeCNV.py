@@ -63,9 +63,10 @@ if __name__ == "__main__":
 
     # there is priority for keeping CNVs when merging
     cnvfiles = [smoove, delly, cnvkit, cnvpytor, mops]
+    print('Merging CNV results from: ', cnvfiles)
     cnvtools = ['smoove', 'delly', 'cnvkit', 'cnvpytor', 'mops']
 
-    overlapPropThreshold = 0.5
+    overlapPropThreshold = 0.3
     cnvs = []
     for i, cnvfile in enumerate(cnvfiles):
         for cnv in readFile(cnvfile):

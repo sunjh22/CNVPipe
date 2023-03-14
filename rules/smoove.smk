@@ -63,7 +63,7 @@ rule smoove_call:
 #         "$4==\"DUP\" && $8>1.3 {{print $1,$2,$3,3,$5\"|\"$7\"|\"$8}}' > {output}"
 
 # Extract all CNVs (DUP and DEL) and do the filtering after merging.
-# Smoove might produce some contradict calls for the same region, indicating they are noisy or 
+# Smoove might produce some contradictary calls for the same region, indicating they are noisy or 
 # complicated, we will just remove these regions before downstream filtering.
 rule smoove_convert:
     input:

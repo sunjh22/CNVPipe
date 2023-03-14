@@ -2,6 +2,7 @@
 #     SNP calling by freebayes
 # =================================================================================================
 
+# In what depth freebayes could provide good results?
 rule freebayes_call:
     input:
         "mapped/{sample}.bam.bai",
