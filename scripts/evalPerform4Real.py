@@ -42,7 +42,7 @@ def overlap(cnv1, cnv2):
     
     cnvProp1 = round((overlap/cnvLen1), 2)
     cnvProp2 = round((overlap/cnvLen2), 2)
-    # if cnvProp1 > 0.8 and cnvProp2 > 0.8:
+    # if min(cnvProp1, cnvProp2) > 0.5:
     if cnvProp1 >= 0.5:
         return True
     else:
@@ -74,7 +74,8 @@ def evaluate(truthFile, callFile, Type):
                 toolName = x[7].split(',')
                 toolNum = int(x[8])
                 cnvfilter = x[9]
-                if (toolNum >= toolNumThe or 'smoove' in toolName) and dupholdScore >= dupholdScoreThe and cnvfilter == 'True':
+                if (toolNum >= toolNumThe or 'smoove' in toolName or 'delly' in toolName) and cnvfilter == 'True':
+                #and dupholdScore >= dupholdScoreThe and cnvfilter == 'True':
                 # if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
                     callCnvs.append(cnv)
             else:
@@ -116,7 +117,9 @@ def evaluate(truthFile, callFile, Type):
 
     sensitivity = round(len(tp)/truthCnvLen, 2)
     fdr = round((callCnvLen-len(observTP))/callCnvLen, 2)
-    return(sensitivity, fdr)
+    precision = round(len(observTP)/callCnvLen, 2)
+    FScore = 2 / (1/sensitivity + 1/precision)
+    return(sensitivity, fdr, FScore)
 
 
 def evaluateHelper(truthFile, tools, sampleID, outputFile):
@@ -124,23 +127,23 @@ def evaluateHelper(truthFile, tools, sampleID, outputFile):
         if tool == 'merge':
             callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/res/' + tool + '/' + \
                 sampleID + '.final.bed'
-            sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
-            print(sampleID, tool, sensitivity, fdr, sep='\t')
-            print(sampleID, tool, sensitivity, fdr, sep='\t', file=outputFile)
+            sensitivity, fdr, Fscore = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
+            print(sampleID, tool, sensitivity, fdr, Fscore, sep='\t')
+            print(sampleID, tool, sensitivity, fdr, Fscore, sep='\t', file=outputFile)
         else:
             callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/res/' + tool + '/' + \
                 sampleID + '.bed'
-            sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
-            print(sampleID, tool, sensitivity, fdr, sep='\t')
-            print(sampleID, tool, sensitivity, fdr, sep='\t', file=outputFile)
+            sensitivity, fdr, Fscore = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
+            print(sampleID, tool, sensitivity, fdr, Fscore, sep='\t')
+            print(sampleID, tool, sensitivity, fdr, Fscore, sep='\t', file=outputFile)
 
 
 if __name__ == "__main__":
 
     outputFile = sys.argv[1]
     out = open(outputFile, 'w')
-    print('sample', 'tool', 'sensitivity', 'FDR', sep='\t')
-    print('sample', 'tool', 'sensitivity', 'FDR', sep='\t', file=out)
+    print('sample', 'tool', 'sensitivity', 'FDR', "Fscore", sep='\t')
+    print('sample', 'tool', 'sensitivity', 'FDR', "Fscore", sep='\t', file=out)
 
     tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
     samples = ['NA12878-1', 'NA12878-2', 'CHM13', 'AK1', 'HG002', 'HG00514', 'HG00733', 'NA19240', 'sample13', 'sample14']

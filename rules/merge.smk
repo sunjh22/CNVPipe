@@ -3,8 +3,8 @@
 # =================================================================================================
 
 # Merge CNV calls from 5 tools according to the read depth.
-# if RD < 0.5x: merge cn.mops, cnvkit and cnvpytor
-# if 0.5x < RD < 5x: merge cn.mops, cnvkit, delly, cnvpytor and smoove
+# if RD < 1x: merge cn.mops, cnvkit and cnvpytor
+# if 1x < RD < 5x: merge cn.mops, cnvkit, delly, cnvpytor and smoove
 # if RD > 5x: merge smoove, delly, cnvkit, cnvpytor, mops
 # Assign 'accumulative score' (1. AS)
 if config['params']['binSize'] < 8000:
@@ -22,7 +22,7 @@ if config['params']['binSize'] < 8000:
             "logs/merge/{sample}.merge.log"
         shell:
             "python {params.absPath}/scripts/mergeCNV.py {input.bed} {output} >{log} 2>&1"
-elif 8000 < config['params']['binSize'] < 80000:
+elif 8000 < config['params']['binSize'] < 40000:
     rule merge_CNVCall_medianDepth:
         input:
             bed = expand(

@@ -22,16 +22,20 @@ with open(inputFile, 'r') as f, open(outputFile, 'w') as g:
             cnv = 'deletion'
             if dhffc <= 0.5:
                 score = 100
-            elif 0.5 < dhffc < 0.7:
-                score = 90
+            elif 0.5 < dhffc <= 0.7:
+                score = 80
+            elif 0.7 < dhffc < 0.99:
+                score = 50
             else:
-                score = 30
+                score = 0
         else:
             cnv = 'duplication'
             if dhbfc >= 1.5:
                 score = 100
-            elif 1.3 < dhbfc < 1.5:
-                score = 90
+            elif 1.3 <= dhbfc < 1.5:
+                score = 80
+            elif 1.01 < dhbfc < 1.3:
+                score = 50
             else:
-                score = 30
+                score = 0
         print(chrom, start, end, cn, cnv, aScore, score, toolName, toolNum, spl, sep='\t', file=g)

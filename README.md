@@ -1031,6 +1031,27 @@ later one. Therefore, here we will only include deletions and duplications
     seqkit sample -s 110 -p 0.33 samples/sample14_1.fq.gz -o ../realAnalysis-10x/samples/sample14_1.fq.gz &
     seqkit sample -s 110 -p 0.33 samples/sample14_2.fq.gz -o ../realAnalysis-10x/samples/sample14_2.fq.gz &
 
+    seqkit sample -s 110 -p 0.033 samples/CHM13_1.fq.gz -o ../realAnalysis-1x/samples/CHM13_1.fq.gz &;
+    seqkit sample -s 110 -p 0.033 samples/CHM13_2.fq.gz -o ../realAnalysis-1x/samples/CHM13_2.fq.gz &
+    seqkit sample -s 110 -p 0.023 samples/AK1_1.fq.gz -o ../realAnalysis-1x/samples/AK1_1.fq.gz &
+    seqkit sample -s 110 -p 0.023 samples/AK1_2.fq.gz -o ../realAnalysis-1x/samples/AK1_2.fq.gz &
+    seqkit sample -s 110 -p 0.03 samples/NA12878-1_1.fq.gz -o ../realAnalysis-1x/samples/NA12878-1_1.fq.gz &
+    seqkit sample -s 110 -p 0.03 samples/NA12878-1_2.fq.gz -o ../realAnalysis-1x/samples/NA12878-1_2.fq.gz &
+    seqkit sample -s 110 -p 0.025 samples/NA12878-2_1.fq.gz -o ../realAnalysis-1x/samples/NA12878-2_1.fq.gz &
+    seqkit sample -s 110 -p 0.025 samples/NA12878-2_2.fq.gz -o ../realAnalysis-1x/samples/NA12878-2_2.fq.gz &
+    seqkit sample -s 110 -p 0.037 samples/HG002_1.fq.gz -o ../realAnalysis-1x/samples/HG002_1.fq.gz &
+    seqkit sample -s 110 -p 0.037 samples/HG002_2.fq.gz -o ../realAnalysis-1x/samples/HG002_2.fq.gz &
+    seqkit sample -s 110 -p 0.023 samples/HG00514_1.fq.gz -o ../realAnalysis-1x/samples/HG00514_1.fq.gz &
+    seqkit sample -s 110 -p 0.023 samples/HG00514_2.fq.gz -o ../realAnalysis-1x/samples/HG00514_2.fq.gz &
+    seqkit sample -s 110 -p 0.03 samples/HG00733_1.fq.gz -o ../realAnalysis-1x/samples/HG00733_1.fq.gz &
+    seqkit sample -s 110 -p 0.03 samples/HG00733_2.fq.gz -o ../realAnalysis-1x/samples/HG00733_2.fq.gz &
+    seqkit sample -s 110 -p 0.023 samples/NA19240_1.fq.gz -o ../realAnalysis-1x/samples/NA19240_1.fq.gz &
+    seqkit sample -s 110 -p 0.023 samples/NA19240_2.fq.gz -o ../realAnalysis-1x/samples/NA19240_2.fq.gz &
+    seqkit sample -s 110 -p 0.033 samples/sample13_1.fq.gz -o ../realAnalysis-1x/samples/sample13_1.fq.gz &
+    seqkit sample -s 110 -p 0.033 samples/sample13_2.fq.gz -o ../realAnalysis-1x/samples/sample13_2.fq.gz &
+    seqkit sample -s 110 -p 0.033 samples/sample14_1.fq.gz -o ../realAnalysis-1x/samples/sample14_1.fq.gz &
+    seqkit sample -s 110 -p 0.033 samples/sample14_2.fq.gz -o ../realAnalysis-1x/samples/sample14_2.fq.gz &
+
 ### Run CNVPipe
 
 Create soft symbolic link to `~/data3/project/CNVPipe/readAnalysis/samples`, copy config file to 

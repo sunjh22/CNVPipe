@@ -43,8 +43,8 @@ def overlap(cnv1, cnv2):
     
     cnvProp1 = round((overlap/cnvLen1), 2)
     cnvProp2 = round((overlap/cnvLen2), 2)
-    if cnvProp1 > 0.8 and cnvProp2 > 0.8:
-    # if cnvProp1 > 0.5:
+    # if min(cnvProp1, cnvProp2) > 0.5:
+    if cnvProp1 > 0.8:
         return True
     else:
         return False
@@ -75,7 +75,7 @@ def evaluate(truthFile, callFile, Type):
                 # accumScore = float(x[5])
                 # dupholdScore = float(x[6])
                 # toolNum = int(x[7])
-                toolNum = int(x[4])
+                toolNum = int(x[5])
                 if toolNum >= toolNumThe:
                 # if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
                     callCnvs.append(cnv)
