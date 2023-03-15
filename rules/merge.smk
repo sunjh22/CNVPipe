@@ -128,7 +128,7 @@ rule classifycnv_convert:
         normal_bed = rules.good_normal_score.output,
         patho_bed = rules.classifycnv_predict.output,
     output:
-        "res/merge/{sample}.final.bed"
+        "res/merge/{sample}.bed"
     params:
         absPath = config['params']['absPath']
     shell:

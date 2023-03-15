@@ -1,3 +1,4 @@
+
 #! /urs/bin/env python
 # Usage: python evalPerform4Real.py 
 
@@ -49,11 +50,13 @@ def overlap(cnv1, cnv2):
         return False
 
 
-def evaluate(truthFile, callFile, Type):
+def evaluate(truthFile, callFile, Type, dup=True):
     '''Calculate sensitivity and FDR for single tool and merged results. We generally take CNVs
     detected by more than one tool in merged results as input.
     - truthFile: a file with ground truth CNVs
     - callFile: a file with detected CNVs
+    - Type: 'merge' or other tools
+    - dup: whether the truth set of sample has duplications
     - return: sensitivity and FDR
     '''
 
@@ -69,14 +72,16 @@ def evaluate(truthFile, callFile, Type):
                 continue
             x = line.strip().split('\t')
             cnv = x[:4]
+            cn = int(cnv[3])
+            if not dup and cn > 2:
+                continue
             if Type == 'merge':
                 dupholdScore = float(x[6])
                 toolName = x[7].split(',')
                 toolNum = int(x[8])
                 cnvfilter = x[9]
-                if (toolNum >= toolNumThe or 'smoove' in toolName or 'delly' in toolName) and cnvfilter == 'True':
-                #and dupholdScore >= dupholdScoreThe and cnvfilter == 'True':
-                # if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
+                if toolNum >= toolNumThe or 'smoove' in toolName or 'delly' in toolName:
+                # if (toolNum >= toolNumThe or 'smoove' in toolName or 'delly' in toolName) and cnvfilter == 'True':
                     callCnvs.append(cnv)
             else:
                 callCnvs.append(cnv)
@@ -115,35 +120,35 @@ def evaluate(truthFile, callFile, Type):
             tp.append(cnv1)
         callCnvs = callCnvs2[:]
 
-    sensitivity = round(len(tp)/truthCnvLen, 2)
-    fdr = round((callCnvLen-len(observTP))/callCnvLen, 2)
+    sensitivity = round(len(tp)/truthCnvLen, 3)
+    fdr = round((callCnvLen-len(observTP))/callCnvLen, 3)
     precision = round(len(observTP)/callCnvLen, 2)
-    FScore = 2 / (1/sensitivity + 1/precision)
-    return(sensitivity, fdr, FScore)
+    # FScore = 2 / (1/sensitivity + 1/precision)
+    return(sensitivity, fdr)
 
 
 def evaluateHelper(truthFile, tools, sampleID, outputFile):
     for tool in tools:
-        if tool == 'merge':
-            callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/res/' + tool + '/' + \
-                sampleID + '.final.bed'
-            sensitivity, fdr, Fscore = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
-            print(sampleID, tool, sensitivity, fdr, Fscore, sep='\t')
-            print(sampleID, tool, sensitivity, fdr, Fscore, sep='\t', file=outputFile)
-        else:
-            callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/res/' + tool + '/' + \
+        callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis-10x/res/' + tool + '/' + \
                 sampleID + '.bed'
-            sensitivity, fdr, Fscore = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
-            print(sampleID, tool, sensitivity, fdr, Fscore, sep='\t')
-            print(sampleID, tool, sensitivity, fdr, Fscore, sep='\t', file=outputFile)
+        if sampleID in ['HG00514', 'HG00733', 'NA19240', 'sample13', 'sample14']:
+            sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool, dup=True)
+        else:
+            callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis-10x/res/' + tool + '/' + \
+                sampleID + '.bed'
+            sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool, dup=False)
+        
+        print(sampleID, tool, sensitivity, fdr, sep='\t')
+        print(sampleID, tool, sensitivity, fdr, sep='\t', file=outputFile)
+
 
 
 if __name__ == "__main__":
 
     outputFile = sys.argv[1]
     out = open(outputFile, 'w')
-    print('sample', 'tool', 'sensitivity', 'FDR', "Fscore", sep='\t')
-    print('sample', 'tool', 'sensitivity', 'FDR', "Fscore", sep='\t', file=out)
+    print('sample', 'tool', 'sensitivity', 'FDR', sep='\t')
+    print('sample', 'tool', 'sensitivity', 'FDR', sep='\t', file=out)
 
     tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
     samples = ['NA12878-1', 'NA12878-2', 'CHM13', 'AK1', 'HG002', 'HG00514', 'HG00733', 'NA19240', 'sample13', 'sample14']
