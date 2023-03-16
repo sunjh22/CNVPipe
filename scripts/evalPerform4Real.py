@@ -61,8 +61,8 @@ def evaluate(truthFile, callFile, Type, dup=True):
     '''
 
     # define some threshold to filter CNV for merged result
-    dupholdScoreThe = 90    # cannot be adjusted
-    toolNumThe = 2         # CNVs called by at least how many tools, equal to accumScoreThe > 0
+    dupholdScoreThe = 0    # cannot be adjusted
+    toolNumThe = 3         # CNVs called by at least how many tools, equal to accumScoreThe > 0
 
     # read detected CNVs, read more columns for CNV filtering for merged CNV set
     callCnvs = []
@@ -76,12 +76,13 @@ def evaluate(truthFile, callFile, Type, dup=True):
             if not dup and cn > 2:
                 continue
             if Type == 'merge':
-                dupholdScore = float(x[6])
+                accumScore = float(x[5])
+                dupholdScore = int(x[6])
                 toolName = x[7].split(',')
                 toolNum = int(x[8])
                 cnvfilter = x[9]
-                if toolNum >= toolNumThe or 'smoove' in toolName or 'delly' in toolName:
-                # if (toolNum >= toolNumThe or 'smoove' in toolName or 'delly' in toolName) and cnvfilter == 'True':
+                # if ((toolNum >= toolNumThe and accumScore > 70) or 'smoove' in toolName or 'delly' in toolName) and dupholdScore > 0 and cnvfilter == 'True':
+                if ('smoove' in toolName or 'delly' in toolName) and cnvfilter == 'True':
                     callCnvs.append(cnv)
             else:
                 callCnvs.append(cnv)
@@ -93,10 +94,10 @@ def evaluate(truthFile, callFile, Type, dup=True):
             if line.startswith('chrom'):
                 continue
             x = line.strip().split('\t')[:4]
-            if x[3] == 'deletion' or x[3] == 'DEL':
+            if not dup:
+                if x[3] not in ['deletion', 'DEL']:
+                    continue
                 x[3] = 1
-            else:
-                x[3] = 3
             truthCnvs.append(x)
 
     truthCnvLen = len(truthCnvs)    # number of simulated CNVs
@@ -131,7 +132,7 @@ def evaluateHelper(truthFile, tools, sampleID, outputFile):
     for tool in tools:
         callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis-10x/res/' + tool + '/' + \
                 sampleID + '.bed'
-        if sampleID in ['HG00514', 'HG00733', 'NA19240', 'sample13', 'sample14']:
+        if sampleID in ['sample13', 'sample14']:
             sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool, dup=True)
         else:
             callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis-10x/res/' + tool + '/' + \
