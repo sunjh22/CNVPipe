@@ -39,5 +39,5 @@ localrules: all
 
 rule all:
     input:
-        expand("res/merge/{sample}.final.bed", sample = config['global']['sample-names']),
+        expand("res/merge/{sample}.bed", sample = config['global']['sample-names']),
         "cleaned/multiqc-report.html",
