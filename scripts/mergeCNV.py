@@ -1,5 +1,8 @@
 #! /usr/bin/env python
 # Merge CNV calling results from 5 tools, assign 'accumulative Score' (1. AS).
+# Only for high-depth data, we use very strict overlap threshold, that is, reciprocal overlap over
+# 0.5. For median-depth and low-depth data, we use a looser one: the max overlap between two CNVs
+# over 0.3 will be counted as a true overlap, thus breakpoints will be extended.
 
 import sys
 import os
