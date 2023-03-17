@@ -4,6 +4,8 @@ if (!requireNamespace("BiocManager", quietly = TRUE)){
     install.packages("BiocManager")
 }
 
+Sys.setenv(XML_CONFIG="/usr/bin/xml2-config")
+
 if(!require("CNVfilteR", quietly=TRUE)){
     BiocManager::install("CNVfilteR", force = TRUE)
 }
@@ -37,7 +39,7 @@ cnv_gr <- loadCNVcalls(cnvs.file = cnv_file, chr.column = 'chromosome', start.co
 temp_cnv_gr <- trim(cnv_gr)
 
 # Load variant data, only 'PASS' variant will be included
-vcfs <- loadVCFs(vcf.files = vcf_file, cnvs.gr = temp_cnv_gr, min.total.depth = 1, genome = 'hg38')
+vcfs <- loadVCFs(vcf.files = vcf_file, cnvs.gr = temp_cnv_gr, min.total.depth = 5, genome = 'hg38')
 
 # Filter
 cnv_filter <- filterCNVs(temp_cnv_gr, vcfs)

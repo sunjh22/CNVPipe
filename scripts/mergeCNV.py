@@ -31,7 +31,7 @@ def overlap(cnv1, cnv2):
     
     cnvProp1 = round((overlap/cnvLen1), 2)
     cnvProp2 = round((overlap/cnvLen2), 2)
-    cnvProp = max(cnvProp1, cnvProp2)
+    cnvProp = min(cnvProp1, cnvProp2)
     return overlap, cnvProp
 
 def readFile(infile):
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     print('Merging CNV results from: ', cnvfiles)
     cnvtools = ['smoove', 'delly', 'cnvkit', 'cnvpytor', 'mops']
 
-    overlapPropThreshold = 0.3
+    overlapPropThreshold = 0.5
     cnvs = []
     for i, cnvfile in enumerate(cnvfiles):
         for cnv in readFile(cnvfile):
@@ -85,12 +85,12 @@ if __name__ == "__main__":
         for i, cnv2 in enumerate(cnvs3):
             # see if two cnvs have overlap
             overlapSize, overlapProp = overlap(cnv1[:4], cnv2[:4])
-            if overlapProp == 0:
+            if overlapProp < overlapPropThreshold:
                 continue
             # if yes but overlap proportion is less than a threshold, keep former one and pop out later one
-            elif 0 < overlapProp < overlapPropThreshold:
-                cnvs2.pop(i-count)
-                count += 1
+            # elif 0 < overlapProp < overlapPropThreshold:
+            #     cnvs2.pop(i-count)
+            #     count += 1
             # if overlap proportion is larger than the threshold, extend breakpoints
             else:
                 assert cnv1[-1] != cnv2[-1], "Overlapped CNV from same tool {:s}! Please make sure these conflicts are solved before merging".format(cnv1[-1])

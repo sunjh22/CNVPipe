@@ -1,4 +1,3 @@
-
 #! /urs/bin/env python
 # Usage: python evalPerform4Real.py 
 
@@ -62,7 +61,7 @@ def evaluate(truthFile, callFile, Type, dup=True):
 
     # define some threshold to filter CNV for merged result
     dupholdScoreThe = 0    # cannot be adjusted
-    toolNumThe = 3         # CNVs called by at least how many tools, equal to accumScoreThe > 0
+    toolNumThe = 4         # CNVs called by at least how many tools, equal to accumScoreThe > 0
 
     # read detected CNVs, read more columns for CNV filtering for merged CNV set
     callCnvs = []
@@ -81,8 +80,9 @@ def evaluate(truthFile, callFile, Type, dup=True):
                 toolName = x[7].split(',')
                 toolNum = int(x[8])
                 cnvfilter = x[9]
-                # if ((toolNum >= toolNumThe and accumScore > 70) or 'smoove' in toolName or 'delly' in toolName) and dupholdScore > 0 and cnvfilter == 'True':
-                if ('smoove' in toolName or 'delly' in toolName) and cnvfilter == 'True':
+                # if (toolNum >= toolNumThe or 'smoove' in toolName or 'delly' in toolName) and dupholdScore > 0 and cnvfilter == 'True':
+                # if 'smoove' in toolName and dupholdScore>0:
+                if ('smoove' in toolName or 'delly' in toolName) and dupholdScore > 0:
                     callCnvs.append(cnv)
             else:
                 callCnvs.append(cnv)
@@ -98,6 +98,13 @@ def evaluate(truthFile, callFile, Type, dup=True):
                 if x[3] not in ['deletion', 'DEL']:
                     continue
                 x[3] = 1
+            else:
+                if x[3] in ['deletion', 'DEL']:
+                    x[3] = 1
+                elif x[3] in ['duplication', 'DUP']:
+                    x[3] = 3
+                else:
+                    pass
             truthCnvs.append(x)
 
     truthCnvLen = len(truthCnvs)    # number of simulated CNVs
@@ -122,20 +129,22 @@ def evaluate(truthFile, callFile, Type, dup=True):
         callCnvs = callCnvs2[:]
 
     sensitivity = round(len(tp)/truthCnvLen, 3)
+    if callCnvLen == 0:
+        return sensitivity, 1
     fdr = round((callCnvLen-len(observTP))/callCnvLen, 3)
     precision = round(len(observTP)/callCnvLen, 2)
     # FScore = 2 / (1/sensitivity + 1/precision)
-    return(sensitivity, fdr)
+    return sensitivity, fdr
 
 
 def evaluateHelper(truthFile, tools, sampleID, outputFile):
     for tool in tools:
-        callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis-10x/res/' + tool + '/' + \
+        callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis-1x/res/' + tool + '/' + \
                 sampleID + '.bed'
         if sampleID in ['sample13', 'sample14']:
             sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool, dup=True)
         else:
-            callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis-10x/res/' + tool + '/' + \
+            callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis-1x/res/' + tool + '/' + \
                 sampleID + '.bed'
             sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool, dup=False)
         
@@ -153,6 +162,7 @@ if __name__ == "__main__":
 
     tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
     samples = ['NA12878-1', 'NA12878-2', 'CHM13', 'AK1', 'HG002', 'HG00514', 'HG00733', 'NA19240', 'sample13', 'sample14']
+    # samples = ['NA12878-1', 'AK1']
 
     for sampleID in samples:
         truthFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/truthSet/' + sampleID + '-SVset.1kb.bed'

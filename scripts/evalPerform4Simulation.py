@@ -44,7 +44,7 @@ def overlap(cnv1, cnv2):
     cnvProp1 = round((overlap/cnvLen1), 2)
     cnvProp2 = round((overlap/cnvLen2), 2)
     # if min(cnvProp1, cnvProp2) > 0.5:
-    if cnvProp1 > 0.8:
+    if cnvProp1 > 0.5:
         return True
     else:
         return False
