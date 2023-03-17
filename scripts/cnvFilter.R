@@ -1,5 +1,8 @@
 #!/usr/bin/env Rscript
 
+options("repos" = c(CRAN="https://mirror-hk.koddos.net/CRAN/"))
+options(BioC_mirror="https://mirrors.tuna.tsinghua.edu.cn/bioconductor/")
+
 if (!requireNamespace("BiocManager", quietly = TRUE)){
     install.packages("BiocManager")
 }
