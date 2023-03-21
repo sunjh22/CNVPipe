@@ -1172,6 +1172,8 @@ When using GATK VariantRecalibrator, sample 22562 has an error: A USER ERROR has
 
 It worked when I use `--max-gaussians 3`.
 
+cnvfilter env: /ubda/home/19044464r/biosoft/conda-env-cnvpipe/fd204c6d09c55bd8aea2c675d1feee08_
+
 
 ### 05.3 Test for SNP calling
 

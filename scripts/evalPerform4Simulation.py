@@ -15,6 +15,8 @@
 
 import sys
 import os
+import pandas as pd
+import joblib
 
 def overlap(cnv1, cnv2):
     '''Calculate overlap proportion of two CNVs, return True if it is larger than some threshold
@@ -50,6 +52,15 @@ def overlap(cnv1, cnv2):
         return False
 
 
+def readCNV4Merge(sample_file):
+    sample_data_in = pd.read_csv(sample_file, sep='\t', skiprows=1, names=['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter'], usecols=[5,6,7,8,9])
+    sample_data = sample_data_in.copy()
+    sample_data.loc[:, 'cnvfilter'] = [0 if x==True else 1 for x in sample_data_in['cnvfilter']]
+    toolScore = {'smoove': 5, 'delly': 4, 'cnvkit': 3, 'cnvpytor': 2, 'mops': 1}
+    sample_data.loc[:, 'tools'] = [sum(toolScore[t] for t in set(x.split(','))) for x in sample_data_in['tools']]
+    return sample_data
+
+
 def evaluate(truthFile, callFile, Type):
     '''Calculate sensitivity and FDR for single tool and merged results. We generally take CNVs
     detected by more than one tool in merged results as input.
@@ -71,16 +82,30 @@ def evaluate(truthFile, callFile, Type):
                 continue
             x = line.strip().split('\t')
             cnv = x[:4]
-            if Type == 'merge':
-                # accumScore = float(x[5])
-                # dupholdScore = float(x[6])
-                # toolNum = int(x[7])
-                toolNum = int(x[5])
-                if toolNum >= toolNumThe:
-                # if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
-                    callCnvs.append(cnv)
-            else:
-                callCnvs.append(cnv)
+            callCnvs.append(cnv)
+            # if Type == 'merge':
+            #     # accumScore = float(x[5])
+            #     # dupholdScore = float(x[6])
+            #     # toolNum = int(x[7])
+            #     toolNum = int(x[5])
+            #     if toolNum >= toolNumThe:
+            #     # if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
+            #         callCnvs.append(cnv)
+            # else:
+            #     callCnvs.append(cnv)
+
+    # SVM method
+    if Type == 'merge':
+        print("Number of copy number deletions:", len(callCnvs))
+        tmp_callCnvs = []
+        clf = joblib.load("/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_0.5x.pkl")
+        allCnvs = readCNV4Merge(sample_file=callFile)
+        predictions = clf.predict(allCnvs)
+        print("Number of CNVs input into SVM:", len(predictions))
+        for idx, label in enumerate(predictions):
+            if label == 'T':
+                tmp_callCnvs.append(callCnvs[idx])
+        callCnvs = tmp_callCnvs[:]
 
     # read ground truth CNVs
     truthCnvs = []
@@ -138,21 +163,35 @@ def evaluate4LowDepth(truthFile, callFile, Type):
                 continue
             x = line.strip().split('\t')
             cnv = x[:4]
-            if Type == 'merge':
+            callCnvs.append(cnv)
+            # if Type == 'merge':
 
-                # for sample.final.bed
-                # accumScore = float(x[5])
-                # dupholdScore = float(x[6])
-                # toolNum = int(x[7])
+            #     # for sample.final.bed
+            #     # accumScore = float(x[5])
+            #     # dupholdScore = float(x[6])
+            #     # toolNum = int(x[7])
 
-                # for sample.merged.bed
-                toolNum = int(x[5])
-                toolName = x[4].split(',')
-                if toolNum >= toolNumThe or 'mops' in toolName:
-                # if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
-                    callCnvs.append(cnv)
-            else:
-                callCnvs.append(cnv)
+            #     # for sample.merged.bed
+            #     toolNum = int(x[5])
+            #     toolName = x[4].split(',')
+            #     if toolNum >= toolNumThe or 'mops' in toolName:
+            #     # if toolNum > 2 or (toolNum==2 and dupholdScore > dupholdScoreThe):
+            #         callCnvs.append(cnv)
+            # else:
+            #     callCnvs.append(cnv)
+    
+    # SVM method
+    if Type == 'merge':
+        print("Number of copy number deletions:", len(callCnvs))
+        tmp_callCnvs = []
+        clf = joblib.load("/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_0.5x.pkl")
+        allCnvs = readCNV4Merge(sample_file=callFile)
+        predictions = clf.predict(allCnvs)
+        print("Number of CNVs input into SVM:", len(predictions))
+        for idx, label in enumerate(predictions):
+            if label == 'T':
+                tmp_callCnvs.append(callCnvs[idx])
+        callCnvs = tmp_callCnvs[:]
 
     # read ground truth CNVs
     truthCnvs = []
@@ -193,7 +232,7 @@ def evaluateHelper(truthFile, tools, fold, outputFile, sampleID):
     for tool in tools:
         if tool == 'merge':
             callFile = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/res/' + tool + '/sample' + \
-                sampleID + '.merged.bed'
+                sampleID + '.bed'
             if fold in ['0.1x', '0.5x']:
                 sensitivity, fdr = evaluate4LowDepth(truthFile=truthFile, callFile=callFile, Type=tool)
             else:
@@ -218,18 +257,21 @@ if __name__ == "__main__":
 
     tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
 
-    for i in range(1,37):
+    for i in range(25,31):
         truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
-        if 1 <= i <= 6:
-            evaluateHelper(truthFile=truthFile, tools=tools, fold='1x', outputFile=out, sampleID=str(i))
-        elif 7 <= i <= 12:
-            evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out, sampleID=str(i))
-        elif 13 <= i <= 18:
-            evaluateHelper(truthFile=truthFile, tools=tools, fold='30x', outputFile=out, sampleID=str(i))
-        elif 19 <= i <= 24:
-            evaluateHelper(truthFile=truthFile, tools=tools, fold='0.1x', outputFile=out, sampleID=str(i))
-        elif 25 <= i <= 30:
-            evaluateHelper(truthFile=truthFile, tools=tools, fold='0.5x', outputFile=out, sampleID=str(i))
-        else:
-            evaluateHelper(truthFile=truthFile, tools=tools, fold='5x', outputFile=out, sampleID=str(i))
+        evaluateHelper(truthFile=truthFile, tools=tools, fold='0.5x', outputFile=out, sampleID=str(i))
+    # for i in range(1,37):
+    #     truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
+    #     if 1 <= i <= 6:
+    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='1x', outputFile=out, sampleID=str(i))
+    #     elif 7 <= i <= 12:
+    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out, sampleID=str(i))
+    #     elif 13 <= i <= 18:
+    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='30x', outputFile=out, sampleID=str(i))
+    #     elif 19 <= i <= 24:
+    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='0.1x', outputFile=out, sampleID=str(i))
+    #     elif 25 <= i <= 30:
+    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='0.5x', outputFile=out, sampleID=str(i))
+    #     else:
+    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='5x', outputFile=out, sampleID=str(i))
 

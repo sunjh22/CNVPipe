@@ -73,8 +73,8 @@ if config['settings']['gatk-snp'] and config['params']['binSize'] < 4000:
             absPath = config['params']['absPath']
         log:
             "logs/cnvfilter/{sample}.log"
-        conda:
-            "../envs/cnvfilter.yaml"
+        # conda:
+        #     "../envs/cnvfilter.yaml"
         shell:
             "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} > {log} 2>&1"
 else:
@@ -88,8 +88,8 @@ else:
             absPath = config['params']['absPath']
         log:
             "logs/cnvfilter/{sample}.log"
-        conda:
-            "../envs/cnvfilter.yaml"
+        # conda:
+        #     "../envs/cnvfilter.yaml"
         shell:
             "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} > {log} 2>&1"
 

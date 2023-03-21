@@ -12,11 +12,6 @@
 # FDR = # of false positive CNVs / # of all detected CNVs
 # In this case, recall = sensitivity, precision = 1 - FDR.
 
-import sys
-import os
-import pandas as pd
-import joblib
-
 def overlap(cnv1, cnv2):
     '''Calculate overlap proportion of two CNVs, return True if it is larger than some threshold
     - cnv1: ground truth CNV
@@ -51,29 +46,16 @@ def overlap(cnv1, cnv2):
         return False
 
 
-def readCNV4Merge(sample_file):
-    sample_data_in = pd.read_csv(sample_file, sep='\t', skiprows=1, names=['cn', 'accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter'], usecols=[3,5,6,7,8,9])
-    sample_data_in = sample_data_in.query('cn < 2')
-    sample_data = sample_data_in.copy()
-    sample_data.loc[:, 'cnvfilter'] = [0 if x==True else 1 for x in sample_data_in['cnvfilter']]
-    toolScore = {'smoove': 5, 'delly': 4, 'cnvkit': 3, 'cnvpytor': 2, 'mops': 1}
-    sample_data.loc[:, 'tools'] = [sum(toolScore[t] for t in set(x.split(','))) for x in sample_data_in['tools']]
-    sample_data = sample_data.drop(columns='cn')
-    return sample_data
-
-
-def evaluate(truthFile, callFile, Type, dup=True):
+def evaluate(truthFile, callFile, outputFile1, outputFile2, dup=True):
     '''Calculate sensitivity and FDR for single tool and merged results. We generally take CNVs
     detected by more than one tool in merged results as input.
     - truthFile: a file with ground truth CNVs
     - callFile: a file with detected CNVs
-    - Type: 'merge' or other tools
-    - dup: whether the truth set of sample has duplications
     - return: sensitivity and FDR
     '''
 
     # define some threshold to filter CNV for merged result
-    dupholdScoreThe = 0    # cannot be adjusted
+    dupholdScoreThe = 90    # cannot be adjusted
     toolNumThe = 4         # CNVs called by at least how many tools, equal to accumScoreThe > 0
 
     # read detected CNVs, read more columns for CNV filtering for merged CNV set
@@ -83,39 +65,18 @@ def evaluate(truthFile, callFile, Type, dup=True):
             if line.startswith('chrom'):
                 continue
             x = line.strip().split('\t')
-            cnv = x[:4]
-            cn = int(cnv[3])
+            dupholdScore = float(x[6])
+            toolName = x[7].split(',')
+            toolNum = int(x[8])
+            cnvfilter = x[9]
+            cn = int(x[3])
             if not dup and cn > 2:
                 continue
-            callCnvs.append(cnv)
+            callCnvs.append(x)
+            # if (toolNum >= toolNumThe or 'smoove' in toolName or 'delly' in toolName) and dupholdScore > 0:
+            # if (toolNum >= toolNumThe or 'smoove' in toolName or 'delly' in toolName) and cnvfilter == 'True':
+                # callCnvs.append(x)
 
-            # brute-force method
-            # if Type == 'merge':
-            #     accumScore = float(x[5])
-            #     dupholdScore = int(x[6])
-            #     toolName = x[7].split(',')
-            #     toolNum = int(x[8])
-            #     cnvfilter = x[9]
-                # if (toolNum >= toolNumThe or 'smoove' in toolName or 'delly' in toolName) and dupholdScore > 0 and cnvfilter == 'True':
-                # if 'smoove' in toolName and dupholdScore>0:
-                # if ('smoove' in toolName or 'delly' in toolName) and dupholdScore > 0:
-                #     callCnvs.append(cnv)
-            # else:
-            #     callCnvs.append(cnv)
-
-    # SVM method
-    if Type == 'merge':
-        # print("Number of copy number deletions:", len(callCnvs))
-        tmp_callCnvs = []
-        clf = joblib.load("/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier.pkl")
-        allCnvs = readCNV4Merge(sample_file=callFile)
-        predictions = clf.predict(allCnvs)
-        # print("Number of CNVs input into SVM:", len(predictions))
-        for idx, label in enumerate(predictions):
-            if label == 'T':
-                tmp_callCnvs.append(callCnvs[idx])
-        callCnvs = tmp_callCnvs[:]
-    
     # read ground truth CNVs
     truthCnvs = []
     with open(truthFile, 'r') as f:
@@ -136,18 +97,17 @@ def evaluate(truthFile, callFile, Type, dup=True):
                     pass
             truthCnvs.append(x)
 
-    truthCnvLen = len(truthCnvs)    # number of simulated CNVs
-    callCnvLen = len(callCnvs)      # number of called CNVs
-
     # the reason for tp and observTP is that several called CNVs might overlap with the same truth CNV.
     tp = []     # CNVs in truth set that can be identified by calling
     observTP = []       # CNVs in called set that have overlap with truth-set CNVs
     callCnvs2 = callCnvs[:]
+    callCnvs3 = callCnvs[:]
     while truthCnvs:
         cnv1 = truthCnvs.pop(0)
         count = 0       # count the number of CNV in calling set that has overlap with truth CNV
         flag = 0        # mark whether the CNV in truth set has been called
-        for i, cnv2 in enumerate(callCnvs):
+        for i, x in enumerate(callCnvs):
+            cnv2 = x[:4]
             if overlap(cnv1, cnv2):
                 observTP.append(callCnvs2.pop(i-count))
                 count += 1
@@ -157,42 +117,24 @@ def evaluate(truthFile, callFile, Type, dup=True):
             tp.append(cnv1)
         callCnvs = callCnvs2[:]
 
-    sensitivity = round(len(tp)/truthCnvLen, 3)
-    if callCnvLen == 0:
-        return sensitivity, 1
-    fdr = round((callCnvLen-len(observTP))/callCnvLen, 3)
-    precision = round(len(observTP)/callCnvLen, 2)
-    # FScore = 2 / (1/sensitivity + 1/precision)
-    return sensitivity, fdr
-
-
-def evaluateHelper(truthFile, tools, sampleID, outputFile):
-    for tool in tools:
-        callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/res/' + tool + '/' + \
-                sampleID + '.bed'
-        if sampleID in ['sample13', 'sample14']:
-            sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool, dup=True)
-        else:
-            callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/res/' + tool + '/' + \
-                sampleID + '.bed'
-            sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool, dup=False)
-        
-        print(sampleID, tool, sensitivity, fdr, sep='\t')
-        print(sampleID, tool, sensitivity, fdr, sep='\t', file=outputFile)
-
+    with open(outputFile1, 'w') as f, open(outputFile2, 'w') as g:
+        for x in callCnvs3:
+            if x in observTP:
+                print(*x, sep='\t', file=f)
+            else:
+                print(*x, sep='\t', file=g)
 
 
 if __name__ == "__main__":
 
-    outputFile = sys.argv[1]
-    out = open(outputFile, 'w')
-    print('sample', 'tool', 'sensitivity', 'FDR', sep='\t')
-    print('sample', 'tool', 'sensitivity', 'FDR', sep='\t', file=out)
-
-    tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
-    samples = ['NA12878-1', 'NA12878-2', 'CHM13', 'AK1', 'HG002', 'HG00514', 'HG00733', 'NA19240', 'sample13', 'sample14']
-    # samples = ['NA12878-1', 'AK1']
+    samples = ['NA12878-1', 'NA12878-2', 'CHM13', 'AK1', 'HG002', 'HG00514', 'HG00733', 'NA19240']
 
     for sampleID in samples:
+        outputFile1 = '/home/jhsun/data3/project/CNVPipe/realAnalysis/evaluation/' + sampleID + '.observTP.bed'
+        outputFile2 = '/home/jhsun/data3/project/CNVPipe/realAnalysis/evaluation/' + sampleID + '.FP.bed'
         truthFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/truthSet/' + sampleID + '-SVset.1kb.bed'
-        evaluateHelper(truthFile=truthFile, tools=tools, sampleID=sampleID, outputFile=out)
+        callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/res/merge/' + sampleID + '.bed'
+        if sampleID in ['sample13', 'sample14']:
+            evaluate(truthFile=truthFile, callFile=callFile, outputFile1=outputFile1, outputFile2=outputFile2, dup=True)
+        else:
+            evaluate(truthFile=truthFile, callFile=callFile, outputFile1=outputFile1, outputFile2=outputFile2, dup=False)
