@@ -70,13 +70,14 @@ if config['settings']['gatk-snp'] and config['params']['binSize'] < 4000:
         output:
             "res/cnvfilter/{sample}.bed",
         params:
-            absPath = config['params']['absPath']
+            absPath = config['params']['absPath'],
+            vcf_source = "HaplotypeCaller",
         log:
             "logs/cnvfilter/{sample}.log"
         # conda:
         #     "../envs/cnvfilter.yaml"
         shell:
-            "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} > {log} 2>&1"
+            "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} {params.vcf_source} > {log} 2>&1"
 else:
     rule cnvfilter_call_freebayes:
         input:
@@ -85,13 +86,14 @@ else:
         output:
             "res/cnvfilter/{sample}.bed",
         params:
-            absPath = config['params']['absPath']
+            absPath = config['params']['absPath'],
+            vcf_source = "freeBayes",
         log:
             "logs/cnvfilter/{sample}.log"
         # conda:
         #     "../envs/cnvfilter.yaml"
         shell:
-            "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} > {log} 2>&1"
+            "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} {params.vcf_source} > {log} 2>&1"
 
 # Calculate overlap fraction with low-complexity region and assign 'good score' (4. GS)
 # Calculate overlap fraction with CNVs in normal population and assign 'normal score' (5. NS)

@@ -61,7 +61,7 @@ def readCNV4Merge(sample_file):
     return sample_data
 
 
-def evaluate(truthFile, callFile, Type):
+def evaluate(truthFile, callFile, Type, fold):
     '''Calculate sensitivity and FDR for single tool and merged results. We generally take CNVs
     detected by more than one tool in merged results as input.
     - truthFile: a file with ground truth CNVs
@@ -98,7 +98,7 @@ def evaluate(truthFile, callFile, Type):
     if Type == 'merge':
         print("Number of copy number deletions:", len(callCnvs))
         tmp_callCnvs = []
-        clf = joblib.load("/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_0.5x.pkl")
+        clf = joblib.load("/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_"+fold+".pkl")
         allCnvs = readCNV4Merge(sample_file=callFile)
         predictions = clf.predict(allCnvs)
         print("Number of CNVs input into SVM:", len(predictions))
@@ -142,7 +142,7 @@ def evaluate(truthFile, callFile, Type):
     return(sensitivity, fdr)
 
 
-def evaluate4LowDepth(truthFile, callFile, Type):
+def evaluate4LowDepth(truthFile, callFile, Type, fold):
     '''Calculate sensitivity and FDR for single tool and merged results. For low read-depth result,
     we take cn.mops result as first priority for merged results
     - truthFile: a file with ground truth CNVs
@@ -184,7 +184,7 @@ def evaluate4LowDepth(truthFile, callFile, Type):
     if Type == 'merge':
         print("Number of copy number deletions:", len(callCnvs))
         tmp_callCnvs = []
-        clf = joblib.load("/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_0.5x.pkl")
+        clf = joblib.load("/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_"+fold+".pkl")
         allCnvs = readCNV4Merge(sample_file=callFile)
         predictions = clf.predict(allCnvs)
         print("Number of CNVs input into SVM:", len(predictions))
@@ -234,9 +234,9 @@ def evaluateHelper(truthFile, tools, fold, outputFile, sampleID):
             callFile = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/res/' + tool + '/sample' + \
                 sampleID + '.bed'
             if fold in ['0.1x', '0.5x']:
-                sensitivity, fdr = evaluate4LowDepth(truthFile=truthFile, callFile=callFile, Type=tool)
+                sensitivity, fdr = evaluate4LowDepth(truthFile=truthFile, callFile=callFile, Type=tool, fold=fold)
             else:
-                sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
+                sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool, fold=fold)
             print(fold, 'sample'+sampleID, tool, sensitivity, fdr, sep='\t', file=outputFile)
         else:
             callFile = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/res/' + tool + '/sample' + \
@@ -244,7 +244,7 @@ def evaluateHelper(truthFile, tools, fold, outputFile, sampleID):
             if not os.path.exists(callFile):
                 print(fold, 'sample'+sampleID, tool, 0.001, 0.001, sep='\t', file=outputFile)
                 continue
-            sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool)
+            sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool, fold=fold)
             print(fold, 'sample'+sampleID, tool, sensitivity, fdr, sep='\t', file=outputFile)
     print('Finished for {:s} fold.'.format(fold))
 
@@ -257,9 +257,9 @@ if __name__ == "__main__":
 
     tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
 
-    for i in range(25,31):
+    for i in range(7,13):
         truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
-        evaluateHelper(truthFile=truthFile, tools=tools, fold='0.5x', outputFile=out, sampleID=str(i))
+        evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out, sampleID=str(i))
     # for i in range(1,37):
     #     truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
     #     if 1 <= i <= 6:

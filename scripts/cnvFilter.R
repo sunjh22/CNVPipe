@@ -7,10 +7,17 @@ if (!requireNamespace("BiocManager", quietly = TRUE)){
     install.packages("BiocManager")
 }
 
+if(!require("remotes", quietly=TRUE)){
+    BiocManager::install("remotes")
+}
+
 Sys.setenv(XML_CONFIG="/usr/bin/xml2-config")
 
 if(!require("CNVfilteR", quietly=TRUE)){
-    BiocManager::install("CNVfilteR", force = TRUE)
+    # BiocManager::install("CNVfilteR", force = TRUE)
+    if(packageVersion('CNVfilteR') != "1.13.2"){
+      BiocManager::install("jpuntomarcos/CNVfilteR")
+    }
 }
 
 if(!require("dplyr", quietly=TRUE)){
@@ -26,6 +33,7 @@ args <- commandArgs(trailingOnly = TRUE)
 cnv_file <- args[1]
 vcf_file <- args[2]
 out_file <- args[3]
+vcf_source <- args[4]
 
 # cnv_file <- "~/data/project/CNVPipe/analysis/res/merge/sample1.bed"
 # vcf_file <- "~/data/project/CNVPipe/analysis/snps/freebayes/sample1.snp.vcf"
@@ -42,7 +50,7 @@ cnv_gr <- loadCNVcalls(cnvs.file = cnv_file, chr.column = 'chromosome', start.co
 temp_cnv_gr <- trim(cnv_gr)
 
 # Load variant data, only 'PASS' variant will be included
-vcfs <- loadVCFs(vcf.files = vcf_file, cnvs.gr = temp_cnv_gr, min.total.depth = 5, genome = 'hg38')
+vcfs <- loadVCFs(vcf.files = vcf_file, cnvs.gr = temp_cnv_gr, min.total.depth = 5, vcf.source = vcf_source, genome = 'hg38')
 
 # Filter
 cnv_filter <- filterCNVs(temp_cnv_gr, vcfs)
