@@ -74,8 +74,8 @@ if config['settings']['gatk-snp'] and config['params']['binSize'] < 4000:
             vcf_source = "HaplotypeCaller",
         log:
             "logs/cnvfilter/{sample}.log"
-        # conda:
-        #     "../envs/cnvfilter.yaml"
+        conda:
+            "../envs/cnvfilter.yaml"
         shell:
             "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} {params.vcf_source} > {log} 2>&1"
 else:
@@ -90,8 +90,8 @@ else:
             vcf_source = "freeBayes",
         log:
             "logs/cnvfilter/{sample}.log"
-        # conda:
-        #     "../envs/cnvfilter.yaml"
+        conda:
+            "../envs/cnvfilter.yaml"
         shell:
             "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} {params.vcf_source} > {log} 2>&1"
 

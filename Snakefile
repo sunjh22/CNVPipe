@@ -40,4 +40,4 @@ localrules: all
 rule all:
     input:
         expand("res/merge/{sample}.bed", sample = config['global']['sample-names']),
-        # "cleaned/multiqc-report.html",
+        "cleaned/multiqc-report.html",
