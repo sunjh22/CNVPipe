@@ -57,7 +57,7 @@ def buildSVMModel(model_file):
 
     # cnvs = pd.concat([sample7, sample8, sample9, sample10, sample11, sample12])
 
-    cnvs = pd.concat([readCNVs('sample25'), readCNVs('sample26'), readCNVs('sample27'), readCNVs('sample28'), readCNVs('sample29'), readCNVs('sample30')])
+    cnvs = pd.concat([readCNVs('sample13'), readCNVs('sample14'), readCNVs('sample15'), readCNVs('sample16'), readCNVs('sample17'), readCNVs('sample18')])
 
     # build SVC
     clf = make_pipeline(StandardScaler(), SVC())
@@ -96,14 +96,14 @@ if __name__ == '__main__':
     training_vectors = ['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter']
 
     # train model and store
-    model_file = "/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_0.5x.pkl"
+    model_file = "/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_30x.pkl"
     if not os.path.exists(model_file):
         buildSVMModel(model_file)
 
     # predict and evaluate
     clf = joblib.load(model_file)
 
-    sample13 = readCNVs('sample26')
+    sample13 = readCNVs('sample14')
     test_x = sample13[training_vectors]
     test_y = sample13['label']
     predictions = clf.predict(test_x)

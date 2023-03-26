@@ -96,12 +96,12 @@ def evaluate(truthFile, callFile, Type, fold):
 
     # SVM method
     if Type == 'merge':
-        print("Number of copy number deletions:", len(callCnvs))
+        # print("Number of copy number deletions:", len(callCnvs))
         tmp_callCnvs = []
         clf = joblib.load("/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_"+fold+".pkl")
         allCnvs = readCNV4Merge(sample_file=callFile)
         predictions = clf.predict(allCnvs)
-        print("Number of CNVs input into SVM:", len(predictions))
+        # print("Number of CNVs input into SVM:", len(predictions))
         for idx, label in enumerate(predictions):
             if label == 'T':
                 tmp_callCnvs.append(callCnvs[idx])
@@ -182,12 +182,12 @@ def evaluate4LowDepth(truthFile, callFile, Type, fold):
     
     # SVM method
     if Type == 'merge':
-        print("Number of copy number deletions:", len(callCnvs))
+        # print("Number of copy number deletions:", len(callCnvs))
         tmp_callCnvs = []
         clf = joblib.load("/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_"+fold+".pkl")
         allCnvs = readCNV4Merge(sample_file=callFile)
         predictions = clf.predict(allCnvs)
-        print("Number of CNVs input into SVM:", len(predictions))
+        # print("Number of CNVs input into SVM:", len(predictions))
         for idx, label in enumerate(predictions):
             if label == 'T':
                 tmp_callCnvs.append(callCnvs[idx])
@@ -257,21 +257,21 @@ if __name__ == "__main__":
 
     tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
 
-    for i in range(7,13):
-        truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
-        evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out, sampleID=str(i))
-    # for i in range(1,37):
+    # for i in range(7,13):
     #     truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
-    #     if 1 <= i <= 6:
-    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='1x', outputFile=out, sampleID=str(i))
-    #     elif 7 <= i <= 12:
-    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out, sampleID=str(i))
-    #     elif 13 <= i <= 18:
-    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='30x', outputFile=out, sampleID=str(i))
-    #     elif 19 <= i <= 24:
-    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='0.1x', outputFile=out, sampleID=str(i))
-    #     elif 25 <= i <= 30:
-    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='0.5x', outputFile=out, sampleID=str(i))
-    #     else:
-    #         evaluateHelper(truthFile=truthFile, tools=tools, fold='5x', outputFile=out, sampleID=str(i))
+    #     evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out, sampleID=str(i))
+    for i in range(1,37):
+        truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
+        if 1 <= i <= 6:
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='1x', outputFile=out, sampleID=str(i))
+        elif 7 <= i <= 12:
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='10x', outputFile=out, sampleID=str(i))
+        elif 13 <= i <= 18:
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='30x', outputFile=out, sampleID=str(i))
+        elif 19 <= i <= 24:
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='0.1x', outputFile=out, sampleID=str(i))
+        elif 25 <= i <= 30:
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='0.5x', outputFile=out, sampleID=str(i))
+        else:
+            evaluateHelper(truthFile=truthFile, tools=tools, fold='5x', outputFile=out, sampleID=str(i))
 
