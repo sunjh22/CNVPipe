@@ -9,3 +9,5 @@ CNVPipe accept fastq file format as input, then perform the reads quality contro
 The following figure demonstrates the workflow of CNVPipe.
 
 ![CNVPipe workflow](/doc/logo/CNVPipe-workflow.png)
+
+## Set up and usage

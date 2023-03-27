@@ -12,5 +12,6 @@ logs/
 bundle/
 analysis2/
 scripts/__pycache__/
-resources/
+resources/GATK/
+resources/SVM/
 .Rhistory
