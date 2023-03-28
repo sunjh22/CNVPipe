@@ -1,0 +1,15 @@
+cluster: "pbs-submit.py"
+jobscript: "pbs-jobscript.sh"
+
+#cluster: "pbs-submit.py --depend \"{dependencies}\""
+#cluster-status: "pbs-status.py"
+
+local-cores: 1
+latency-wait: 60
+
+jobs: 6
+#immediate-submit: {{cookiecutter.immediate_submit}} 
+rerun-incomplete: True
+printshellcmds: True
+#verbose: True
+notemp: True

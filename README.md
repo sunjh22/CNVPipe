@@ -1,10 +1,10 @@
 # CNVPipe - an integrated and robust CNV calling pipeline
 
-CNVPipe integrates several popular CNV calling methods and designed various score metrics to filter false positive callings, aims at reaching higher sensitivity and lower false discovery rate. CNVPipe uses Snakemake as bachend to it highly robust and reproducible between different machines. CNVPipe is user-friendly and robust.
+CNVPipe integrates several popular CNV calling methods and designed various score metrics to filter false positive callings, aims at reaching higher sensitivity and lower false discovery rate. CNVPipe uses Snakemake as backend to make it highly robust and reproducible between different machines.
 
 ## CNVPipe workflow
 
-CNVPipe accept fastq file format as input, then perform the reads quality control by [fastp](https://github.com/OpenGene/fastp) and reads alignment with [bwa mem](http://bio-bwa.sourceforge.net/bwa.shtml). It will automatically determine an optimal CNV calling resolution if users not provide one. Then CNVPipe parallelly call CNVs by using five methods, including [CNVKit](https://github.com/etal/cnvkit), [CNVpytor](https://github.com/abyzovlab/CNVpytor), [cn.MOPS](http://bioconductor.org/packages/devel/bioc/html/cn.mops.html), [Smoove](https://github.com/brentp/smoove) and [Delly](https://github.com/dellytools/delly). After that, CNVPipe will adopt different strategies to recursively merge the CNV set from different methods based on the read depth. To obtain high-confidence CNVs, CNVPipe firstly use [duphold](https://github.com/brentp/duphold) to calculate the adjacent read depth of CNVs and assign "duphold score" for each CNV entry. Secondly, CNVPipe use [CNVFilteR](http://bioconductor.org/packages/release/bioc/html/CNVfilteR.html) to filter likely false positive CNVs based on B allele frequency of SNPs. In addition, CNVPipe calculate the overlap length between identified CNVs and genomic low-complexity regions to further refine the CNV set. To predict the pathogenicity of CNVs, CNVPipe compare the identified CNVs with CNVs frequently (>1%) appeared in healthy population, and assign a score based on the overlap fraction. CNVPipe also utilize [ClassifyCNV](https://github.com/Genotek/ClassifyCNV) to do a pathogenicity prediction. Finally CNVPipe will give a CNV list with various score metrics, predicted pathogenicity and possibly affected dosage-sensitive genes, and also give a list of figures showing read depth and BAF of high-confident CNVs.
+CNVPipe accept fastq files as input, then perform reads filtering by [fastp](https://github.com/OpenGene/fastp) and reads alignment by [bwa mem](http://bio-bwa.sourceforge.net/bwa.shtml). It will automatically determine an optimal CNV calling resolution if users not provide one. Then CNVPipe parallelly call CNVs by using five methods, including [CNVKit](https://github.com/etal/cnvkit), [CNVpytor](https://github.com/abyzovlab/CNVpytor), [cn.MOPS](http://bioconductor.org/packages/devel/bioc/html/cn.mops.html), [Smoove](https://github.com/brentp/smoove) and [Delly](https://github.com/dellytools/delly). After that, CNVPipe will adopt different strategies to recursively merge the CNV set from different methods based on the read depth. To obtain high-confidence CNVs, CNVPipe firstly use [duphold](https://github.com/brentp/duphold) to calculate the adjacent read depth of CNVs and assign "duphold score" for each CNV entry. Secondly, CNVPipe use [CNVFilteR](http://bioconductor.org/packages/release/bioc/html/CNVfilteR.html) to filter likely false positive CNVs based on B allele frequency of SNPs. In addition, CNVPipe calculate the overlap length between identified CNVs and genomic low-complexity regions to further refine the CNV set. To predict the pathogenicity of CNVs, CNVPipe compare the identified CNVs with CNVs frequently (>1%) appeared in healthy population, and assign a score based on the overlap fraction. CNVPipe also utilize [ClassifyCNV](https://github.com/Genotek/ClassifyCNV) to do a pathogenicity prediction. Finally CNVPipe will give a CNV list with various score metrics, predicted pathogenicity and possibly affected dosage-sensitive genes, and also give a list of figures showing read depth and BAF of high-confidence CNVs.
 
 The following figure demonstrates the workflow of CNVPipe.
 
@@ -34,13 +34,13 @@ There is a directory `resources` under CNVPipe, we recommend store all resouce f
     mkdir -p resources/{refs,Delly,GATK}
 
 Then download from following resources.
-1. Download human reference files from [UCSC](http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/analysisSet/) into `resources/refs/` if no reference genome in your system;
+1. Download human reference genome from [UCSC](http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/analysisSet/) into `resources/refs/` if no reference genome;
 2. Download Delly mappbility file from [Delly](https://gear.embl.de/data/delly/) into `resources/Delly/`, remember to download all three `GRCh38` files;
-3. Download GATK bundle from [here](https://console.cloud.google.com/storage/browser/genomics-public-data/resources/broad/hg38/v0/) into `resources/GATK`, all vcf files are required.
+3. Download GATK bundle files from [here](https://console.cloud.google.com/storage/browser/genomics-public-data/resources/broad/hg38/v0/) into `resources/GATK`, all vcf files and their index are required.
 
 ### About calling resolution
 
-Determining an optimal resolution is critical for whole-genome level CNV calling, users could specifiy a value in `config` file. Based on the simulation study, we have some recommendations for different depth of data.
+A good resolution is critical for whole-genome level CNV calling, users could specifiy a value in `config` file. Based on the simulation study, we have some recommendations for different depth of data.
 | Depth of data | Optimal resolution |
 |:-------------:|:------------------:|
 | 0.1x          | 369300             |
@@ -54,30 +54,28 @@ Alternatively, CNVPipe could estimate a resolution based on the median depth of 
 
     snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --cores 10 --directory /your/working/directory autobinBydepth
 
-Then followed by
-
-    snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --cores 10 --directory /your/working/directory
+This will produce a `logs/autobin/binsize.txt` file, which will be read in real CNV calling process. Actually this step will do reads filtering and alignment, thus in later CNV calling, these pre-processing steps will be skipped.
 
 ### Run CNVPipe
 
-Notice that this workflow should always be ran under `CNVPipe` directory, users could change the working directory. Under working directory, there should exist a folder containing fastq files of all samples, a sample sheet cantaining the location of samples' fastq files and a config file. 
+Notice that this workflow should always be ran under `CNVPipe` directory, users could change the working directory for different dataset. Under working directory, there should exist a folder containing fastq files of all samples, a sample sheet cantaining the location of samples' fastq files and a config file. 
 
 1. The sample sheet could be generated by a script in `scripts/generateTable.py`, the output is called `samples.tsv`.
 
-    cd /your/working/directory
-    python generateTable.py /working/directory/of/fastq/files
+        cd /your/working/directory
+        python generateTable.py /working/directory/of/fastq/files
 
-2. The config file could be copied from `CNVPipe` directory into working directory, users need to modify the 'absPath' and the path of various resource files in it.
+2. The config file could be copied from `CNVPipe` directory into working directory, users need to modify the 'absPath' and the path of various resource files in it, and specify a resolution if you do not want CNVPipe to calculate one.
 
 3. Make sure `snakemake` environment is activated, then run CNVPipe with
 
-    snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --cores 10 --directory /your/working/directory
+        snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --cores 10 --directory /your/working/directory
 
-You can use Snakemake dry run to do a test first
+You can use Snakemake `dry run` to do a test first
 
     snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --cores 10 --directory /your/working/directory -n
 
-You can also run specific rules separately, for example you are interested in Delly, you can run with
+You can also run specific rules separately, for example, if you are interested in Delly, you can run with
 
     snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --cores 10 --directory /your/working/directory all_delly
 
@@ -97,9 +95,18 @@ Snakemake also provides an option to generate a graph showing all connected rule
 
 ### Output of CNVPipe
 
-The result of CNVPipe is under `res/` of working directory. Results from different tools including CNVPipe, CNVKit, CNVpytor, cn.MOPS, Delly and Smoove are all under this directory. For CNVPipe, a bed file was generated for each sample, in which locations, exact copy number, various scores and pathogenicity prediction results were given. Besides, a pdf file was generated to visualize the high-confident CNVs.
+The output of CNVPipe includes a summary report of reads quality, refined CNV list for each sample, and figures showing the read depth and BAF for high-confidence CNVs for each sample.
 
-## Running on clusters
+Summary report of reads quality is `cleaned/multiqc-report.html`.
 
+CNV list is under `res/` of working directory. Results from different tools including CNVPipe, CNVKit, CNVpytor, cn.MOPS, Delly and Smoove are all under this directory. For CNVPipe, a bed file was generated for each sample, in which locations, exact copy number, various scores and pathogenicity prediction results were given. Besides, a pdf file was generated to visualize the high-confident CNVs.
 
+## Run on clusters
 
+To run CNVPipe on cluster environment, we need to set up some "profiles" to correctly get the resources required in our pipeline. Snakemake provided some profile templates for different cluster environments at [here](https://github.com/Snakemake-Profiles).
+
+### Run on pbs-torque
+
+A template profile for pbs-torque environment is provided under `profiles/pbs-torque/`. You might need to adjust the parameters such as cores and jobs in profile to fit into your cluster configuration. To run CNVPipe on pbs-torque cluster
+
+    snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --profile profiles/pbs-torque --directory /your/working/directory 
