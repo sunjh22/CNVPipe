@@ -12,7 +12,7 @@ rule mops_call:
         get_sample_bai(config['global']['sample-names']),
         bam = get_sample_bam(config['global']['sample-names']),
     output:
-        bed = expand("res/mops/{sample}.bed", sample=config['global']['sample-names']),
+        bed = expand("res/mops/{sample}.temp.bed", sample=config['global']['sample-names']),
     params:
         resDir = "res/mops/",
         binSize = config['params']['binSize'],
@@ -28,8 +28,19 @@ rule mops_call:
     shell:
         "Rscript {params.absPath}/scripts/mopsCall.R {params.resDir} {params.binSize} "
         "{threads} {input.bam} > {log} 2>&1"
-    # script:
-    #     "../scripts/mopsCall.R"
+
+# cn.MOPS may produce results with adjacent CNVs being the same type of CNV but the copy number is
+# slightly different (for example one has cn 3 while the other has cn4, but they are separated).
+# We will try to merge this kind of CNVs and average the copy number
+rule mops_convert:
+    input:
+        "res/mops/{sample}.temp.bed",
+    output:
+        "res/mops/{sample}.bed",
+    params:
+        absPath = config['params']['absPath'],
+    shell:
+        "python {params.absPath}/scripts/mopsConvert.py {input} {output}"
 
 localrules: all_mops
 

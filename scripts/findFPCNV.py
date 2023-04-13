@@ -1,16 +1,5 @@
 #! /urs/bin/env python
-# Usage: python evalPerform4Real.py 
-
-# Evaluate the performance of different tools for real WGS data by comparing their CNV calling 
-# results with ground truth set. We use false discovery rate and sensitivity to benchmark.
-
-# Generally, we define true positive calls as CNV has 50% reciprocal overlap with truth set. For
-# CNVPipe results, we only take those CNVs detected by more than 
-# one tool as the input.
-
-# Sensitivity = # of true positive CNVs / # of all simulated CNVs
-# FDR = # of false positive CNVs / # of all detected CNVs
-# In this case, recall = sensitivity, precision = 1 - FDR.
+# Usage: python findFPCNV.py
 
 def overlap(cnv1, cnv2):
     '''Calculate overlap proportion of two CNVs, return True if it is larger than some threshold
@@ -39,8 +28,8 @@ def overlap(cnv1, cnv2):
     
     cnvProp1 = round((overlap/cnvLen1), 2)
     cnvProp2 = round((overlap/cnvLen2), 2)
-    # if min(cnvProp1, cnvProp2) > 0.5:
-    if cnvProp1 >= 0.5:
+    if min(cnvProp1, cnvProp2) > 0.3:
+    # if cnvProp1 >= 0.3:
         return True
     else:
         return False
@@ -130,10 +119,10 @@ if __name__ == "__main__":
     samples = ['NA12878-1', 'NA12878-2', 'CHM13', 'AK1', 'HG002', 'HG00514', 'HG00733', 'NA19240']
 
     for sampleID in samples:
-        outputFile1 = '/home/jhsun/data3/project/CNVPipe/realAnalysis/evaluation/' + sampleID + '.observTP.bed'
-        outputFile2 = '/home/jhsun/data3/project/CNVPipe/realAnalysis/evaluation/' + sampleID + '.FP.bed'
+        outputFile1 = '/home/jhsun/data3/project/CNVPipe/realAnalysis-10x/evaluation/' + sampleID + '.observTP.bed'
+        outputFile2 = '/home/jhsun/data3/project/CNVPipe/realAnalysis-10x/evaluation/' + sampleID + '.FP.bed'
         truthFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/truthSet/' + sampleID + '-SVset.1kb.bed'
-        callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/res/merge/' + sampleID + '.bed'
+        callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis-10x/res/merge/' + sampleID + '.bed'
         if sampleID in ['sample13', 'sample14']:
             evaluate(truthFile=truthFile, callFile=callFile, outputFile1=outputFile1, outputFile2=outputFile2, dup=True)
         else:

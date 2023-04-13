@@ -1,16 +1,5 @@
 #! /urs/bin/env python
-# Usage: python evalPerform4Real.py 
-
-# Evaluate the performance of different tools for real WGS data by comparing their CNV calling 
-# results with ground truth set. We use false discovery rate and sensitivity to benchmark.
-
-# Generally, we define true positive calls as CNV has 50% reciprocal overlap with truth set. For
-# CNVPipe results, we only take those CNVs detected by more than 
-# one tool as the input.
-
-# Sensitivity = # of true positive CNVs / # of all simulated CNVs
-# FDR = # of false positive CNVs / # of all detected CNVs
-# In this case, recall = sensitivity, precision = 1 - FDR.
+# Usage: python findFPCNV4simulation.py
 
 def overlap(cnv1, cnv2):
     '''Calculate overlap proportion of two CNVs, return True if it is larger than some threshold
@@ -40,13 +29,13 @@ def overlap(cnv1, cnv2):
     cnvProp1 = round((overlap/cnvLen1), 2)
     cnvProp2 = round((overlap/cnvLen2), 2)
     # if min(cnvProp1, cnvProp2) > 0.5:
-    if cnvProp1 >= 0.5:
+    if cnvProp1 >= 0.8:
         return True
     else:
         return False
 
 
-def evaluate(truthFile, callFile, outputFile1, outputFile2, dup=True):
+def evaluate(truthFile, callFile, outputFile1, outputFile2):
     '''Calculate sensitivity and FDR for single tool and merged results. We generally take CNVs
     detected by more than one tool in merged results as input.
     - truthFile: a file with ground truth CNVs
@@ -61,7 +50,6 @@ def evaluate(truthFile, callFile, outputFile1, outputFile2, dup=True):
             if line.startswith('chrom'):
                 continue
             x = line.strip().split('\t')
-            cn = int(x[3])
             callCnvs.append(x)
 
     # read ground truth CNVs
@@ -103,9 +91,9 @@ def evaluate(truthFile, callFile, outputFile1, outputFile2, dup=True):
 
 if __name__ == "__main__":
 
-    for i in range(1,37):
+    for i in range(1,109):
         outputFile1 = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/evaluation-svm/sample' + str(i) + '.observTP.bed'
         outputFile2 = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/evaluation-svm/sample' + str(i) + '.FP.bed'
         truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
         callFile = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/res/merge/sample' + str(i) + '.bed'
-        evaluate(truthFile=truthFile, callFile=callFile, outputFile1=outputFile1, outputFile2=outputFile2, dup=True)
+        evaluate(truthFile=truthFile, callFile=callFile, outputFile1=outputFile1, outputFile2=outputFile2)

@@ -15,12 +15,12 @@ def readCNVs(sample_name):
     """
     toolScore = {'smoove': 5, 'delly': 4, 'cnvkit': 3, 'cnvpytor': 2, 'mops': 1}
 
-    cnv_tp = pd.read_csv("/data3/jhsun/project/CNVPipe/realAnalysis/evaluation/"+sample_name+".observTP.bed", sep='\t', names=['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter'], usecols=[5,6,7,8,9])
+    cnv_tp = pd.read_csv("/data3/jhsun/project/CNVPipe/realAnalysis-10x/evaluation/"+sample_name+".observTP.bed", sep='\t', names=['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter', 'goodScore'], usecols=[5,6,7,8,9,10])
     cnv_tp['label'] = ['T' for _ in range(len(cnv_tp))]
     cnv_tp['cnvfilter'] = [0 if x==True else 1 for x in cnv_tp.cnvfilter]
     cnv_tp['tools'] = [sum(toolScore[t] for t in set(x.split(','))) for x in cnv_tp.tools]
 
-    cnv_fp = pd.read_csv("/data3/jhsun/project/CNVPipe/realAnalysis/evaluation/"+sample_name+".FP.bed", sep='\t', names=['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter'], usecols=[5,6,7,8,9])
+    cnv_fp = pd.read_csv("/data3/jhsun/project/CNVPipe/realAnalysis-10x/evaluation/"+sample_name+".FP.bed", sep='\t', names=['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter', 'goodScore'], usecols=[5,6,7,8,9,10])
     cnv_fp['label'] = ['F' for _ in range(len(cnv_fp))]
     cnv_fp['cnvfilter'] = [0 if x==True else 1 for x in cnv_fp.cnvfilter]
     cnv_fp['tools'] = [sum(toolScore[t] for t in set(x.split(','))) for x in cnv_fp.tools]
@@ -33,7 +33,7 @@ def testSVM(sample_name, cross_ratio):
     clf = make_pipeline(StandardScaler(), SVC())
 
     train, test = train_test_split(cnvs, test_size=cross_ratio)
-    training_vectors = ['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter']
+    training_vectors = ['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter', 'goodScore']
     train_x = train[training_vectors]
     test_x = test[training_vectors]
 
@@ -93,10 +93,18 @@ if __name__ == '__main__':
     # test_y = NA19240['label']
     # clf.fit(train_x, train_y)
 
-    training_vectors = ['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter']
+    training_vectors = ['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter', 'goodScore']
 
     # train model and store
-    model_file = "/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier.pkl"
+    # v1: training_vectors = ['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter'], accuracy is 0.9758
+    # v2: training_vectors = ['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter', 'goodScore'], accuracy is 0.9759
+    # v3: training_vectors = ['accumScore', 'depthScore', 'tools', 'toolNum', 'cnvfilter', 'goodScore', 'normalScore'], accuracy is 0.9758
+    # v4: training_vectors = ['accumScore', 'tools', 'toolNum', 'cnvfilter', 'goodScore'], accuracy is 0.9744
+    # v5: training_vectors = ['tools', 'toolNum'], accuracy is 0.9752
+    # v6: training_vectors = ['tools', 'toolNum', 'cnvfilter', 'goodScore'], accuracy is 0.9743
+    
+    model_file = "/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_real_10x.pkl"
+
     if not os.path.exists(model_file):
         buildSVMModel(model_file)
 

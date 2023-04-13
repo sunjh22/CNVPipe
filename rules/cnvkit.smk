@@ -70,9 +70,10 @@ rule cnvkit_convert:
         rules.cnvkit_call.output,
     output:
         "res/cnvkit/{sample}.bed",
+    params:
+        absPath = config['params']['absPath'],
     shell:
-        "cat {input} | awk -v OFS='\t' '$8 != 2{{print $1,$2,$3,$8,$5,$9\"|\"$12\"|\"$13}}' "
-        "> {output}"
+        "python {params.absPath}/scripts/cnvkitConvert.py {input} {output}"
 
 localrules: all_cnvkit
 

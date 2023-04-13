@@ -47,7 +47,7 @@ def calculateOverlapScore(target_cnv, cnv_list, reciprocal_prop):
     """
     accumLen = 0    # accumulative length of overlap region between cnv and bad
     i = 0
-    print("A new CNV region: ", target_cnv)
+    # print("A new CNV region: ", target_cnv)
 
     targetSize = int(target_cnv[2]) - int(target_cnv[1])
 
@@ -61,7 +61,7 @@ def calculateOverlapScore(target_cnv, cnv_list, reciprocal_prop):
 
     accumProp = round(accumLen * 100 / (int(target_cnv[2]) - int(target_cnv[1])))
     score = 100 - accumProp - i * 10
-    print("This CNV totally overlaps with {:d} CNV regions\n".format(i))
+    # print("This CNV totally overlaps with {:d} CNV regions\n".format(i))
     return score
 
 
@@ -75,9 +75,14 @@ if __name__ == "__main__":
     bad_list = readRegionFile(lowMapFile)
     normal_list = readRegionFile(normalCNVFile)
 
+    # a simple test
+    # cnv = ['chr1', 125174901, 125187299]
+    # bad_score = calculateOverlapScore(cnv, bad_list, 0.3)
+    # print(bad_score)
+
     with open(inputFile, 'r') as f, open(outputFile, 'w') as g:
         for x in f:
-            if x.startswith('chromosome'):
+            if x.startswith('chrom'):
                 continue
             cnv = x.strip().split('\t')[:3]
             bad_score = calculateOverlapScore(cnv, bad_list, 0.3)

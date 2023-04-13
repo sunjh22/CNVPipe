@@ -16,6 +16,8 @@ Objectives of CNVPipe
 
 CNVPipe-token: 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
 
+general-token2: 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
+
     git clone https://github.com/sunjh22/CNVPipe.git
 
 The most important questions:
@@ -38,50 +40,74 @@ structure variation rate, `-l` assigns copy neutral LOH rate, `-c` assigns numbe
 `-g` assigns mean copy number segment size (default 1M), `-m` assigns minimal deletion size, `-x` 
 assigns maximum size of tandem duplication, `-a` prefix.
 
-In this simulation, we need germline SNPs for later SNP calling and BAF correction, we also set
-SV rate to be relatively low to make sure only CNV happens in the genome, so we can fully test the
-performance of CNV calling tools.
+Even we set `-s` to be low, we still can get many SVs, so we then merge SV set and CNV set to get
+a final truth set for evaluation.
 
-`normal` genome has SNP rate 0.001, while `normal1` genome has SNP rate 0.01.
-`tumor1-6` in `10X/` corresponds to `normal`, while `tumor7-12` in `10X/` corresponds to `normal1`.
-In the later reads simulation, we used `tumor7-12` as reference to simulate 1X, 10X and 30X data.
+`normal` genome has SNP rate 0.01.
+
+200k bp CNVs:
+Sample1-6 are 30X; sample7-12 are 10X; sample13-18 are 5X; sample19-24 are 1X;
+sample25-30 are 0.5X. sample31-36 are 0.1X.
+
+50k bp CNVs:
+sample37-42 are 30X (1200); sample43-48 are 10X (3600); sample49-54 are 5X (7200);
+sample55-60 are 1X (30000); sample61-66 are 0.5X (60000); sample67-72 are 0.1X (100000);
+
+10k bp CNVs:
+sample73-78 are 30X (600); sample79-84 are 10X (1800); sample85-90 are 5X (3600);
+sample91-96 are 1X (9000); sample97-102 are 0.5X (18000); sample103-108 are 0.1X (100000);
 
     curl -OL https://sourceforge.net/projects/scnvsim/files/latest/download
     unzip download
-    cd data/
-    time java -jar ~/data/biosoft/scnvsim_1.3.1/normgenomsim_1.3.1.jar -v ~/data/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -o ./simulation/simuGenome -s 0.01 -a normal1 1>1.log 2>2.log &
-    time java -jar ~/data/biosoft/scnvsim_1.3.1/tumorgenomsim_1.3.1.jar -v ~/data/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data/refs/hg38/analysisSet/hg38.analysisSet.fa -k ~/data/refs/hg38/bundle/SCNVSim/repeatmask.txt -i ./simulation/simuGenome/normal1_snvindelsim.vcf -o simulation/simuGenome -s 0.001 -l 0.001 -c 150 -m 500 -x 10000 -a tumor7 1>1.log 2>2.log &
+    cd ~/data3/project/CNVPipe/simulation
+    time java -jar ~/data3/biosoft/scnvsim_1.3.1/normgenomsim_1.3.1.jar -v ~/data3/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa -o ./simuGenome -s 0.01 -a normal 1>1.log 2>2.log &
+
+We have some problems when simulating tumor genome, because SCNVSim requires CNV mean segment size
+to be at least 1M. I am trying to fix that bug in their source code, but stack at compiling the 
+revised Java code. 
+Problem solved: Use ':' to separate class path, after compiling, copy .class file into 
+uncompressed fold of tumorgenomsim_1.3.2.jar, and then re-compress by jar.
+
+    javac --class-path /home/jhsun/data3/biosoft/scnvsim_1.3.1/lib/*: -d tumorgenomsim_revised/ org/rpci/SVSimulation/MainSimulator.java
+    jar -cvfm tumorgenomsim_1.3.2.jar manifest.txt org/*
+    mv tumorgenomsim_1.3.2.jar scnvsim_1.3.1/
+
+    time java -jar ~/data3/biosoft/scnvsim_1.3.1/tumorgenomsim_1.3.2.jar -v ~/data3/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa -k ~/data3/refs/hg38/bundle/SCNVSim/repeatmask.txt -i ./simuGenome/normal_snvindelsim.vcf -o ./simuGenome -s 0.001 -l 0.001 -c 200 -g 200000 -m 20000 -x 1000000 -a sample2 1>>1.log 2>>&1 &
+
+    time java -jar ~/data3/biosoft/scnvsim_1.3.1/tumorgenomsim_1.3.2.jar -v ~/data3/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa -k ~/data3/refs/hg38/bundle/SCNVSim/repeatmask.txt -i ./simuGenome/normal_snvindelsim.vcf -o ./simuGenome -s 0.001 -l 0.001 -c 200 -g 200000 -m 20000 -x 1000000 -a sample[123456] 1>>1.log 2>>&1 &
+    
+    time java -jar ~/data3/biosoft/scnvsim_1.3.1/tumorgenomsim_1.3.2.jar -v ~/data3/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa -k ~/data3/refs/hg38/bundle/SCNVSim/repeatmask.txt -i ./simuGenome/normal_snvindelsim.vcf -o ./simuGenome -s 0.001 -l 0.001 -c 200 -g 50000 -m 5000 -x 500000 -a sample{37,38,39,40,41,42} 1>>1.log 2>>&1 &
+    
+    time java -jar ~/data3/biosoft/scnvsim_1.3.1/tumorgenomsim_1.3.2.jar -v ~/data3/refs/hg38/analysisSet/hg38.analysisSet.size.rmMT.txt -n ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa -k ~/data3/refs/hg38/bundle/SCNVSim/repeatmask.txt -i ./simuGenome/normal_snvindelsim.vcf -o ./simuGenome -s 0.001 -l 0.001 -c 200 -g 10000 -m 1000 -x 100000 -a sample7[345678] 1>>1.log 2>>&1 &
+    
     $ SCNVSim Version: 1.3.1
 
-#### Use ART to simulate reads
+Use ART to simulate reads
 
 `ART` was used to simulate paired-end sequencing reads. `-ss` model Illumina sequencing system, e.g
 HSXn - HiSeqX PCR free (150bp), HS25 - HiSeq 2500 (125bp, 150bp), HSXt - HiSeqX TruSeq (150bp); `-f`
 assigns coverage, `-l` assigns length, `-m` assigns mean size of DNA fragments in library; `-na` do 
 not output ALN alignment file, `-s` standard deviation of DNA fragment size.
 
-In three different depth data simulation, we all use `tumor7-12` genome as reference.
-`sample1-6` are 1X depth
+Only one control sample is needed, after simulation, downsample it to different depth.
 
-    parallel --dry-run "~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 1 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/normal1_snvindelsim.fasta -o simulation/1X/control{}_ 1>1.log 2>&1" ::: 1 2 3 4 5 6 &
-    time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 1 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/tumor7_svcnvsim_clone_0.fasta -o simulation/1X/sample1_ 1>2.log 2>&1 &
-    parallel -j 6 -k gzip -q -1 simulation/1X/control{}_1.fq ::: 1 2 3 4 5 6 &
-    parallel -j 6 -k gzip -q -1 simulation/1X/sample{}_1.fq ::: 1 2 3 4 5 6 &
-    ART Version: v2.5.8
+    art_illumina -ss HSXn -f 30 -l 150 -m 800 -na -p -s 10 -i simulation/simuGenome/normal_snvindelsim.fasta -o simulation/normal/control1_ 1>1.log 2>&1
 
-`sample7-12` are 10X depth.
+For samples with different CNV size, simulate 30x data, then downsample them.
 
-    time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 10 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/normal1_snvindelsim.fasta -o simulation/10X/control7_ 1>1.log 2>2.log &
-    time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 10 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/tumor7_svcnvsim_clone_0.fasta -o simulation/10X/sample7_ >1.log 2>2.log &
-    parallel -j 6 -k gzip -q -1 simulation/10X/control{}_1.fq ::: 7 8 9 10 11 12 &
-    parallel -j 6 -k gzip -q -1 simulation/10X/sample{}_1.fq ::: 7 8 9 10 11 12 &
+    parallel --dry-run "art_illumina -ss HSXn -f 15 -l 150 -m 800 -na -p -s 10 -i simulation/simuGenome/sample{}_snvindelsim.fasta -o simulation/200k/30X/sample{}_ 1>1.log 2>&1" ::: 1 2 3 4 5 6 &
 
-`sample13-18` are 30X depth
+    parallel --dry-run "art_illumina -ss HSXn -f 15 -l 150 -m 800 -na -p -s 10 -i simulation/simuGenome/sample{}_snvindelsim.fasta -o simulation/200k/30X/sample{}_ 1>1.log 2>&1" ::: 37 38 39 40 41 42 &
 
-    parallel --dry-run "~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 30 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/normal1_snvindelsim.fasta -o simulation/30X/control{}_ 1>1.log 2>&1" ::: 13 14 15 16 17 18 &
-    time ~/data/biosoft/art_bin_MountRainier/art_illumina -ss HSXn -f 30 -l 150 -m 500 -na -p -s 10 -i simulation/simuGenome/tumor7_svcnvsim_clone_0.fasta -o simulation/30X/sample13_ >1.log 2>2.log &
-    parallel -j 6 -k gzip -q -1 simulation/30X/control{}_1.fq ::: 13 14 15 16 17 18 &
-    parallel -j 6 -k gzip -q -1 simulation/30X/sample{}_1.fq ::: 13 14 15 16 17 18 &
+    parallel --dry-run "art_illumina -ss HSXn -f 15 -l 150 -m 800 -na -p -s 10 -i simulation/simuGenome/sample{}_snvindelsim.fasta -o simulation/200k/30X/sample{}_ 1>1.log 2>&1" ::: 73 74 75 76 77 78 &
+
+Compress fastq files with gzip.
+
+    parallel -j 6 -k gzip -q -1 simulation/30X/sample{}_1.fq ::: 1 2 3 4 5 6 &
+
+Conclusion for this tool: it is well documented, but it cannot fulfill our needs because: 1. we 
+cannot precisely control the size of CNVs and SVs; 2. CNVs and SVs produced by it is messy, 
+even with 0bp CNVs (hard to explain), and many conflict SVs.
 
 ### 01.2 CNV-Sim + ART
 
@@ -119,8 +145,21 @@ The tool is in `~/data3/project/CNV-simulator`.
 To simulate experimental samples with CNVs. This will simulate sample genomes and NGS reads,
 concatenate and compress reads automatically.
 
-Sample1-6 are 1X; sample7-12 are 10X; sample13-18 are 30X; sample19-24 are 0.1X; 
+200k bp CNVs:
+Sample1-6 are 1X; sample7-12 are 10X; sample13-18 are 30X; sample19-24 are 0.1X;
 sample25-30 are 0.5X. sample31-36 are 5X.
+
+50k bp CNVs:
+sample37-42 are 30X (1200); sample43-48 are 10X (3600); sample49-54 are 5X (7200);
+sample55-60 are 1X (30000); sample61-66 are 0.5X (60000); sample67-72 are 0.1X (100000);
+
+10k bp CNVs:
+sample73-78 are 30X (600); sample79-84 are 10X (1800); sample85-90 are 5X (3600);
+sample91-96 are 1X (9000); sample97-102 are 0.5X (18000); sample103-108 are 0.1X (100000);
+
+1M bp CNVs:
+sample109-114 are 30X (1200); sample115-120 are 10X (3600); sample121-126 are 5X (7200);
+sample127-132 are 1X (9000); sample133-138 are 0.5X (18000); sample139-144 are 0.1X (100000);
 
     cd ~/data3/project/CNV-simulator
     ./cnv_simulator.py -o ~/data3/project/CNVPipe/simulation-CNVSimulator/1X -a sample1 -c 0.5 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed
@@ -131,6 +170,41 @@ sample25-30 are 0.5X. sample31-36 are 5X.
     parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/0.5X -a sample{} -c 0.25 -e 500000 -b 50000 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 25 26 27 28 29 30 &
 
     parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/5X -a sample{} -c 2.5 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 31 32 33 34 35 36 &
+
+Simulate 30x data for 50k bp CNV, then downsample to lower depth
+
+    parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/50k/30X -a sample{} -c 15 -e 50000 -b 5000 -B 500000 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 37 38 39 40 41 42 &
+    parallel --dry-run seqkit sample -s 110 -p 0.33 30X/sample{}_1.fq.gz -o 10X/sample{}_1.fq.gz ::: 37 38 39 40 41 42 &
+    parallel seqkit sample -s 110 -p 0.5 10X/sample{}_1.fq.gz -o 5X/sample{}_1.fq.gz ::: 43 44 45 46 47 48 &
+    parallel seqkit sample -s 110 -p 0.1 10X/sample{}_1.fq.gz -o 1X/sample{}_1.fq.gz ::: 43 44 45 46 47 48 &
+    parallel seqkit sample -s 110 -p 0.05 10X/sample{}_1.fq.gz -o 0.5X/sample{}_1.fq.gz ::: 43 44 45 46 47 48 &
+    parallel seqkit sample -s 110 -p 0.01 10X/sample{}_1.fq.gz -o 0.1X/sample{}_1.fq.gz ::: 43 44 45 46 47 48 &
+
+    parallel --xapply mv 10X/sample{1}_1.fq.gz 10X/sample{2}_1.fq.gz ::: 37 38 39 40 41 42 ::: 43 44 45 46 47 48
+    parallel --xapply mv 5X/sample{1}_1.fq.gz 5X/sample{2}_1.fq.gz ::: 43 44 45 46 47 48 ::: 49 50 51 52 53 54
+    parallel --xapply mv 1X/sample{1}_1.fq.gz 1X/sample{2}_1.fq.gz ::: 43 44 45 46 47 48 ::: 55 56 57 58 59 60
+    parallel --xapply mv 0.5X/sample{1}_1.fq.gz 0.5X/sample{2}_1.fq.gz ::: 43 44 45 46 47 48 ::: 61 62 63 64 65 66
+    parallel --xapply mv 0.1X/sample{1}_1.fq.gz 0.1X/sample{2}_1.fq.gz ::: 43 44 45 46 47 48 ::: 67 68 69 70 71 72
+
+Simulate 30x data for 10k bp CNV
+
+    parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/10k/30X -a sample{} -c 15 -e 10000 -b 1000 -B 100000 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 73 74 75 76 77 78 &
+    parallel seqkit sample -s 110 -p 0.33 30X/sample{}_1.fq.gz -o 10X/sample{}_1.fq.gz ::: 73 74 75 76 77 78 &
+    parallel seqkit sample -s 110 -p 0.5 10X/sample{}_1.fq.gz -o 5X/sample{}_1.fq.gz ::: 79 80 81 82 83 84 &
+    parallel seqkit sample -s 110 -p 0.1 10X/sample{}_1.fq.gz -o 1X/sample{}_1.fq.gz ::: 79 80 81 82 83 84 &
+    parallel seqkit sample -s 110 -p 0.05 10X/sample{}_1.fq.gz -o 0.5X/sample{}_1.fq.gz ::: 79 80 81 82 83 84 &
+    parallel seqkit sample -s 110 -p 0.01 10X/sample{}_1.fq.gz -o 0.1X/sample{}_1.fq.gz ::: 79 80 81 82 83 84 &
+
+    parallel --xapply mv 10X/sample{1}_1.fq.gz 10X/sample{2}_1.fq.gz ::: 73 74 75 76 77 78 ::: 79 80 81 82 83 84
+    parallel --xapply mv 5X/sample{1}_1.fq.gz 5X/sample{2}_1.fq.gz ::: 79 80 81 82 83 84 ::: 85 86 87 88 89 90
+    parallel --xapply mv 1X/sample{1}_1.fq.gz 1X/sample{2}_1.fq.gz ::: 79 80 81 82 83 84 ::: 91 92 93 94 95 96
+    parallel --xapply mv 0.5X/sample{1}_1.fq.gz 0.5X/sample{2}_1.fq.gz ::: 79 80 81 82 83 84 ::: 97 98 99 100 101 102
+    parallel --xapply mv 0.1X/sample{1}_1.fq.gz 0.1X/sample{2}_1.fq.gz ::: 79 80 81 82 83 84 ::: 103 104 105 106 107 108
+
+Simulate 30x data for 1M bp CNV
+
+    parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/1M/30X -a sample{} -c 15 -e 1000000 -b 100000 -B 5000000 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 109 110 111 112 113 114 &
+    parallel seqkit sample -s 110 -p 0.33 30X/sample{}_1.fq.gz -o 10X/sample{}_1.fq.gz ::: 109 110 111 112 113 114 &
 
 To simulate control samples, directly use reference genome.
 
@@ -445,6 +519,18 @@ profile (by GC profile or normal read coverage), constructs the B-allele frequen
 segments both profiles (Lasso-based algorithm), ascribes the genotype status to each segment using 
 both copy number and allelic frequency information, then annotates genomic alterations.
 
+#### 02.4.6 Canvas
+
+Try to test Canvas, Version 1.35.1.1316-0 requires .NET 1.1.2, which cannot be installed by conda,
+therefore, it is hard for us to include it into our pipeline.
+
+Then I downloaded the latest version of Canvas from GitHub, under .Net 2.1, it worked. But it failed
+for running the sample under Germline-WGS mode. The author suggest to use Small-pedigree workflow.
+
+    dotnet ~/data3/biosoft/Canvas-1.40.0.1613+master_x64/Canvas.dll Germline-WGS -b mapped/sample13.bam --population-b-allele-vcf /home/jhsun/data3/refs/hg38/bundle/canvas/dbsnp.vcf -n sample13 -o temp/canvas -r /home/jhsun/data3/refs/hg38/bundle/canvas/kmer.fa -g /home/jhsun/data3/refs/hg38/bundle/canvas/Sequence -f /home/jhsun/data3/refs/hg38/bundle/canvas/filter13.bed
+
+    dotnet ~/data3/biosoft/Canvas-1.40.0.1613+master_x64/Canvas.dll SmallPedigree-WGS --bam=mapped/sample13.bam --population-b-allele-vcf /home/jhsun/data3/refs/hg38/bundle/canvas/dbsnp.vcf -o res/canvas -r /home/jhsun/data3/refs/hg38/bundle/canvas/kmer.fa -g /home/jhsun/data3/refs/hg38/bundle/canvas/Sequence -f /home/jhsun/data3/refs/hg38/bundle/canvas/filter13.bed
+
 ### 02.5 SNP calling
 
 #### 02.5.1 freebayes
@@ -678,7 +764,11 @@ Tools pending for test:
     time samplot plot -n sample7 sample8 sample9 -b mapped/sample7.bam mapped/sample8.bam mapped/sample9.bam -o test.png -c chr1 -s 8571601 -e 8697599 -t DEL
     time samplot plot -n sample7 sample8 sample9 -b mapped/sample7.bam mapped/sample8.bam mapped/sample9.bam -c chr1 -s 8571601 -e 8697599 -t DEL -w 10000 -T ~/data3/refs/hg38/annotations/Homo_sapiens.GRCh38.109.sort.gff3.gz -A ~/data3/refs/hg38/annotations/rmsk.bed.gz ~/data3/refs/hg38/annotations/k100.Umap.MultiTrackMappability.bed.gz -o test4.png
 
+    time samplot plot -n sample17 sample18 -b mapped/sample17.bam mapped/sample18.bam -c chr9 -s 63168045 -e 63195657 -t DUP -A ~/data3/refs/hg38/annotations/k100.Umap.MultiTrackMappability.bed.gz -o test.png
+
 3. svviz
+
+4. R script, like from Delly `R/cnv.R`.
 
 ## 03. Evaluate performance on simulation data
 
@@ -980,7 +1070,6 @@ be found in this file, no duplications. (538 CNVs)
         1 #VARIANT CALL
     cut -f 3,8,11,14 nstd175.GRCh38.variant_call.tsv | grep --color=never -e '^deletion' | awk '$4-$3>1000 {OFS="\t"; print "chr"$2,$3,$4,$1}' | sort -Vk 1 -k 2,3n
 
-
 ### HGSVC - HG00514,HG00733,NA19240
 
 We downloaded HG00514 SV set from dbVar database with accession number nstd152. In this file, there
@@ -1058,7 +1147,7 @@ later one. Therefore, here we will only include deletions and duplications
 
 ### Run CNVPipe
 
-Create soft symbolic link to `~/data3/project/CNVPipe/readAnalysis/samples`, copy config file to 
+Create soft symbolic link to `~/data3/project/CNVPipe/realAnalysis/samples`, copy config file to 
 the directory, and create `samples.tsv` by `scripts/generate-table.py`, which was obtained from 
 grenepipe.
 
@@ -1074,7 +1163,15 @@ not correct.
 In addition, using 1000G normal as control to identify CNVs in AK1 and NA12878 may not be a good
 idea, we should use simualted data directly from the reference genome.
 
+CNV results of mops and cnvkit could be further merged to reduce the CNV entry, thus improve the 
+sensitivity.
 
+    mv res/mops res/mops-temp
+    mkdir res/mops
+    python ~/data3/github-repo/CNVPipe/scripts/mopsConvert.py ./res/
+    mv res/cnvkit res/cnvkit-temp
+    mkdir res/cnvkit
+    python ~/data3/github-repo/CNVPipe/scripts/mopsConvert.py ./res
 
 
 ## 05. Real patient WGS data analysis
@@ -1176,9 +1273,6 @@ When using GATK VariantRecalibrator, sample 22562 has an error: A USER ERROR has
 
 It worked when I use `--max-gaussians 3`.
 
-cnvfilter env: /ubda/home/19044464r/biosoft/conda-env-cnvpipe/fd204c6d09c55bd8aea2c675d1feee08_
-
-
 ### 05.3 Test for SNP calling
 
 One sample need around 4 hours
@@ -1205,32 +1299,20 @@ samples all have over 100M reads. It turns out I mis-linked the original fastq f
 should be in Run10-2_V350034138 Lane4 with Adaptor 1-4, but I used Adaptor 13-16 to do soft link.
 So I relink and rerun the calling and downstream analysis.
 
+### 05.5 Analyze the CNVPipe results
+
+cnvfilter env: /ubda/home/19044464r/biosoft/conda-env-cnvpipe/fd204c6d09c55bd8aea2c675d1feee08_
+
+Count the number of CNVs in each sample, find recurrent CNVs, filter and predict pathogenicity.
+
+    python ../patientData/scripts/countCNVs.py report/cnv-count.tsv ./
+    python ../patientData/scripts/findRecurrentCNV.py res/recurrent/recurrent.inner.strict.bed ./
+    awk '$6>5' res/recurrent/recurrent.inner.strict.bed | sort -Vk 1 -k 2,3n | grep -v chrom | grep -v 'E' | grep -v blood > res/recurrent/recurrent.inner.strict.filterHealthy.bed
+    python ~/data3/github-repo/CNVPipe/scripts/classifyCNV.py --absPath /home/jhsun/data3/github-repo/CNVPipe/ --infile res/recurrent/recurrent.inner.strict.filterHealthy.bed --GenomeBuild hg38 --cores 2
+    python ~/data3/github-repo/CNVPipe/scripts/classifyCNVConvert.py res/recurrent/recurrent.inner.strict.filterHealthy.bed res/classifycnv/recurrent.classifycnv.txt res/classifycnv/recurrent.inner.strict.filterHealthy.classifycnv.bed
+  
+Use `samplot` to visualize the recurrent CNVs.
+
+    time samplot plot -n {26275,26382,26473,26529,28344,28448,29091,29258,30329,30875,E251,E252,blood,control1} -b mapped/{26275,26382,26473,26529,28344,28448,29091,29258,30329,30875,E251,E252,blood,control1}.bam -o chr1_13165600_13224504_DEL.png -c chr1 -s 13165600 -e 13224504 -t DEL -T ~/refs/hg38/annotations/Homo_sapiens.GRCh38.109.sort.gff3.gz -A ~/refs/hg38/annotations/rmsk.bed.gz ~/refs/hg38/annotations/k100.Umap.MultiTrackMappability.bed.gz
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Principles of Varbin
-
-We firstly downloaded the `k100.umap.bed` file from <https://bismap.hoffmanlab.org/>,
-(Umap, Human, hg38, Single-read). This is a file showing goodzones of the genome, which
-means the position can just be uniquely mapped. We then count the mappable positions in
-each chromosome using `bin/varbin/mappable.py` and get `refs/k100.mappable.bed`. Then we construct
-a target bin file using `bin/varbin/bin.boundary.py`, then sort this file based on chromosome using
-`sort -Vk 1 -k 2,3n refs/bin.5k.test.txt > refs/bin.5k.boundary.txt`. Next, calculate the
-gc content of target bins by using `bin/varbin/gc.content.py` and get `refs/bin.5k.boundary.gc.txt`.
-Then we calculate the coverage of samples in target bins and correct the log2 ratio using
-`bin/varbin/coverage.py`, in which `pysam` `bedcov` utils was used to calclulate the basecount in bin
-regions. For example,
-
-    time python bin/varbin/coverage.py refs/bin.5k.boundary.gc.txt data/simulation/1X/sample1.mkdup.bam analysis/read-depth/coverage/sample1.coverage.bed 1>1.log 2>2.log &

@@ -58,13 +58,13 @@ if __name__ == "__main__":
         for i, cnv2 in enumerate(cnvs3):
             # see if two cnvs have overlap
             overlapSize, overlapProp = overlap(cnv1[:4], cnv2[:4])
-            if overlapProp == 0:
+            if overlapProp < overlapPropThreshold:
                 continue
-            # if yes but overlap proportion is less than 0.5, keep former one and pop out later one
-            elif 0 < overlapProp < overlapPropThreshold:
-                cnvs2.pop(i-count)
-                count += 1
-            # if overlap proportion is larger than 0.5, extend breakpoints
+            # if yes but overlap proportion is less than 0.3, keep former one and pop out later one
+            # elif 0 < overlapProp < overlapPropThreshold:
+            #     cnvs2.pop(i-count)
+            #     count += 1
+            # if overlap proportion is larger than 0.3, extend breakpoints
             else:
                 assert cnv1[-1] != cnv2[-1], "Overlapped CNV from same tool {:s}! Please make sure these conflicts are solved before merging".format(cnv1[-1])
                 tmpCnv[1:3] = [min(cnv1[1], cnv2[1]), max(cnv1[2], cnv2[2])]
