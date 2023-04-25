@@ -21,6 +21,10 @@ settings:
     keep-intermediate:
         fastp: False
         bwamem: False
+    
+    bqsr: False
+
+    recurrent: False
 
 params:
     absPath: "/data/jinwf/jhsun/project/CNVPipe"
@@ -45,3 +49,5 @@ params:
 
     freebayes:
         threads:    8
+
+    recurrent-threshold: 5

@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+
 # Merge CNV calling results from 5 tools, assign 'accumulative Score' (1. AS).
 # Only for high-depth data, we use very strict overlap threshold, that is, reciprocal overlap over
 # 0.5. For median-depth and low-depth data, we use a looser one: the max overlap between two CNVs
@@ -69,7 +70,7 @@ if __name__ == "__main__":
     print('Merging CNV results from: ', cnvfiles)
     cnvtools = ['smoove', 'delly', 'cnvkit', 'cnvpytor', 'mops']
 
-    overlapPropThreshold = 0.5
+    overlapPropThreshold = 0.75
     cnvs = []
     for i, cnvfile in enumerate(cnvfiles):
         for cnv in readFile(cnvfile):

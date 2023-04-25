@@ -159,7 +159,7 @@ sample91-96 are 1X (9000); sample97-102 are 0.5X (18000); sample103-108 are 0.1X
 
 1M bp CNVs:
 sample109-114 are 30X (1200); sample115-120 are 10X (3600); sample121-126 are 5X (7200);
-sample127-132 are 1X (9000); sample133-138 are 0.5X (18000); sample139-144 are 0.1X (100000);
+sample127-132 are 1X (36000); sample133-138 are 0.5X (72000); sample139-144 are 0.1X (360000);
 
     cd ~/data3/project/CNV-simulator
     ./cnv_simulator.py -o ~/data3/project/CNVPipe/simulation-CNVSimulator/1X -a sample1 -c 0.5 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed
@@ -205,6 +205,16 @@ Simulate 30x data for 1M bp CNV
 
     parallel "cnv_simulator -o ~/data3/project/CNVPipe/simulation-CNVSimulator/1M/30X -a sample{} -c 15 -e 1000000 -b 100000 -B 5000000 ~/data3/refs/hg38/analysisSet/hg38.analysisSet.fa ~/data3/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed 1>cnv-simu.{}.log 2>&1" ::: 109 110 111 112 113 114 &
     parallel seqkit sample -s 110 -p 0.33 30X/sample{}_1.fq.gz -o 10X/sample{}_1.fq.gz ::: 109 110 111 112 113 114 &
+    parallel seqkit sample -s 110 -p 0.5 10X/sample{}_1.fq.gz -o 5X/sample{}_1.fq.gz ::: 115 116 117 118 119 120 &
+    parallel seqkit sample -s 110 -p 0.1 10X/sample{}_1.fq.gz -o 1X/sample{}_1.fq.gz ::: 115 116 117 118 119 120 &
+    parallel seqkit sample -s 110 -p 0.05 10X/sample{}_1.fq.gz -o 0.5X/sample{}_1.fq.gz ::: 115 116 117 118 119 120 &
+    parallel seqkit sample -s 110 -p 0.01 10X/sample{}_1.fq.gz -o 0.1X/sample{}_1.fq.gz ::: 115 116 117 118 119 120 &
+
+    parallel --xapply mv 10X/sample{1}_1.fq.gz 10X/sample{2}_1.fq.gz ::: 109 110 111 112 113 114 ::: 115 116 117 118 119 120
+    parallel --xapply mv 5X/sample{1}_1.fq.gz 5X/sample{2}_1.fq.gz ::: 115 116 117 118 119 120 ::: 121 122 123 124 125 126
+    parallel --xapply mv 1X/sample{1}_1.fq.gz 1X/sample{2}_1.fq.gz ::: 115 116 117 118 119 120 ::: 127 128 129 130 131 132
+    parallel --xapply mv 0.5X/sample{1}_1.fq.gz 0.5X/sample{2}_1.fq.gz ::: 115 116 117 118 119 120 ::: 133 134 135 136 137 138
+    parallel --xapply mv 0.1X/sample{1}_1.fq.gz 0.1X/sample{2}_1.fq.gz ::: 115 116 117 118 119 120 ::: 139 140 141 142 143 144
 
 To simulate control samples, directly use reference genome.
 
@@ -488,7 +498,7 @@ Some R scripts were provided for plotting CNV, which could be a reference for la
 
     Version: Delly 1.1.5
 
-#### 02.4.5 Control-FREEC (deprecated)
+#### 02.4.6 Control-FREEC (deprecated)
 
 `Control-FREEC` is written in C++.
 
@@ -519,7 +529,7 @@ profile (by GC profile or normal read coverage), constructs the B-allele frequen
 segments both profiles (Lasso-based algorithm), ascribes the genotype status to each segment using 
 both copy number and allelic frequency information, then annotates genomic alterations.
 
-#### 02.4.6 Canvas
+#### 02.4.7 Canvas
 
 Try to test Canvas, Version 1.35.1.1316-0 requires .NET 1.1.2, which cannot be installed by conda,
 therefore, it is hard for us to include it into our pipeline.

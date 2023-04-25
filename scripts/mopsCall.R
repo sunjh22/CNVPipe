@@ -46,7 +46,7 @@ write_bed <- function(bed, file_name) {
 write_sample_cnvs <- function(sample_name, cnv_results) {
     sample_cnvs <- cnv_results[cnv_results$sampleName == sample_name]
     bed <- granges_to_bed(sample_cnvs)
-    file_name <- sub(".bam$", ".bed", sample_name)
+    file_name <- sub(".bam$", ".temp.bed", sample_name)
     path <- paste0(result_dir, file_name)
     write_bed(bed, path)
 }

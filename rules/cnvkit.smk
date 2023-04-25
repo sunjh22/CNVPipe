@@ -33,7 +33,7 @@ rule cnvkit_batch:
         "--annotate {params.refflat} --drop-low-coverage --output-reference {output.reference} "
         "-d {params.outdir}) > {log} 2>&1"
         
-# Segment CNVs based on confidence interval
+# Calculate confidence interval for log2 ratio and will be used for later call step
 rule cnvkit_segmetric:
     input:
         cns = "temp/cnvkit/{sample}.cns",
@@ -56,7 +56,7 @@ rule cnvkit_call:
     output:
         "temp/cnvkit/call/{sample}.cns",
     params:
-        "-m clonal"
+        "-m clonal --filter ci"
     log:
         "logs/cnvkit/call/{sample}.log"
     conda:
@@ -64,7 +64,7 @@ rule cnvkit_call:
     shell:
         "cnvkit.py call {input} {params} -o {output} > {log} 2>&1"
 
-# Use awk to extract columns: chromosome, start, end, cn, log2, dpeth, probe and weight.
+# Merge segments with the same type of CNVs
 rule cnvkit_convert:
     input:
         rules.cnvkit_call.output,

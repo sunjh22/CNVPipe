@@ -26,9 +26,10 @@ with open(inputfile, 'r') as f:
             evalue1 = float(line[4])
             evalue2 = float(line[5])
             evalue = max(evalue1, evalue2)
+            q0 = float(line[8])
             pN = float(line[9])
             dG = int(line[10])
-            if cn != 2 and evalue < 0.00001 and pN < 0.5 and dG > 100000:
+            if cn != 2 and evalue < 0.00001 and q0 < 0.5 and pN < 0.5 and dG > 10000:
                 print(chrom, start, end, cn, depth, '|'.join(str(x) for x in [evalue, pN, dG]), 
                 sep='\t', file=g)
             else:
