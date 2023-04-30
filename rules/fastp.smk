@@ -33,14 +33,12 @@ rule clean_reads_se:
         "logs/fastp/{sample}.log"
     benchmark:
         "benchmarks/fastp/{sample}.bench"
-    params:
-        extra = config["params"]["fastp"]["se"]
     threads:
         config["params"]["fastp"]["threads"]
     conda:
         "../envs/fastp.yaml"
     shell:
-        "(fastp --thread {threads} {params.extra} --in1 {input} "
+        "(fastp --thread {threads} --in1 {input} "
         "--out1 {output.trimmed} --html {output.html} --json {output.json}) > {log} 2>&1"
 
 rule clean_reads_pe:
@@ -58,14 +56,12 @@ rule clean_reads_pe:
         "logs/fastp/{sample}.log"
     benchmark:
         "benchmarks/fastp/{sample}.bench"
-    params:
-        extra = config["params"]["fastp"]["pe"]
     threads:
         config["params"]["fastp"]["threads"]
     conda:
         "../envs/fastp.yaml"
     shell:
-        "(fastp --thread {threads} {params.extra} --in1 {input[0]} --in2 {input[1]} "
+        "(fastp --thread {threads} --in1 {input[0]} --in2 {input[1]} "
         "--out1 {output.trimmed[0]} --out2 {output.trimmed[1]} "
         "--html {output.html} --json {output.json}) > {log} 2>&1"
 
