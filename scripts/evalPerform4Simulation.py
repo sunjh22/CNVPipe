@@ -285,7 +285,7 @@ if __name__ == "__main__":
 
     tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
 
-    for i in range(1,109):
+    for i in range(1,145):
         truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
         if 1 <= i <= 6:
             evaluateHelper(truthFile=truthFile, size='200k', tools=tools, fold='1x', outputFile=out, sampleID=str(i))
@@ -321,6 +321,18 @@ if __name__ == "__main__":
             evaluateHelper(truthFile=truthFile, size='10k', tools=tools, fold='1x', outputFile=out, sampleID=str(i))
         elif 97 <= i <= 102:
             evaluateHelper(truthFile=truthFile, size='10k', tools=tools, fold='0.5x', outputFile=out, sampleID=str(i))
-        else:
+        elif 103 <= i <= 108:
             evaluateHelper(truthFile=truthFile, size='10k', tools=tools, fold='0.1x', outputFile=out, sampleID=str(i))
+        elif 109 <= i <= 114:
+            evaluateHelper(truthFile=truthFile, size='1M', tools=tools, fold='30x', outputFile=out, sampleID=str(i))
+        elif 115 <= i <= 120:
+            evaluateHelper(truthFile=truthFile, size='1M', tools=tools, fold='10x', outputFile=out, sampleID=str(i))
+        elif 121 <= i <= 126:
+            evaluateHelper(truthFile=truthFile, size='1M', tools=tools, fold='5x', outputFile=out, sampleID=str(i))
+        elif 127 <= i <= 132:
+            evaluateHelper(truthFile=truthFile, size='1M', tools=tools, fold='1x', outputFile=out, sampleID=str(i))
+        elif 133 <= i <= 138:
+            evaluateHelper(truthFile=truthFile, size='1M', tools=tools, fold='0.5x', outputFile=out, sampleID=str(i))
+        else:
+            evaluateHelper(truthFile=truthFile, size='1M', tools=tools, fold='0.1x', outputFile=out, sampleID=str(i))
 

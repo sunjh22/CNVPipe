@@ -17,9 +17,7 @@ def is_single_end( sample, **kargs ):
 def unpack_fastq_files(wildcards):
     return list(get_fastq(wildcards).values())
 
-# Since fastp wrapper is not stable, we decide to implement it by ourselves, thus use different
-# commands for single-end and paired-end data.
-# fastp is fast but its parallel efficiency reaches limit at 6 threads
+# The efficiency of fastp reaches limit at 6 threads
 rule clean_reads_se:
     input:
         unpack_fastq_files,
@@ -71,6 +69,7 @@ rule clean_reads_pe:
         "--out1 {output.trimmed[0]} --out2 {output.trimmed[1]} "
         "--html {output.html} --json {output.json}) > {log} 2>&1"
 
+# Get quality report for cleaned reads by multiqc
 rule multiqc_report:
     input:
         json = (
@@ -84,7 +83,6 @@ rule multiqc_report:
         "../envs/multiqc.yaml"
     shell:
         "multiqc --force -d cleaned/ -n multiqc-report -o cleaned/ -q"
-
 
 localrules: all_fastp
 

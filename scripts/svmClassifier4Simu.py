@@ -29,7 +29,7 @@ def readCNVs(sample_name):
 
 def buildSVMModel(model_file):
 
-    cnvs = pd.concat([readCNVs('sample'+str(i)) for i in range(31,37)])
+    cnvs = pd.concat([readCNVs('sample'+str(i)) for i in range(139,145)])
     # cnvs = pd.concat([readCNVs('sample43'), readCNVs('sample44'), readCNVs('sample45'), readCNVs('sample46'), readCNVs('sample47'), readCNVs('sample48')])
 
     # build SVC
@@ -53,14 +53,15 @@ if __name__ == '__main__':
     # 200k: 30x - 0.9363; 10x - 0.9372; 5x - 0.9250; 1x - 0.9375; 0.5x - 0.9545; 0.1x - 0.9565
     # 50k: 30x - 0.9293; 10x - 0.9348; 5x - 0.9082; 1x - 0.9294; 0.5x - 1; 0.1x - 0.8750
     # 10k: 30x - 0.9403; 10x - 0.9204; 5x - 0.9036; 1x - 0.7368; 0.5x - 0.5556; 0.1x - 1.0000
-    model_file = "/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_200k_5x.pkl"
+    # 1M: 30x - 0.9757; 10x - 0.9614; 5x - 0.9677; 1x - 0.9135; 0.5x - 0.9221; 0.1x - 0.9302
+    model_file = "/data3/jhsun/github-repo/CNVPipe/resources/SVM/cnv_svm_classifier_simu_1M_0.1x.pkl"
     if not os.path.exists(model_file):
         buildSVMModel(model_file)
 
     # predict and evaluate
     clf = joblib.load(model_file)
 
-    sample13 = readCNVs('sample31')
+    sample13 = readCNVs('sample139')
     test_x = sample13[training_vectors]
     test_y = sample13['label']
     predictions = clf.predict(test_x)

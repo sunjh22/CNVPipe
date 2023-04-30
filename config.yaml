@@ -3,17 +3,17 @@
 data:
     samples:    "/data/jinwf/jhsun/project/CNVPipe/analysis/samples.tsv"
     genome: "/data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa"
-    access:    "/data/jinwf/jhsun/refs/hg38/bundle/CNVKit/access-excludes.hg38.analysisSet.bed"
-    refflat:    "/data/jinwf/jhsun/refs/hg38/bundle/CNVKit/refFlat.txt"
-    delly-map: "/data/jinwf/jhsun/refs/hg38/bundle/delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz"
-    smoove-exclude: "/data/jinwf/jhsun/refs/hg38/low-mappability-track/10x/hg38.sv_blacklist.bed"
-    normal-common-cnv: "/data/jinwf/jhsun/refs/hg38/genomic-variation-track/common_global_normal.bed"
-    gatk-dbsnp: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/dbsnp_146.hg38.vcf.gz"
-    gatk-hapmap: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/hapmap_3.3.hg38.vcf.gz"
-    gatk-omni: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/1000G_omni2.5.hg38.vcf.gz"
-    gatk-1000g: "/data/jinwf/jhsun/refs/hg38/bundle/gatk/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
-    gatk-mills: "/home/jhsun/data3/refs/hg38/bundle/gatk/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
-    gatk-hg38: "/home/jhsun/data3/refs/hg38/bundle/gatk/Homo_sapiens_assembly38.known_indels.vcf.gz"
+    access:    "/data/jinwf/jhsun/CNVPipe/resources/CNVKit/access-excludes.hg38.analysisSet.bed"
+    refflat:    "/data/jinwf/jhsun/CNVPipe/resources/CNVKit/refFlat.txt"
+    delly-map: "/data/jinwf/jhsun/CNVPipe/resources/Delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz"
+    smoove-exclude: "/data/jinwf/jhsun/CNVPipe/resources/Smoove/hg38.sv_blacklist.bed"
+    normal-common-cnv: "/data/jinwf/jhsun/CNVPipe/resources/dbVar/common_global_normal.bed"
+    gatk-dbsnp: "/data/jinwf/jhsun/CNVPipe/resources/GATK/dbsnp_146.hg38.vcf.gz"
+    gatk-hapmap: "/data/jinwf/jhsun/CNVPipe/resources/GATK/hapmap_3.3.hg38.vcf.gz"
+    gatk-omni: "/data/jinwf/jhsun/CNVPipe/resources/GATK/1000G_omni2.5.hg38.vcf.gz"
+    gatk-1000g: "/data/jinwf/jhsun/CNVPipe/resources/GATK/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
+    gatk-mills: "/home/jhsun/data3/CNVPipe/resources/GATK/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
+    gatk-hg38: "/home/jhsun/data3/CNVPipe/resources/GATK/Homo_sapiens_assembly38.known_indels.vcf.gz"
 
 settings:
     gatk-snp: False
@@ -28,7 +28,7 @@ settings:
 
 params:
     absPath: "/data/jinwf/jhsun/project/CNVPipe"
-    binSize:   20000
+    binSize:   1200
     
     fastp:
         threads:    6

@@ -16,24 +16,27 @@ cnvpipe_version = "0.0.1" #CNVPIPE_VERSION#
 
 # Import config file
 configfile: "config.yaml"
-#snakemake.utils.validate(config, schema="../schemas/config.schema.yaml")
-# Validate the format of config file TODO
 
-# We need to clean up the file name for the reference genome.
-# The prep rule decompress_genome provides the unzipped genome as needed.
+# Validate the format of config file TODO
+#snakemake.utils.validate(config, schema="../schemas/config.schema.yaml")
+
+# Clean up the file name for the reference genome.
 if config["data"]["genome"].endswith(".gz"):
     config["data"]["genome"] = os.path.splitext(config["data"]["genome"])[0]
 
 # Store sample names into config['global']
 if "global" in config:
-    raise Exception("Config key 'global' already defined. Someone messed with our setup.")
+    raise Exception("Config key 'global' cannot be defined in config file, please carefully check.")
 else:
     config["global"] = {}
 
 config["global"]["samples"] = pd.read_csv(
     config["data"]["samples"], sep='\t', dtype=str).set_index(["sample"], drop=False)
-#snakemake.utils.validate( config["global"]["samples"], schema="../schemas/samples.schema.yaml" ) TODO
 
+# Validate the format of sample tsv file TODO
+#snakemake.utils.validate( config["global"]["samples"], schema="../schemas/samples.schema.yaml" )
+
+# All control samples in sample tsv should start with 'control' keyword.
 config["global"]["sample-names"] = list()
 config["global"]["control-sample-names"] = list()
 for index, row in config["global"]["samples"].iterrows():
@@ -58,12 +61,7 @@ def valid_filepath(fn):
 problematic_filenames = 0
 for index, row in config["global"]["samples"].iterrows():
     if not valid_filename(row['sample']):
-        raise Exception(
-            "Invalid sample name or unit name found in samples table that contains characters " +
-            "which cannot be used as sample/unit names for naming output files: " +
-            str(row["sample"]) +
-            "; for maximum robustness, we only allow alpha-numerical, dots, dashes, and underscores. "
-        )
+        raise Exception("Invalid sample name: "+ str(row["sample"]) + "we only allow alpha-numerical, dots, dashes, and underscores.")
     if not os.path.isfile(row['fq1']) or (not pd.isnull(row['fq2']) and not os.path.isfile(row['fq2'])):
         raise Exception(
             "Input fastq files listed in the input files table " + config["data"]["samples"] +
@@ -151,10 +149,7 @@ if problematic_filenames > 0:
         "In " + str(problematic_filenames) + " of the " + str(len(config["global"]["sample-names"])) +
         " input fastq files listed in the input files table " + config["data"]["samples"] +
         " contain problematic characters. We generally advise to only use alpha-numeric " +
-        "characters, dots, dashes, and underscores. " +
-        "Use for example the script `tools/copy-samples.py --mode link [...] --clean` " +
-        "to create a new samples table and symlinks to the existing fastq files to solve this."
-        "We will try to continue running with these files, but it might lead to errors."
+        "characters, dots, dashes, and underscores. "
     )
 
 # No need to have these output vars available in the rest of the snakefiles

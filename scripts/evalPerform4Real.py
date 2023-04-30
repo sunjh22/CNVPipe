@@ -44,8 +44,8 @@ def overlap(cnv1, cnv2):
     
     cnvProp1 = round((overlap/cnvLen1), 2)
     cnvProp2 = round((overlap/cnvLen2), 2)
-    if min(cnvProp1, cnvProp2) > 0.3:
-    # if cnvProp1 >= 0.5:
+    # if min(cnvProp1, cnvProp2) > 0.3:
+    if cnvProp1 >= 0.5:
         return True
     else:
         return False
@@ -90,7 +90,7 @@ def evaluate(truthFile, callFile, Type, deletion=True):
             # if 'smoove' in toolName and dupholdScore>0:
             # if ('smoove' in toolName or 'delly' in toolName) and dupholdScore > 0:
             # if toolNum >= 2 and dupholdScore >= 90 and cnvfilter == 'True' and goodScore == 100:
-            if Type == 'merge':
+            if Type == 'CNVPipe':
                 dupholdScore = int(x[6])
                 toolName = x[7].split(',')
                 toolNum = int(x[8])
@@ -164,12 +164,12 @@ def evaluate(truthFile, callFile, Type, deletion=True):
 
 def evaluateHelper(truthFile, tools, sampleID, outputFile):
     for tool in tools:
-        callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis-10x/res/' + tool + '/' + \
+        callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/res/' + tool + '/' + \
                 sampleID + '.bed'
         if sampleID in ['sample13']:
             sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool, deletion=False)
         else:
-            callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis-10x/res/' + tool + '/' + \
+            callFile = '/home/jhsun/data3/project/CNVPipe/realAnalysis/res/' + tool + '/' + \
                 sampleID + '.bed'
             sensitivity, fdr = evaluate(truthFile=truthFile, callFile=callFile, Type=tool, deletion=True)
         
@@ -185,8 +185,7 @@ if __name__ == "__main__":
     print('sample', 'tool', 'sensitivity', 'FDR', sep='\t')
     print('sample', 'tool', 'sensitivity', 'FDR', sep='\t', file=out)
 
-    tools = ['merge', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
-    # tools = ['merge']
+    tools = ['CNVPipe', 'cnvkit', 'delly', 'cnvpytor', 'smoove', 'mops']
     samples = ['NA12878-1', 'NA12878-2', 'CHM13', 'AK1', 'HG002', 'HG00514', 'HG00733', 'NA19240']
 
     for sampleID in samples:

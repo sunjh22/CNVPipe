@@ -1,6 +1,6 @@
 #! /usr/bin/env snakemake
 
-# Include config file, get sample and control, print basic information of CNVPipe run
+# Include config file, get sample and control names, print CNVPipe interface
 include: "rules/common.smk"
 
 # Build genome index, BWA index and GATK dictionary for reference genome if they are not existed

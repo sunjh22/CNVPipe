@@ -216,6 +216,13 @@ Simulate 30x data for 1M bp CNV
     parallel --xapply mv 0.5X/sample{1}_1.fq.gz 0.5X/sample{2}_1.fq.gz ::: 115 116 117 118 119 120 ::: 133 134 135 136 137 138
     parallel --xapply mv 0.1X/sample{1}_1.fq.gz 0.1X/sample{2}_1.fq.gz ::: 115 116 117 118 119 120 ::: 139 140 141 142 143 144
 
+    parallel --xapply cp 30X/sample{1}_cnvList.bed 10X/sample{2}_cnvList.bed ::: 109 110 111 112 113 114 ::: 115 116 117 118 119 120
+    parallel --xapply cp 30X/sample{1}_cnvList.bed 5X/sample{2}_cnvList.bed ::: 109 110 111 112 113 114 ::: 121 122 123 124 125 126
+    parallel --xapply cp 30X/sample{1}_cnvList.bed 1X/sample{2}_cnvList.bed ::: 109 110 111 112 113 114 ::: 127 128 129 130 131 132
+    parallel --xapply cp 30X/sample{1}_cnvList.bed 0.5X/sample{2}_cnvList.bed ::: 109 110 111 112 113 114 ::: 133 134 135 136 137 138
+    parallel --xapply cp 30X/sample{1}_cnvList.bed 0.1X/sample{2}_cnvList.bed ::: 109 110 111 112 113 114 ::: 139 140 141 142 143 144
+    for x in {30,10,5,1,0.5,0.1}X; do ln -s /home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/1M/${x}/*_cnvList.bed ../simuGenome/; done
+    
 To simulate control samples, directly use reference genome.
 
     cd ~/data3/project/CNVPipe

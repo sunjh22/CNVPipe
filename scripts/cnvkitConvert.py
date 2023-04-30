@@ -18,7 +18,7 @@ def readFile(infile):
             if x.startswith('chrom'):
                 continue
             x = x.strip().split('\t')
-            chrom, start, end, cn = x[0], int(x[1]), int(x[2]), int(x[7])
+            chrom, start, end, cn = x[0], int(x[1]), int(x[2]), int(x[5])
             if cn == 2:
                 continue
             cnvList.append([chrom, start, end, cn])

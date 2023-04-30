@@ -91,7 +91,7 @@ def evaluate(truthFile, callFile, outputFile1, outputFile2):
 
 if __name__ == "__main__":
 
-    for i in range(1,109):
+    for i in range(109,145):
         outputFile1 = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/evaluation-svm/sample' + str(i) + '.observTP.bed'
         outputFile2 = '/home/jhsun/data3/project/CNVPipe/analysis-CNVSimulator/evaluation-svm/sample' + str(i) + '.FP.bed'
         truthFile = '/home/jhsun/data3/project/CNVPipe/simulation-CNVSimulator/simuGenome/sample' + str(i) + '_cnvList.bed'
