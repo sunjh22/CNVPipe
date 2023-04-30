@@ -2,7 +2,7 @@
 #     CNV calling by CNVKit
 # =================================================================================================
 
-# Call CNVs in samples in batch mode
+# Call CNVs with batch mode
 rule cnvkit_batch:
     input:
         get_sample_bai(config['global']['all-sample-names']),
@@ -33,7 +33,7 @@ rule cnvkit_batch:
         "--annotate {params.refflat} --drop-low-coverage --output-reference {output.reference} "
         "-d {params.outdir}) > {log} 2>&1"
         
-# Calculate confidence interval for log2 ratio and will be used for later call step
+# Calculate confidence interval for log2 ratio of bins, which will be used for later 'call' step
 rule cnvkit_segmetric:
     input:
         cns = "temp/cnvkit/{sample}.cns",
@@ -49,7 +49,7 @@ rule cnvkit_segmetric:
     shell:
         "cnvkit.py segmetrics -s {input.cns} {input.cnr} {params} -o {output} > {log} 2>&1"
 
-# Call integer copy number
+# Call integer copy number and filter by confidence interval
 rule cnvkit_call:
     input:
         rules.cnvkit_segmetric.output,

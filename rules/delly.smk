@@ -2,6 +2,10 @@
 #     CNV calling by Delly
 # =================================================================================================
 
+# Delly is written in C++ and calls CNV sample by sample.
+# 'delly cnv' optionally take the SV set obtained by 'delly call' as input to improve the accuracy 
+# of CNV calling. However 'delly call' is very time-consuming, a 10x sample needs around 24h to 
+# complete, so currently we skipped this step and directly used 'delly cnv' for CNV calling.
 # Delly by default divide genome into 10kb-mappable bins, but we can set window size by `-i`.
 rule delly_call_cnv:
     input:
@@ -24,9 +28,25 @@ rule delly_call_cnv:
         "(delly cnv -u -i {params.window} -g {params.ref} "
         "-m {params.maptrack} -c {output.cov} -o {output.cnv} {input.bam}) > {log} 2>&1"
 
-#! Delly sv call is too time-consuming, we will skip this step for real WGS data analysis for now.
-# Delly is written in C++ and calls CNV sample by sample.
-# Use Delly to call structural variants first, which will be used as input for CNV calling.
+# Extract all CNVs (DUP and DEL) and do the filtering after merging.
+rule delly_convert:
+    input:
+        rules.delly_call_cnv.output.cnv,
+    output:
+        "res/delly/{sample}.bed",
+    conda:
+        "../envs/delly.yaml"
+    shell:
+        "bcftools query -f '%FILTER\t%CHROM\t%POS\t%INFO/END[\t%CN]\t%QUAL\n' {input} | "
+        "grep 'PASS' | cut -f 2- | awk '$4 !=2 {{print$0}}' > {output}"
+
+rule all_delly:
+    input:
+        expand("res/delly/{sample}.bed", sample=config['global']['sample-names'])
+
+# ---------------------------------------------------------------------------------------------
+#! Delly sv call 
+# Use Delly to call structural variants first, which could be used as input for CNV calling.
 # rule delly_call_sv:
 #     input:
 #         "mapped/{sample}.bam.bai",
@@ -67,23 +87,6 @@ rule delly_call_cnv:
 #     shell:
 #         "(delly cnv -u -i {params.window} -g {params.ref} -l {input.sv} "
 #         "-m {params.maptrack} -c {output.cov} -o {output.cnv} {input.bam}) > {log} 2>&1"
-
-# Extract all CNVs (DUP and DEL) and do the filtering after merging.
-rule delly_convert:
-    input:
-        rules.delly_call_cnv.output.cnv,
-    output:
-        "res/delly/{sample}.bed",
-    conda:
-        "../envs/delly.yaml"
-    shell:
-        "bcftools query -f '%FILTER\t%CHROM\t%POS\t%INFO/END[\t%CN]\t%QUAL\n' {input} | "
-        "grep 'PASS' | cut -f 2- | awk '$4 !=2 {{print$0}}' > {output}"
-
-rule all_delly:
-    input:
-        expand("res/delly/{sample}.bed", sample=config['global']['sample-names'])
-
 
 # Use duphold to genotype delly results
 # Change: move the step of duphold genotyping to after merging results

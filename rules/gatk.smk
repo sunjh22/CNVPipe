@@ -2,7 +2,7 @@
 #     SNP calling by GATK
 # =================================================================================================
 
-# We call vcf per sample
+# Use GATK to call vcf with single-sample mode, for data with over 10x depth.
 # HaplotypeCaller is the most time consuming step
 rule gatk_haplotypeCaller:
     input:
@@ -57,9 +57,6 @@ rule gatk_variantRecalibrator:
         "-O {output.recal} --tranches-file {output.tranches} --rscript-file {output.rscript} "
         ">{log} 2>&1"
 
-# the variance of these two is zero, may be due to simulation data, should be added for real data.
-# -an MQ -an MQRankSum
-
 rule gatk_applyVQSR:
     input:
         vcf = rules.gatk_haplotypeCaller.output.vcf,
@@ -87,23 +84,3 @@ localrules: all_gatk
 rule all_gatk:
     input:
         expand("snps/gatk/{sample}.vqsr.vcf.gz", sample = config['global']['sample-names']),
-
-# As we just kept SNP in vcf, this selecting step is not necessary.
-# rule gatk_selectVariants:
-#     input:
-#         rules.gatk_applyVQSR.output,
-#     output:
-#         "snps/gatk/{sample}.vqsr.snp.vcf.gz",
-#     params:
-#         ref = config['data']['genome'],
-#         extra = config['params']['gatk']['extra'],
-#     log:
-#         "logs/gatk/{sample}.selectVariants.log"
-#     benchmark:
-#         "benchmarks/gatk/{sample}.selectVariants.bench"
-#     conda:
-#         "../envs/pre-processing.yaml"
-#     shell:
-#         "gatk {params.extra} SelectVariants -R {params.ref} -V {input} -O {output} "
-#         "--select-type-to-include SNP --exclude-filtered "
-#         "--exclude-non-variants --remove-unused-alternates >{log} 2>&1"

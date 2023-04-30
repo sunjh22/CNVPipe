@@ -2,6 +2,7 @@
 #     SNP calling by freebayes
 # =================================================================================================
 
+# Use freebayes to call SNPs for low-depth data (< 10x)
 # In what depth freebayes could provide good results?
 rule freebayes_call:
     input:

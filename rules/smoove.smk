@@ -2,8 +2,8 @@
 #     CNV calling by Smoove
 # =================================================================================================
 
-# Smoove is a wrapper of Lumpy, which get discordant and split reads automatically, runs very fast.
-# This method uses the information of read depth, split read and read pair.
+# Smoove is a wrapper of Lumpy, duphold and SVtyper, which gets discordant and split reads 
+# automatically and runs very fast.
 rule smoove_call:
     input:
         "mapped/{sample}.bam.bai",
@@ -24,6 +24,31 @@ rule smoove_call:
         "(smoove call --outdir {params.outdir} --exclude {params.exclude} "
         "--name {wildcards.sample} --fasta {params.ref} -p 1 --genotype {input.bam}) > {log} 2>&1"
 
+# Extract all CNVs (DUP and DEL). Smoove might produce some contradictary calls for noisy or 
+# complicated regions, we remove these regions before downstream filtering.
+rule smoove_convert:
+    input:
+        rules.smoove_call.output,
+    output:
+        tmpBed = "temp/smoove/{sample}.bed",
+        bed = "res/smoove/{sample}.bed",
+    params:
+        absPath = config['params']['absPath']
+    log:
+        "logs/smoove/{sample}.covert.log"
+    conda:
+        "../envs/freebayes.yaml"
+    shell:
+        "bcftools query -f '%CHROM\t%POS\t%INFO/END\t%INFO/SVTYPE\t%QUAL\n' {input} | "
+        "egrep 'DUP|DEL' | awk -v OFS='\t' '$4==\"DEL\" {{print $1,$2,$3,1,$5}} "
+        "$4==\"DUP\" {{print $1,$2,$3,3,$5}}' > {output.tmpBed}; "
+        "python {params.absPath}/scripts/smooveFilter.py {output.tmpBed} {output.bed} > {log} 2>&1"
+
+rule all_smoove:
+    input:
+        expand("res/smoove/{sample}.bed", sample=config['global']['sample-names'])
+
+# --------------------------------------------------------------------------------------------------
 # Smoove genotype command is a wrapper of svtyper and duphold, the later one will calculatethe read 
 # depth ratio between CNV region and its flanking region, and regions with the same GC content, and 
 # regions in the same chromosome.
@@ -61,28 +86,3 @@ rule smoove_call:
 #         "{input} | egrep 'DUP|DEL' | "
 #         "awk -v OFS='\t' '$4==\"DEL\" && $7<0.7 {{print $1,$2,$3,1,$5\"|\"$7\"|\"$8}} "
 #         "$4==\"DUP\" && $8>1.3 {{print $1,$2,$3,3,$5\"|\"$7\"|\"$8}}' > {output}"
-
-# Extract all CNVs (DUP and DEL) and do the filtering after merging.
-# Smoove might produce some contradictary calls for the same region, indicating they are noisy or 
-# complicated, we will just remove these regions before downstream filtering.
-rule smoove_convert:
-    input:
-        rules.smoove_call.output,
-    output:
-        tmpBed = "temp/smoove/{sample}.bed",
-        bed = "res/smoove/{sample}.bed",
-    params:
-        absPath = config['params']['absPath']
-    log:
-        "logs/smoove/{sample}.covert.log"
-    conda:
-        "../envs/freebayes.yaml"
-    shell:
-        "bcftools query -f '%CHROM\t%POS\t%INFO/END\t%INFO/SVTYPE\t%QUAL\n' {input} | "
-        "egrep 'DUP|DEL' | awk -v OFS='\t' '$4==\"DEL\" {{print $1,$2,$3,1,$5}} "
-        "$4==\"DUP\" {{print $1,$2,$3,3,$5}}' > {output.tmpBed}; "
-        "python {params.absPath}/scripts/smooveFilter.py {output.tmpBed} {output.bed} > {log} 2>&1"
-
-rule all_smoove:
-    input:
-        expand("res/smoove/{sample}.bed", sample=config['global']['sample-names'])

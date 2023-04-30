@@ -2,12 +2,12 @@
 #     Assign various scores to CNV
 # =================================================================================================
 
-# Merge CNV calls from 5 tools according to the read depth.
+# Merge CNV calls from 5 tools by different strategies according to the read depth of the data.
 # if RD < 1x: merge cn.mops, cnvkit and cnvpytor
-# if 1x < RD < 5x: merge cn.mops, cnvkit, delly, cnvpytor and smoove
-# if RD > 5x: merge smoove, delly, cnvkit, cnvpytor, mops
+# if 1x <= RD < 5x: merge cn.mops, cnvkit, delly, cnvpytor and smoove
+# if RD >= 5x: merge smoove, delly, cnvkit, cnvpytor, mops
 # Assign 'accumulative score' (1. AS)
-if config['params']['binSize'] < 8000:
+if config['params']['binSize'] <= 8000:
     rule merge_CNVCall_highDepth:
         input:
             bed = expand(
@@ -129,18 +129,20 @@ rule classifycnv_predict:
         "python {params.absPath}/scripts/classifyCNV.py --absPath {params.absPath} --infile {input}"
         " --GenomeBuild hg38 --cores {threads} >{log} 2>&1"
 
+# Convert ClassifyCNV output to well-formated CNV bed file.
 rule classifycnv_convert:
     input:
         normal_bed = rules.good_normal_score.output,
         patho_bed = rules.classifycnv_predict.output,
     output:
-        "res/merge/{sample}.bed"
+        "res/CNVPipe/{sample}.bed"
     params:
         absPath = config['params']['absPath']
     shell:
         "python {params.absPath}/scripts/classifyCNVConvert.py {input.normal_bed} {input.patho_bed}"
         " {output}"
 
+# Optionally identify recurrent CNVs for samples with specific phenotypes
 if config['settings']['recurrent']:
     rule find_recurrent_cnvs:
         input:
@@ -162,3 +164,5 @@ if config['settings']['recurrent']:
             "tmp/recurrent/recurrent.sort.bed --GenomeBuild hg38 --cores {threads} >{log} 2>&1; "
             "python {params.absPath}/scripts/classifyCNVConvert.py tmp/recurrent/recurrent.sort.bed "
             "res/classifycnv/recurrent.classifycnv.txt {output}"
+
+# Plot

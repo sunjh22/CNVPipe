@@ -37,7 +37,13 @@ include: "rules/merge.smk"
 # Get final CNV table
 localrules: all
 
-rule all:
-    input:
-        expand("res/merge/{sample}.bed", sample = config['global']['sample-names']),
-        "cleaned/multiqc-report.html",
+if config['settings']['recurrent']:
+    rule all:
+        input:
+            "res/recurrent/recurrent.bed",
+            "cleaned/multiqc-report.html",
+else:
+    rule all:
+        input:
+            expand("res/CNVPipe/{sample}.bed", sample = config['global']['sample-names']),
+            "cleaned/multiqc-report.html",
