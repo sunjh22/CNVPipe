@@ -1,6 +1,7 @@
 channels:
   - conda-forge
-  - bioconda 
+  - bioconda
+
 dependencies:
-  - pomegranate=0.14.8
-  - cnvkit=0.9.9
+  #- pomegranate=0.14.8
+  - cnvkit=0.9.10
