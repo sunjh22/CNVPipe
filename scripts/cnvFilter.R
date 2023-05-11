@@ -4,20 +4,17 @@ options("repos" = c(CRAN="https://mirror-hk.koddos.net/CRAN/"))
 options(BioC_mirror="https://mirrors.tuna.tsinghua.edu.cn/bioconductor/")
 
 if (!requireNamespace("BiocManager", quietly = TRUE)){
-    install.packages("BiocManager")
+  install.packages("BiocManager")
 }
 
 if(!require("remotes", quietly=TRUE)){
-    BiocManager::install("remotes")
+  BiocManager::install("remotes")
 }
 
 Sys.setenv(XML_CONFIG="/usr/bin/xml2-config")
 
 if(!require("CNVfilteR", quietly=TRUE)){
-    BiocManager::install("CNVfilteR", force = TRUE)
-    if(packageVersion('CNVfilteR') != "1.13.2"){
-      BiocManager::install("jpuntomarcos/CNVfilteR")
-    }
+  BiocManager::install("jpuntomarcos/CNVfilteR")
 }
 
 if(!require("dplyr", quietly=TRUE)){
