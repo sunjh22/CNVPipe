@@ -31,8 +31,10 @@ def overlap(cnv1, cnv2):
     
     cnvProp1 = round((overlap/cnvLen1), 2)
     cnvProp2 = round((overlap/cnvLen2), 2)
-    cnvProp = min(cnvProp1, cnvProp2)
+    # cnvProp = min(cnvProp1, cnvProp2)
+    cnvProp = max(cnvProp1, cnvProp2)
     return overlap, cnvProp
+
 
 def getCNVs(workDir):
     new_cnvs = []
@@ -57,6 +59,7 @@ def getCNVs(workDir):
                     new_cnvs.append(new_cnv)
 
     return new_cnvs
+
 
 def main(outputFile, workDir, controlNames, sampleNumThe):
     cnvs = getCNVs(workDir)
@@ -93,7 +96,6 @@ def main(outputFile, workDir, controlNames, sampleNumThe):
         mergedCnvs.append(cnv1)
         cnvs = cnvs2[:]
 
-    controlNames = controlNames.lstrip('[').rstrip(']').split(',')
     with open(outputFile, 'w') as f:
         print('chromosome', 'start', 'end', 'cn', 'samples', 'sampleNum', 'accumScore', sep='\t', file=f)
         for cnv in mergedCnvs:
@@ -106,12 +108,14 @@ def main(outputFile, workDir, controlNames, sampleNumThe):
                     continue
             print(*cnv, sep='\t', file=f)
 
+
 if __name__ == '__main__':
 
     outputFile = sys.argv[1]
     workDir = sys.argv[2]
-    controlNames = sys.argv[3]  # a list of control sample names
-    sampleNumThe = sys.argv[4]  # threshold of the number of samples to keep the recurrent CNVs
-    print(controlNames)
+    sampleNumThe = sys.argv[3]  # threshold of the number of samples to keep the recurrent CNVs
+    controlNames = sys.argv[4:]  # a list of control sample names
+    
+    # print(controlNames)
 
     main(outputFile, workDir, controlNames, sampleNumThe)

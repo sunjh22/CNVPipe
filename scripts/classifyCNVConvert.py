@@ -16,7 +16,7 @@ with open(pathoBedFile, 'r') as f:
         pathoCNV[cnv] = pathoInfo
 
 with open(normalBedFile, 'r') as f, open(outputFile, 'w') as g:
-    print('chrom\tstart\tend\tcn\ttype\tAS\tDS\ttoolName\ttoolNum\tcnvfilter\tGS\tNS\tpathogenicity\tpathoScore\tdosageGene', file=g)
+    print('chrom\tstart\tend\tcn\tsamples\tsampleNum\taccumScore\tpathogenicity\tpathoScore\tdosageGene', file=g)
     for x in f:
         if x.startswith('chromosome'):
             continue

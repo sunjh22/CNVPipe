@@ -15,6 +15,7 @@ Sys.setenv(XML_CONFIG="/usr/bin/xml2-config")
 
 if(!require("CNVfilteR", quietly=TRUE)){
   BiocManager::install("jpuntomarcos/CNVfilteR")
+  # BiocManager::install("jpuntomarcos/CNVfilteR", version='1.13.2')
 }
 
 if(!require("dplyr", quietly=TRUE)){

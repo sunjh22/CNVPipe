@@ -17,7 +17,6 @@ rule cnvkit_batch:
     params:
         ref = config['data']['genome'],
         access = config['data']['access'],
-        refflat = config['data']['refflat'],
         outdir = "temp/cnvkit",
         binSize = config['params']['binSize'],
     log:
@@ -30,7 +29,7 @@ rule cnvkit_batch:
         "echo 'Bin size used for CNV calling is: ' {params.binSize}; "
         "(cnvkit.py batch {input.sample} -n {input.control} -m wgs -f {params.ref} "
         "--access {params.access} --target-avg-size {params.binSize} -p {threads} "
-        "--annotate {params.refflat} --drop-low-coverage --output-reference {output.reference} "
+        "--drop-low-coverage --output-reference {output.reference} "
         "-d {params.outdir}) > {log} 2>&1"
         
 # Calculate confidence interval for log2 ratio of bins, which will be used for later 'call' step

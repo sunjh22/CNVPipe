@@ -74,8 +74,8 @@ if config['settings']['gatk-snp'] and config['params']['binSize'] < 4000:
             vcf_source = "HaplotypeCaller",
         log:
             "logs/cnvfilter/{sample}.log"
-        conda:
-            "../envs/cnvfilter.yaml"
+        # conda:
+        #     "../envs/cnvfilter.yaml"
         shell:
             "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} {params.vcf_source} > {log} 2>&1"
 else:
@@ -90,8 +90,8 @@ else:
             vcf_source = "freeBayes",
         log:
             "logs/cnvfilter/{sample}.log"
-        conda:
-            "../envs/cnvfilter.yaml"
+        # conda:
+        #     "../envs/cnvfilter.yaml"
         shell:
             "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} {params.vcf_source} > {log} 2>&1"
 
@@ -148,7 +148,9 @@ if config['settings']['recurrent']:
         input:
             expand("res/CNVPipe/{sample}.bed", sample=config['global']['sample-names']),
         output:
-            "res/recurrent/recurrent.bed",
+            tmpBed = "temp/recurrent/recurrent.bed",
+            tmpSortBed = "temp/recurrent/recurrent.sort.bed",
+            finalBed = "res/recurrent/recurrent.bed",
         params:
             absPath = config['params']['absPath'],
             controlNames = config['global']['control-sample-names'],
@@ -157,12 +159,12 @@ if config['settings']['recurrent']:
         log:
             "logs/recurrent/recurrent.classifyCNV.log"
         shell:
-            "python {params.absPath}/scripts/findRecurrentCNV.py tmp/recurrent/recurrent.bed ./ "
-            "{params.controlNames} {params.sampleNumThe}; "
-            "sort -Vk 1 -k 2,3n tmp/recurrent/recurrent.bed > tmp/recurrent/recurrent.sort.bed; "
+            "python {params.absPath}/scripts/findRecurrentCNV.py {output.tmpBed} ./ "
+            "{params.sampleNumThe} {params.controlNames} ; "
+            "sort -Vk 1 -k 2,3n {output.tmpBed} > {output.tmpSortBed}; "
             "python {params.absPath}/scripts/classifyCNV.py --absPath {params.absPath} --infile "
-            "tmp/recurrent/recurrent.sort.bed --GenomeBuild hg38 --cores {threads} >{log} 2>&1; "
-            "python {params.absPath}/scripts/classifyCNVConvert.py tmp/recurrent/recurrent.sort.bed "
-            "res/classifycnv/recurrent.classifycnv.txt {output}"
+            "{output.tmpSortBed} --GenomeBuild hg38 --cores {threads} >{log} 2>&1; "
+            "python {params.absPath}/scripts/classifyCNVConvert.py {output.tmpSortBed} "
+            "res/classifycnv/recurrent.classifycnv.txt {output.finalBed}"
 
 # Plot
