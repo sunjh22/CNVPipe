@@ -37,7 +37,7 @@ if __name__ == '__main__':
     cnvs = []
     with open(inputFile, 'r') as f:
         for line in f:
-            if line.find('_') != -1:
+            if line.find('_') != -1 and not line.startswith('NC'):
                 continue
             line = line.strip().split('\t')
             cnvs.append(line)
@@ -51,8 +51,8 @@ if __name__ == '__main__':
                 if overlap(x[:3], y[:3]) > 0:
                     flag = 1
 
-        # the length of identified CNV should larger than 1kb
-        if flag == 0 and cnvLen >= 1000:
+        # the length of identified CNV should be larger than 50bp
+        if flag == 0 and cnvLen >= 50:
             print(*x, sep='\t', file=out)
 
     out.close()

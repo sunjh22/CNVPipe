@@ -135,13 +135,25 @@ else:
         input:
             rules.delly_uncompress.output,
         output:
-            "res/delly/{sample}.bed",
+            "temp/delly/convert/{sample}.bed",
+        params:
+            absPath = config['params']['absPath'],
         conda:
             "../envs/delly.yaml"
         shell:
             "bcftools query -f '[%FT]\t%CHROM\t%POS\t%INFO/END\t%INFO/SVTYPE[\t%RDCN]\n' {input} | "
             "grep 'PASS' | egrep 'DEL|DUP' | cut -f 2- | awk '$4 == \"DEL\" && $5 < 2 {{print$0}} "
             "$4 == \"DUP\" && $5 > 2 {{print$0}}' | cut -f 1,2,3,5 > {output}"
+            
+    rule delly_resolveConflict:
+        input:
+            rules.delly_convert.output,
+        output:
+            "res/delly/{sample}.bed",
+        params:
+            absPath = config['params']['absPath'],
+        shell:
+            "python {params.absPath}/scripts/smooveFilter.py {input} {output}"
 
 rule all_delly:
     input:

@@ -14,6 +14,7 @@ rule mops_call:
     output:
         bed = expand("res/mops/{sample}.temp.bed", sample=config['global']['sample-names']),
     params:
+        species = config['settings']['species']['human'],
         resDir = "res/mops/",
         binSize = config['params']['binSize'],
         absPath = config['params']['absPath'],
@@ -26,7 +27,7 @@ rule mops_call:
     conda:
         "../envs/cnmops.yaml"
     shell:
-        "Rscript {params.absPath}/scripts/mopsCall.R {params.resDir} {params.binSize} "
+        "Rscript {params.absPath}/scripts/mopsCall.R {params.species} {params.resDir} {params.binSize} "
         "{threads} {input.bam} > {log} 2>&1"
 
 # cn.MOPS may produce results with adjacent CNVs being the same type of CNV but the CN value is 

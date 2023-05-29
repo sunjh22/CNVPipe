@@ -40,6 +40,8 @@ def getCNVs(workDir):
     new_cnvs = []
     files = os.listdir(workDir + 'res/CNVPipe/')
     for tmpFile in files:
+        if not os.path.isfile(tmpFile):
+            continue
         with open('res/CNVPipe/' + tmpFile, 'r') as f:
             sample = os.path.basename(tmpFile).split('.')[0]
             for cnv in f:

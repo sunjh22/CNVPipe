@@ -12,10 +12,11 @@ options(scipen = 999)
 
 # Get arguments.
 args <- commandArgs(trailingOnly = TRUE)
-result_dir <- args[1]
-bin_size <- as.integer(args[2])
-threads <- as.integer(args[3])
-bam_files <- tail(args, -3)
+species_human <- args[1]
+result_dir <- args[2]
+bin_size <- as.integer(args[3])
+threads <- as.integer(args[4])
+bam_files <- tail(args, -4)
 
 # Get arguments from snakemake
 # result_dir <- snakemake@params[['resDir']]
@@ -24,7 +25,9 @@ bam_files <- tail(args, -3)
 # bam_files <- snakemake@input[['bam']]
 
 # Drop MT (fails otherwise) and get read counts in bin_size windows. Windows should contain 50-100 reads each.
-seq_names <- paste('chr', c(as.character(seq(22)), "X", "Y"), sep = '')
+human_ref <- paste('chr', c(as.character(seq(22)), "X", "Y"), sep = '')
+rice_ref <- c('NC_029256.1','NC_029257.1','NC_029258.1','NC_029259.1','NC_029260.1','NC_029261.1','NC_029262.1','NC_029263.1','NC_029264.1','NC_029265.1','NC_029266.1','NC_029267.1')
+seq_names <- if(species_human=='True') human_ref else rice_ref
 bam_data_ranges <- getReadCountsFromBAM(bam_files, refSeqNames = seq_names, WL = bin_size, parallel = threads)
 
 # Call CNVS and calculate integer copy numbers.
