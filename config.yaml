@@ -15,9 +15,6 @@ data:
     gatk-hg38: "/home/jhsun/data3/CNVPipe/resources/GATK/Homo_sapiens_assembly38.known_indels.vcf.gz"
 
 settings:
-    species:
-        human: True
-
     keep-intermediate:
         fastp: False
         bwamem: False
@@ -29,7 +26,8 @@ settings:
     recurrent: False
 
 params:
-    absPath: "/data/jinwf/jhsun/project/CNVPipe"
+    species: 'human'
+
     binSize:   1200
     
     fastp:
@@ -49,6 +47,9 @@ params:
     mops:
         threads:    10
 
+    delly:
+        complex-mode: False
+        
     freebayes:
         threads:    8
 

@@ -12,7 +12,7 @@ options(scipen = 999)
 
 # Get arguments.
 args <- commandArgs(trailingOnly = TRUE)
-species_human <- args[1]
+x_species <- args[1]
 result_dir <- args[2]
 bin_size <- as.integer(args[3])
 threads <- as.integer(args[4])
@@ -27,8 +27,17 @@ bam_files <- tail(args, -4)
 # Drop MT (fails otherwise) and get read counts in bin_size windows. Windows should contain 50-100 reads each.
 human_ref <- paste('chr', c(as.character(seq(22)), "X", "Y"), sep = '')
 rice_ref <- c('NC_029256.1','NC_029257.1','NC_029258.1','NC_029259.1','NC_029260.1','NC_029261.1','NC_029262.1','NC_029263.1','NC_029264.1','NC_029265.1','NC_029266.1','NC_029267.1')
-seq_names <- if(species_human=='True') human_ref else rice_ref
-bam_data_ranges <- getReadCountsFromBAM(bam_files, refSeqNames = seq_names, WL = bin_size, parallel = threads)
+
+if(x_species=='human'){
+    bam_data_ranges <- getReadCountsFromBAM(bam_files, refSeqNames = human_ref, WL = bin_size, parallel = threads)
+} else if(x_species=='rice'){
+    bam_data_ranges <- getReadCountsFromBAM(bam_files, refSeqNames = rice_ref, WL = bin_size, parallel = threads)
+} else{
+    bam_data_ranges <- getReadCountsFromBAM(bam_files, WL = bin_size, parallel = threads)
+}
+
+# seq_names <- if(x_species=='human') human_ref else rice_ref
+# bam_data_ranges <- getReadCountsFromBAM(bam_files, refSeqNames = seq_names, WL = bin_size, parallel = threads)
 
 # Call CNVS and calculate integer copy numbers.
 results <- cn.mops(bam_data_ranges, parallel = threads) %>% calcIntegerCopyNumbers()

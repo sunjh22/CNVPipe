@@ -1,11 +1,15 @@
 #! /usr/bin/env python
 
-import sys
 from collections import defaultdict
 
-normalBedFile = sys.argv[1]
-pathoBedFile = sys.argv[2]
-outputFile = sys.argv[3]
+# normalBedFile = sys.argv[1]
+# pathoBedFile = sys.argv[2]
+# outputFile = sys.argv[3]
+
+normalBedFile = snakemake.input[0]
+pathoBedFile = snakemake.input[1]
+flag = snakemake.params[0]
+outputFile = snakemake.output[0]
 
 pathoCNV = defaultdict(list)
 with open(pathoBedFile, 'r') as f:
@@ -16,7 +20,12 @@ with open(pathoBedFile, 'r') as f:
         pathoCNV[cnv] = pathoInfo
 
 with open(normalBedFile, 'r') as f, open(outputFile, 'w') as g:
-    print('chrom\tstart\tend\tcn\tsamples\tsampleNum\taccumScore\tpathogenicity\tpathoScore\tdosageGene', file=g)
+    if flag == "before-recurrent":
+        print('chrom\tstart\tend\tcn\tcnv\tAS\tDS\ttools\ttoolNum\tcnvfilter\tGS\tNS\tpathogenicity\tPS\tdosageGene', file=g)
+    elif flag == "after-recurrent":
+        print('chrom\tstart\tend\tcn\tsamples\tsampleNum\taccumScore\tpathogenicity\tpathoScore\tdosageGene', file=g)
+    else:
+        raise ValueError('You must indicate this convert script is use for "before-recurrent" or "after-recurrent".')
     for x in f:
         if x.startswith('chromosome'):
             continue

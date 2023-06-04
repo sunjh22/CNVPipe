@@ -12,7 +12,8 @@ rule smoove_call:
         "temp/smoove/{sample}-smoove.genotyped.vcf.gz",
     params:
         outdir = "temp/smoove/",
-        exclude = config['data']['smoove-exclude'],
+        exclude = ("--exclude " + config['data']['smoove-exclude'] 
+                    if config['data']['smoove-exclude'] else ""),
         ref = config['data']['genome'],
     log:
         "logs/smoove/{sample}.call.log"
@@ -21,28 +22,33 @@ rule smoove_call:
     conda:
         "../envs/smoove.yaml"
     shell:
-        "(smoove call --outdir {params.outdir} --exclude {params.exclude} "
+        "(smoove call --outdir {params.outdir} {params.exclude} "
         "--name {wildcards.sample} --fasta {params.ref} -p 1 --genotype {input.bam}) > {log} 2>&1"
 
 # Extract all CNVs (DUP and DEL). Smoove might produce some contradictary calls for noisy or 
 # complicated regions, we remove these regions before downstream filtering.
-rule smoove_convert:
+rule smoove_extract:
     input:
         rules.smoove_call.output,
     output:
-        tmpBed = "temp/smoove/{sample}.bed",
-        bed = "res/smoove/{sample}.bed",
-    params:
-        absPath = config['params']['absPath']
-    log:
-        "logs/smoove/{sample}.covert.log"
+        "temp/smoove/{sample}.bed",
     conda:
         "../envs/freebayes.yaml"
     shell:
         "bcftools query -f '%CHROM\t%POS\t%INFO/END\t%INFO/SVTYPE\t%QUAL\n' {input} | "
         "egrep 'DUP|DEL' | awk -v OFS='\t' '$4==\"DEL\" {{print $1,$2,$3,1,$5}} "
-        "$4==\"DUP\" {{print $1,$2,$3,3,$5}}' > {output.tmpBed}; "
-        "python {params.absPath}/scripts/smooveFilter.py {output.tmpBed} {output.bed} > {log} 2>&1"
+        "$4==\"DUP\" {{print $1,$2,$3,3,$5}}' > {output}"
+        
+#"python {params.absPath}/scripts/smooveFilter.py {output.tmpBed} {output.bed} > {log} 2>&1"
+rule smoove_convert:
+    input:
+        rules.smoove_extract.output,
+    output:
+        "res/smoove/{sample}.bed",
+    script:
+        "../scripts/smooveConvert.py"
+
+localrules: all_smoove
 
 rule all_smoove:
     input:

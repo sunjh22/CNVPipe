@@ -1,10 +1,8 @@
 #! /usr/bin/env python
 ### Score CNV region by DHFFC and DHBFC from duphold
 
-import sys
-
-inputFile = sys.argv[1]
-outputFile = sys.argv[2]
+inputFile = snakemake.input[0]
+outputFile = snakemake.output[0]
 
 with open(inputFile, 'r') as f, open(outputFile, 'w') as g:
     print('chromosome\tstart\tend\tcn\tcnv\taccumScore\tdupholdScore\ttoolName\ttoolNum\tsample', file=g)

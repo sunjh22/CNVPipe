@@ -1,5 +1,8 @@
 #! /usr/bin/env snakemake
 
+# Import config file
+configfile: "config.yaml"
+
 # Include config file, get sample and control names, print CNVPipe interface
 include: "rules/common.smk"
 
@@ -37,13 +40,20 @@ include: "rules/merge.smk"
 # Get final CNV table
 localrules: all
 
-if config['settings']['recurrent']:
+if config['params']['species'] != 'human':
     rule all:
         input:
-            "res/recurrent/recurrent.bed",
+            expand("res/CNVpipe/{sample}.bed", sample = config['global']['sample-names']),
             "cleaned/multiqc-report.html",
 else:
-    rule all:
-        input:
-            expand("res/CNVPipe/{sample}.bed", sample = config['global']['sample-names']),
-            "cleaned/multiqc-report.html",
+    if config['settings']['recurrent']:
+        rule all:
+            input:
+                "res/recurrent/recurrent.bed",
+                expand("res/CNVPipe/{sample}.priority.bed", sample = config['global']['sample-names']),
+                "cleaned/multiqc-report.html",
+    else:
+        rule all:
+            input:
+                expand("res/CNVPipe/{sample}.priority.bed", sample = config['global']['sample-names']),
+                "cleaned/multiqc-report.html",

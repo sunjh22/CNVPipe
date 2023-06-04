@@ -17,11 +17,9 @@ if config['params']['binSize'] <= 8000:
         output:
             "res/merge/{sample}.merged.bed",
         params:
-            absPath = config['params']['absPath']
-        log:
-            "logs/merge/{sample}.merge.log"
-        shell:
-            "python {params.absPath}/scripts/mergeCNV.py {input.bed} {output} >{log} 2>&1"
+            flag = 'high'
+        script:
+            "../scripts/mergeCNV.py"
 elif 8000 < config['params']['binSize'] < 40000:
     rule merge_CNVCall_medianDepth:
         input:
@@ -32,11 +30,9 @@ elif 8000 < config['params']['binSize'] < 40000:
         output:
             "res/merge/{sample}.merged.bed",
         params:
-            absPath = config['params']['absPath']
-        log:
-            "logs/merge/{sample}.merge.log"
-        shell:
-            "python {params.absPath}/scripts/mergeCNVMedianDepth.py {input.bed} {output} >{log} 2>&1"
+            flag = 'median'
+        script:
+            "../scripts/mergeCNV.py"
 else:
     rule merge_CNVCall_lowDepth:
         input:
@@ -47,11 +43,9 @@ else:
         output:
             "res/merge/{sample}.merged.bed",
         params:
-            absPath = config['params']['absPath']
-        log:
-            "logs/merge/{sample}.merge.log"
-        shell:
-            "python {params.absPath}/scripts/mergeCNVLowDepth.py {input.bed} {output} >{log} 2>&1"
+            flag = 'low'
+        script:
+            "../scripts/mergeCNV.py"
 
 localrules: all_merge_CNVCall
 rule all_merge_CNVCall:
@@ -61,11 +55,20 @@ rule all_merge_CNVCall:
 # Apply duphold and assign 'depth score' (2. DS)
 include: "duphold.smk"
 
+if config['params']['species'] != 'human':
+    rule cnvpipe_convert:
+        input:
+            rules.duphold_convert.output,
+        output:
+            "res/CNVpipe/{sample}.bed",
+        shell:
+            "awk '$7>0 && $9>=2' {input} | cut -f 1-9 > {output}"
+
 # Apply cnvfilter and assign 'SNP score' (3. SS) if SNPs could be called
 if config['settings']['gatk-snp'] and config['params']['binSize'] < 4000:
     rule cnvfilter_call_gatk:
         input:
-            bed = rules.score_byDepth.output.scoreBed,
+            bed = rules.duphold_convert.output,
             vcf = rules.gatk_applyVQSR.output,
         output:
             "res/cnvfilter/{sample}.bed",
@@ -74,14 +77,14 @@ if config['settings']['gatk-snp'] and config['params']['binSize'] < 4000:
             vcf_source = "HaplotypeCaller",
         log:
             "logs/cnvfilter/{sample}.log"
-        # conda:
-        #     "../envs/cnvfilter.yaml"
+        conda:
+            "../envs/cnvfilter.yaml"
         shell:
             "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} {params.vcf_source} > {log} 2>&1"
 else:
     rule cnvfilter_call_freebayes:
         input:
-            bed = rules.score_byDepth.output.scoreBed,
+            bed = rules.duphold_convert.output,
             vcf = rules.freebayes_filter.output.snp,
         output:
             "res/cnvfilter/{sample}.bed",
@@ -90,8 +93,8 @@ else:
             vcf_source = "freeBayes",
         log:
             "logs/cnvfilter/{sample}.log"
-        # conda:
-        #     "../envs/cnvfilter.yaml"
+        conda:
+            "../envs/cnvfilter.yaml"
         shell:
             "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} {params.vcf_source} > {log} 2>&1"
 
@@ -103,14 +106,10 @@ rule good_normal_score:
     output:
         "res/merge/{sample}.goodscore.bed",
     params:
-        absPath = config['params']['absPath'],
         badList = config['data']['smoove-exclude'],
         normalList = config['data']['normal-common-cnv'],
-    log:
-        "logs/merge/{sample}.goodscore.log"
-    shell:
-        "python {params.absPath}/scripts/goodNormalScore.py {input} {params.badList} "
-        "{params.normalList} {output} >{log} 2>&1"
+    script:
+        "../scripts/goodNormalScore.py"
 
 # Apply ClassifyCNV and assign 'pathogenicity score' (6. PS)
 rule classifycnv_predict:
@@ -135,12 +134,30 @@ rule classifycnv_convert:
         normal_bed = rules.good_normal_score.output,
         patho_bed = rules.classifycnv_predict.output,
     output:
-        "res/CNVPipe/{sample}.bed"
+        "res/classifycnv/{sample}.bed",
     params:
-        absPath = config['params']['absPath']
+        "before-recurrent"
+    script:
+        "../scripts/classifyCNVConvert.py"
+
+rule CNVPipe_convert:
+    input:
+        rules.classifycnv_convert.output,
+    output:
+        "res/CNVPipe/{sample}.bed",
     shell:
-        "python {params.absPath}/scripts/classifyCNVConvert.py {input.normal_bed} {input.patho_bed}"
-        " {output}"
+        "(head -n1 {input}; awk '$9>=2 && $7>0 && $10==\"True\"' {input}) > {output}"
+
+rule CNVPipe_prioritize:
+    input:
+        rules.CNVPipe_convert.output,
+    output:
+        "res/CNVPipe/{sample}.priority.bed",
+    script:
+        "../scripts/cnvpipeConvert.py"
+
+# Plot
+
 
 # Optionally identify recurrent CNVs for samples with specific phenotypes
 if config['settings']['recurrent']:
@@ -148,23 +165,40 @@ if config['settings']['recurrent']:
         input:
             expand("res/CNVPipe/{sample}.bed", sample=config['global']['sample-names']),
         output:
-            tmpBed = "temp/recurrent/recurrent.bed",
-            tmpSortBed = "temp/recurrent/recurrent.sort.bed",
-            finalBed = "res/recurrent/recurrent.bed",
+            "temp/recurrent/recurrent.bed",
+        params:
+            sampleNumThe = config['params']['recurrent-threshold'],
+        script:
+            "../scripts/findRecurrentCNV.py"
+    
+    rule recurrent_sort:
+        input:
+            rules.find_recurrent_cnvs.output,
+        output:
+            "temp/recurrent/recurrent.sort.bed",
+        shell:
+            "sort -Vk 1 -k 2,3n {input} > {output}"
+    
+    rule recurrent_classifyCNV:
+        input:
+            rules.recurrent_sort.output,
+        output:
+            "res/classifycnv/recurrent.classifycnv.txt",
         params:
             absPath = config['params']['absPath'],
-            controlNames = config['global']['control-sample-names'],
-            sampleNumThe = config['params']['recurrent-threshold'],
-        threads: 2
         log:
             "logs/recurrent/recurrent.classifyCNV.log"
         shell:
-            "python {params.absPath}/scripts/findRecurrentCNV.py {output.tmpBed} ./ "
-            "{params.sampleNumThe} {params.controlNames} ; "
-            "sort -Vk 1 -k 2,3n {output.tmpBed} > {output.tmpSortBed}; "
             "python {params.absPath}/scripts/classifyCNV.py --absPath {params.absPath} --infile "
-            "{output.tmpSortBed} --GenomeBuild hg38 --cores {threads} >{log} 2>&1; "
-            "python {params.absPath}/scripts/classifyCNVConvert.py {output.tmpSortBed} "
-            "res/classifycnv/recurrent.classifycnv.txt {output.finalBed}"
-
-# Plot
+            "{input} --GenomeBuild hg38 --cores {threads} >{log} 2>&1; "
+    
+    rule recurrent_classifyCNV_convert:
+        input:
+            bed = rules.recurrent_sort.output,
+            classify = rules.recurrent_classifyCNV.output,
+        output:
+            "res/recurrent/recurrent.bed",
+        params:
+            "after-recurrent"
+        script:
+            "../scripts/classifyCNVConvert.py"

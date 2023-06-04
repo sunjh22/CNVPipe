@@ -34,20 +34,24 @@ rule duphold_score:
     shell:
         "duphold -t {threads} -v {input.vcf} -b {input.bam} -f {params.genome} -o {output}"
 
-# Score CNV region by duphold results
-rule score_byDepth:
+rule duphold_extract:
     input:
         rules.duphold_score.output,
     output:
-        bed = "res/duphold/{sample}.duphold.bed",
-        scoreBed = "res/duphold/{sample}.duphold.score.bed",
-    params:
-        absPath = config['params']['absPath']
+        "res/duphold/{sample}.duphold.bed",
     conda:
         "../envs/freebayes.yaml"
     shell:
-        "bcftools query -f '%CHROM\t%POS\t%INFO/END[\t%CN\t%AS\t%DHFFC\t%DHBFC]\t%INFO/TNa\t%INFO/TN\t%INFO/SAMPLE\n' {input} > {output.bed}; "
-        "python {params.absPath}/scripts/scoreDuphold.py {output.bed} {output.scoreBed}"
+        "bcftools query -f '%CHROM\t%POS\t%INFO/END[\t%CN\t%AS\t%DHFFC\t%DHBFC]\t%INFO/TNa\t%INFO/TN\t%INFO/SAMPLE\n' {input} > {output}"
+
+# Score CNV region by duphold results
+rule duphold_convert:
+    input:
+        rules.duphold_extract.output,
+    output:
+        "res/duphold/{sample}.duphold.score.bed",
+    script:
+        "../scripts/scoreDuphold.py"
 
 
 localrules: all_duphold

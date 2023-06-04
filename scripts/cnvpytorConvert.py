@@ -1,15 +1,9 @@
 #! /usr/bin/env python
+
 # The script is written for converting cnvpytor output into a bed format cnv list, do some simple
 # filtering at the same time.
 
-# from logging.config import fileConfig
-
-# import sys
-
-# inputfile = sys.argv[1]
-# outputfile = sys.argv[2]
 inputfile = snakemake.input[0]
-
 outputfile = snakemake.output[0]
 
 with open(inputfile, 'r') as f:
@@ -32,5 +26,3 @@ with open(inputfile, 'r') as f:
             if cn != 2 and evalue < 0.00001 and q0 < 0.5 and pN < 0.5 and dG > 10000:
                 print(chrom, start, end, cn, depth, '|'.join(str(x) for x in [evalue, pN, dG]), 
                 sep='\t', file=g)
-            else:
-                pass

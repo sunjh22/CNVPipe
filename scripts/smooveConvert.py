@@ -1,13 +1,13 @@
 #! /usr/bin/env python
 
-# Merge consecutive bins in cn.MOPS results
+# Filter confilct or complex regions for Lumpy results
 
-from utils import readCNVFile, mergeConsecutiveSegments
+from utils import readCNVFile, resolveConflictCNVs
 
 inputFile = snakemake.input[0]
 outputFile = snakemake.output[0]
 
-cnvList = mergeConsecutiveSegments(readCNVFile(inputFile, tool='MOPS'), shift=1)
+cnvList = resolveConflictCNVs(readCNVFile(inputFile, tool='Delly'))
 
 with open(outputFile, 'w') as f:
     for x in cnvList:

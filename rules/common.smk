@@ -8,21 +8,14 @@ import socket, platform
 import subprocess
 from datetime import datetime
 
-# Ensure min Snakemake version
-snakemake.utils.min_version("5.7")
-basedir = workflow.basedir
+# Minimum Snakemake version for CNVPipe to run
+snakemake.utils.min_version("5.7") 
 
-cnvpipe_version = "0.0.1" #CNVPIPE_VERSION#
-
-# Import config file
-configfile: "config.yaml"
+# CNVPipe Version
+cnvpipe_version = "0.0.1"
 
 # Validate the format of config file TODO
-#snakemake.utils.validate(config, schema="../schemas/config.schema.yaml")
-
-# Clean up the file name for the reference genome.
-if config["data"]["genome"].endswith(".gz"):
-    config["data"]["genome"] = os.path.splitext(config["data"]["genome"])[0]
+# snakemake.utils.validate(config, schema="../schemas/config.schema.yaml")
 
 # Store sample names into config['global']
 if "global" in config:
@@ -30,17 +23,12 @@ if "global" in config:
 else:
     config["global"] = {}
 
-config["global"]["samples"] = pd.read_csv(
-    config["data"]["samples"], sep='\t', dtype=str).set_index(["sample"], drop=False)
+config["global"]["samples"] = pd.read_csv(config["data"]["samples"], sep='\t', dtype=str).set_index(["sample"], drop=False)
 
-# Validate the format of sample tsv file TODO
-#snakemake.utils.validate( config["global"]["samples"], schema="../schemas/samples.schema.yaml" )
-
-# All control samples in sample tsv should start with 'control' keyword.
+# The name of control samples in sample tsv should start with 'control' keyword.
 config["global"]["sample-names"] = list()
 config["global"]["control-sample-names"] = list()
-for index, row in config["global"]["samples"].iterrows():
-    s = row["sample"]
+for s in config["global"]["samples"]['sample']:
     if s not in config["global"]["sample-names"] and not s.startswith('control'):
         config["global"]["sample-names"].append(s)
     else:
@@ -61,22 +49,29 @@ def valid_filepath(fn):
 problematic_filenames = 0
 for index, row in config["global"]["samples"].iterrows():
     if not valid_filename(row['sample']):
-        raise Exception("Invalid sample name: "+ str(row["sample"]) + "we only allow alpha-numerical, dots, dashes, and underscores.")
+        raise Exception("Invalid sample name: "+ str(row["sample"]) + 
+        "we only allow alpha-numerical, dots, dashes, and underscores.")
     if not os.path.isfile(row['fq1']) or (not pd.isnull(row['fq2']) and not os.path.isfile(row['fq2'])):
-        raise Exception(
-            "Input fastq files listed in the input files table " + config["data"]["samples"] +
-            " not found: " + str(row["fq1"]) + "; " + str(row["fq2"])
-        )
+        raise Exception("Input fastq files listed in the input files table " + config["data"]["samples"] +
+            " not found: " + str(row["fq1"]) + "; " + str(row["fq2"]))
     if not valid_filepath(row['fq1']) or (not pd.isnull(row['fq2']) and not valid_filepath(row['fq2'])):
         problematic_filenames += 1
 
+# Clean up the file name for the reference genome.
+if config["data"]["genome"].endswith(".gz"):
+    config["data"]["genome"] = os.path.splitext(config["data"]["genome"])[0]
+
+# Store the path of CNVPipe as a variable
+config['params']['absPath'] = workflow.basedir
 
 # =================================================================================================
 #     Pipeline User Output
 # =================================================================================================
 
+# Following content learnt from Grenepipe
+
 # Get a nicely formatted username and hostname
-username = pwd.getpwuid( os.getuid() )[ 0 ]
+username = pwd.getpwuid(os.getuid())[0]
 hostname = socket.gethostname()
 hostname = hostname + ("; " + platform.node() if platform.node() != socket.gethostname() else "")
 
@@ -103,13 +98,15 @@ cmdline = sys.argv[0]
 for i in range( 1, len(sys.argv)):
     if sys.argv[i].startswith("--"):
         cmdline += "\n                        " + sys.argv[i]
+    elif sys.argv[i].startswith("-"):
+        cmdline += "\n                        " + sys.argv[i]
     else:
         cmdline += " " + sys.argv[i]
 
 # Get abs paths of all config files
 cfgfiles = []
 for cfg in workflow.configfiles:
-    cfgfiles.append( os.path.abspath(cfg) )
+    cfgfiles.append(os.path.abspath(cfg))
 cfgfiles = "\n                        ".join(cfgfiles)
 
 smpcnt = str(len(config['global']['sample-names']))
@@ -153,7 +150,7 @@ if problematic_filenames > 0:
     )
 
 # No need to have these output vars available in the rest of the snakefiles
-del problematic_filenames
+# del problematic_filenames
 del username
 del hostname
 del conda_ver

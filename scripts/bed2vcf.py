@@ -9,7 +9,7 @@ def readChrLength(infile):
     chrLength = {}
     with open(infile, 'r') as f:
         for x in f:
-            if x.find('_') != -1:
+            if x.find('_') != -1 and not x.startswith('NC'):
                 continue
             x = x.strip().split('\t')
             chrLength[x[0]] = int(x[1])

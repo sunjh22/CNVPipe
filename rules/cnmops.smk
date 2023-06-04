@@ -14,7 +14,7 @@ rule mops_call:
     output:
         bed = expand("res/mops/{sample}.temp.bed", sample=config['global']['sample-names']),
     params:
-        species = config['settings']['species']['human'],
+        species = config['params']['species'],
         resDir = "res/mops/",
         binSize = config['params']['binSize'],
         absPath = config['params']['absPath'],
@@ -40,8 +40,8 @@ rule mops_convert:
         "res/mops/{sample}.bed",
     params:
         absPath = config['params']['absPath'],
-    shell:
-        "python {params.absPath}/scripts/mopsConvert.py {input} {output}"
+    script:
+        "../scripts/mopsConvert.py"
 
 localrules: all_mops
 

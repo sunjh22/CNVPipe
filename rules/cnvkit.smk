@@ -2,7 +2,8 @@
 #     CNV calling by CNVKit
 # =================================================================================================
 
-# Call CNVs with batch mode
+# Call CNVs in batch mode, only sample bam files, reference file and binsize are required.
+# Theoretically it can be used for any species.
 rule cnvkit_batch:
     input:
         get_sample_bai(config['global']['all-sample-names']),
@@ -16,7 +17,7 @@ rule cnvkit_batch:
         config['params']['cnvkit']['threads']
     params:
         ref = config['data']['genome'],
-        access = config['data']['access'],
+        access = "--access " + config['data']['access'] if config['data']['access'] else "",
         outdir = "temp/cnvkit",
         binSize = config['params']['binSize'],
     log:
@@ -28,7 +29,7 @@ rule cnvkit_batch:
     shell:
         "echo 'Bin size used for CNV calling is: ' {params.binSize}; "
         "(cnvkit.py batch {input.sample} -n {input.control} -m wgs -f {params.ref} "
-        "--access {params.access} --target-avg-size {params.binSize} -p {threads} "
+        "{params.access} --target-avg-size {params.binSize} -p {threads} "
         "--drop-low-coverage --output-reference {output.reference} "
         "-d {params.outdir}) > {log} 2>&1"
         
@@ -71,8 +72,8 @@ rule cnvkit_convert:
         "res/cnvkit/{sample}.bed",
     params:
         absPath = config['params']['absPath'],
-    shell:
-        "python {params.absPath}/scripts/cnvkitConvert.py {input} {output}"
+    script:
+        "../scripts/cnvkitConvert.py"
 
 localrules: all_cnvkit
 
