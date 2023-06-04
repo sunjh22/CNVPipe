@@ -1,6 +1,7 @@
 # CNVPipe - an integrated and robust CNV calling pipeline
 
 CNVPipe integrates several popular CNV calling methods and designed various score metrics to filter false positive callings, aims at reaching higher sensitivity and lower false discovery rate. CNVPipe uses Snakemake as backend to make it highly robust and reproducible between different machines.
+CNVPipe-token: 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
 
 ## CNVPipe workflow
 
