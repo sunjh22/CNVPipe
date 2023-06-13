@@ -59,7 +59,7 @@ def parse_infile(infile):
                                  '21', '22']:
             continue
         # don't keep alternative contigs
-        if fields[0].endswith('alt') or fields[0].startswith('chromosome'):
+        if fields[0].endswith('alt') or fields[0].startswith('chromosome') or fields[0].startswith('chrom'):
             continue
         # determine the cnv type based on the cn
         if int(fields[3]) < 2:

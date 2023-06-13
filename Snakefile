@@ -29,13 +29,14 @@ include: "rules/delly.smk"
 
 # SNP calling by freebayes or gatk based on read depth
 # 4k binSize generally equals to 10X read depth
-if config['settings']['gatk-snp'] and config['params']['binSize'] < 4000:
-    include: "rules/gatk.smk"
-else:
-    include: "rules/freebayes.smk"
+include: "rules/gatk.smk"
+include: "rules/freebayes.smk"
 
 # Merge CNVs from different tools and assign quality score based on various metrics
 include: "rules/merge.smk"
+
+# Plot CNVs and export CNV table
+include: "rules/report.smk"
 
 # Get final CNV table
 localrules: all

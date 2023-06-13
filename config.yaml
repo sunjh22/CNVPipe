@@ -1,35 +1,77 @@
 ## Config file for CNVPipe snakemake workflow
 
 data:
+    # 'samples' and 'genome' are mandatory.
     samples:    "/data/jinwf/jhsun/project/CNVPipe/analysis/samples.tsv"
     genome: "/data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa"
+
+    # 'access' and 'smoove-exclude' files for human and rice are pre-configured under CNVPipe 
+    # 'resources/CNVKit' and 'resources/Smoove' directory. They are not mandatory for other sepcies.
     access:    "/data/jinwf/jhsun/CNVPipe/resources/CNVKit/access-excludes.hg38.analysisSet.bed"
-    delly-map: "/data/jinwf/jhsun/CNVPipe/resources/Delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz"
     smoove-exclude: "/data/jinwf/jhsun/CNVPipe/resources/Smoove/hg38.sv_blacklist.bed"
+
+    # 'delly-map' is mandatory for human, while not required for other species;
+    # 'delly-map' files can be downloaded from https://gear.embl.de/data/delly/.
+    delly-map: "/data/jinwf/jhsun/CNVPipe/resources/Delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz"
+
+    # 'normal-common-cnv' file is used to evaluate the overlap between identified CNVs with
+    # high-frequency CNVs in normal population, it's under 'resources/dbVar' directory.
+    # Keep it empty if calling CNVs for other species.
     normal-common-cnv: "/data/jinwf/jhsun/CNVPipe/resources/dbVar/common_global_normal.bed"
+    
+    # Below three GATK bundle files are mandatory if base quality recalibration function is 
+    # activated (default is deactivated), otherwise can be empty.
+    # GATK bundle files can be downloaded from Google cloud:
+    # https://console.cloud.google.com/storage/browser/genomics-public-data/resources/broad/hg38/v0;tab=objects?pli=1&prefix=&forceOnObjectsSortingFiltering=false
     gatk-dbsnp: "/data/jinwf/jhsun/CNVPipe/resources/GATK/dbsnp_146.hg38.vcf.gz"
+    gatk-mills: "/home/jhsun/data3/CNVPipe/resources/GATK/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
+    gatk-hg38: "/home/jhsun/data3/CNVPipe/resources/GATK/Homo_sapiens_assembly38.known_indels.vcf.gz"
+    
+    # Below three GATK bundle files are mandatory if GATK SNP calling pipeline is activated 
+    # (default is deactivated), otherwise can be empty.
     gatk-hapmap: "/data/jinwf/jhsun/CNVPipe/resources/GATK/hapmap_3.3.hg38.vcf.gz"
     gatk-omni: "/data/jinwf/jhsun/CNVPipe/resources/GATK/1000G_omni2.5.hg38.vcf.gz"
     gatk-1000g: "/data/jinwf/jhsun/CNVPipe/resources/GATK/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
-    gatk-mills: "/home/jhsun/data3/CNVPipe/resources/GATK/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
-    gatk-hg38: "/home/jhsun/data3/CNVPipe/resources/GATK/Homo_sapiens_assembly38.known_indels.vcf.gz"
-
+    
 settings:
+    # Whether keep fastp and bwamem intermediate files (which should be very large), default is 
+    # deleting them after workflow is finished, if you want to keep them, set the parameters to True.
     keep-intermediate:
         fastp: False
         bwamem: False
     
+    # Whether do base quality recalibration, which can improve the accuracy of SNP calling, but is
+    # relatively timeconsuming, GATK bundle files are required if activated.
     bqsr: False
 
+    # Whether use GATK HaplotypeCaller function to call SNPs, which is very timeconsuming, CNVPipe
+    # use freebayes to call SNPs by default. If activated, CNVPipe will also examine the depth of
+    # the data, if it is lower than 10x, CNVPipe will still use freebayes even though this function
+    # is activated.
     gatk-snp: False
 
+    # Whether calculate recurrent CNVs for population studies. The least number of samples required
+    # to regard a CNV to be a recurrent CNV can be set in following 'recurrent-threshold' param.
     recurrent: False
 
 params:
+    # Specify the species for which CNVPipe will be applied on, should be one of ['human', 'rice', 'others']
     species: 'human'
 
+    # The resolution of CNV calling, it is critical to set an appropriate 'binSize' for CNV calling, 
+    # as it will greatly affect the final result. We have some recommendations for different depth 
+    # of data. See it on our GitHub: https://github.com/sunjh22/CNVPipe.
     binSize:   1200
-    
+        
+    # 'complex-mode' means call SV first then use the result as input for CNV calling, it is only
+    # for human CNV calling.
+    delly:
+        complex-mode: False
+
+    # The least number of samples required to regard a CNV to be a recurrent CNV, default is 5.
+    recurrent-threshold: 5
+
+    # Set threads for different programs, no need to change them if no special requirement.
     fastp:
         threads:    6
 
@@ -47,10 +89,5 @@ params:
     mops:
         threads:    10
 
-    delly:
-        complex-mode: False
-        
     freebayes:
         threads:    8
-
-    recurrent-threshold: 5

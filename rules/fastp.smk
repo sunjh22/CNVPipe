@@ -87,10 +87,8 @@ rule all_fastp:
         cleaned_reads = (
             expand("cleaned/{sample}.fq.gz", sample=config["global"]["all-sample-names"])
             if is_single_end(config["global"]["all-sample-names"][0])
-            else expand(
-                "cleaned/{sample}_{pair}.fq.gz", pair=[1, 2], 
-                sample=config["global"]["all-sample-names"])
-        ),
+            else expand("cleaned/{sample}_{pair}.fq.gz", pair=[1, 2], 
+                sample=config["global"]["all-sample-names"])),
         report = "cleaned/multiqc-report.html",
 
 # Get cleaned reads no matter single-end or paired-end
@@ -99,9 +97,3 @@ def get_cleaned_reads(wildcards):
         return ["cleaned/{sample}.fq.gz".format(sample=wildcards.sample)]
     else:
         return expand("cleaned/{sample}_{pair}.fq.gz", pair=[1, 2], sample=wildcards.sample)
-
-def get_fastp_report(sample):
-    if is_single_end(sample):
-        return "cleaned/" + sample + "-se-fastp.json"
-    else:
-        return "cleaned/" + sample + "-pe-fastp.json"

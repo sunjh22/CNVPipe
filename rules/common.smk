@@ -68,7 +68,7 @@ config['params']['absPath'] = workflow.basedir
 #     Pipeline User Output
 # =================================================================================================
 
-# Following content learnt from Grenepipe
+# Logger is learnt from Grenepipe: https://github.com/moiexpositoalonsolab/grenepipe.
 
 # Get a nicely formatted username and hostname
 username = pwd.getpwuid(os.getuid())[0]
@@ -145,12 +145,18 @@ if problematic_filenames > 0:
     logger.warning(
         "In " + str(problematic_filenames) + " of the " + str(len(config["global"]["sample-names"])) +
         " input fastq files listed in the input files table " + config["data"]["samples"] +
-        " contain problematic characters. We generally advise to only use alpha-numeric " +
-        "characters, dots, dashes, and underscores. "
+        " contain problematic characters. We generally advise to only use alpha-numeric" +
+        " characters, dots, dashes, and underscores. "
     )
 
+# Install a package that will be used later
+try:
+    import kmeans1d
+except:
+    os.system('pip3 install kmeans1d')
+    
 # No need to have these output vars available in the rest of the snakefiles
-# del problematic_filenames
+del problematic_filenames
 del username
 del hostname
 del conda_ver

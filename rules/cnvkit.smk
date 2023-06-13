@@ -26,8 +26,9 @@ rule cnvkit_batch:
         "benchmarks/cnvkit/batch.benchmark"
     conda:
         "../envs/cnvkit.yaml"
+    message:
+        "Bin size used for CNV calling is {params.binSize}"
     shell:
-        "echo 'Bin size used for CNV calling is: ' {params.binSize}; "
         "(cnvkit.py batch {input.sample} -n {input.control} -m wgs -f {params.ref} "
         "{params.access} --target-avg-size {params.binSize} -p {threads} "
         "--drop-low-coverage --output-reference {output.reference} "

@@ -16,11 +16,8 @@ rule map_reads:
         idx = multiext(config['data']['genome'], ".amb", ".ann", ".bwt", ".pac", ".sa", ".fai"),
         ref = config['data']['genome'],
     output:
-        (
-            "mapped/{sample}.raw.bam"
-            if config['settings']['keep-intermediate']['bwamem']
-            else temp("mapped/{sample}.raw.bam")
-        )
+        ("mapped/{sample}.raw.bam" if config['settings']['keep-intermediate']['bwamem']
+            else temp("mapped/{sample}.raw.bam"))
     params:
         read_group = get_bwa_mem_rg,
     threads:

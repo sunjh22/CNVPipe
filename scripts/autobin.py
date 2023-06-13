@@ -77,14 +77,13 @@ def ensure_bam_index(bam_fname):
         # MySample.cram.crai
         bai_fname = bam_fname + '.crai'
       else:
-            # MySample.crai
+        # MySample.crai
         bai_fname = bam_fname[:-1] + 'i'
       if not is_newer_than(bai_fname, bam_fname):
          logging.info("Indexing CRAM file %s", bam_fname)
          pysam.index(bam_fname)
          bai_fname = bam_fname + '.crai'
-      assert os.path.isfile(bai_fname), \
-            "Failed to generate cram index " + bai_fname
+      assert os.path.isfile(bai_fname), "Failed to generate cram index " + bai_fname
     else:
         if os.path.isfile(bam_fname + '.bai'):
             # MySample.bam.bai
@@ -96,8 +95,7 @@ def ensure_bam_index(bam_fname):
             logging.info("Indexing BAM file %s", bam_fname)
             pysam.index(bam_fname)
             bai_fname = bam_fname + '.bai'
-        assert os.path.isfile(bai_fname), \
-                "Failed to generate bam index " + bai_fname
+        assert os.path.isfile(bai_fname), "Failed to generate bam index " + bai_fname
     return bai_fname
 
 
@@ -136,8 +134,7 @@ def get_read_length(bam, span=1000, fasta=None):
         bam = pysam.Samfile(bam, 'rb', reference_filename=fasta)
     else:
         was_open = True
-    lengths = [read.query_length for read in islice(bam, span)
-               if read.query_length > 0]
+    lengths = [read.query_length for read in islice(bam, span) if read.query_length > 0]
     if was_open:
         bam.seek(0)
     else:
@@ -188,8 +185,7 @@ def on_weighted_array(f):
     @wraps(f)
     def wrapper(a, w, **kwargs):
         if len(a) != len(w):
-            raise ValueError("Unequal array lengths: a=%d, w=%d"
-                            % (len(a), len(w)))
+            raise ValueError("Unequal array lengths: a=%d, w=%d" % (len(a), len(w)))
         if not len(a):
             return np.nan
         a = np.asfarray(a)
@@ -235,6 +231,8 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--access', metavar="FILENAME", 
             help="Sequencing-accessible genomic regions")
     parser.add_argument('-f', '--fasta', metavar="FILENAME", help="Reference genome file")
+    parser.add_argument('-l', '--log', metavar="FILENAME", help="Logger file")
+    parser.add_argument('-o', '--output', metavar="FILENAME", help="Output file name")
     parser.add_argument('-b', '--bp-per-bin', type=float, default=37500., 
             help="""Desired average number of sequencing read bases mapped to each
                     bin. [Default: %(default)s]""")
@@ -243,11 +241,14 @@ if __name__ == "__main__":
     parser.add_argument('--min-size', metavar="BASES", type=int, default=20,
             help="Minimum size of target bins. [Default: %(default)s]")
     args = parser.parse_args()
-
+    logging.basicConfig(filename=args.log, filemode="w", 
+                        format="%(asctime)s %(name)s:%(levelname)s:%(message)s", 
+                        datefmt="%d-%M-%Y %H:%M:%S", level=logging.DEBUG)
     bam_fname = midsize_file(args.bams)
     access_fname = args.access
     access = pd.read_csv(access_fname, sep='\t', header=None, names=['chromosome', 'start', 'end'])
     bin_size = do_autobin(bam_fname=bam_fname, access=access, bp_per_bin=args.bp_per_bin, 
                 max_size=args.max_size, min_size=args.min_size)
     bin_size = (bin_size // 100) * 100
-    print(bin_size)
+    with open(args.output, 'w') as f:
+        print(bin_size, file=f)
