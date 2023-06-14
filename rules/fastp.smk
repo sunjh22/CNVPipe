@@ -74,7 +74,7 @@ rule multiqc_report:
             else expand("cleaned/{sample}-pe-fastp.json", sample = config["global"]["sample-names"])
             ),
     output:
-        "cleaned/multiqc-report.html",
+        report("cleaned/multiqc-report.html", caption="../report/qcReport.rst", category="QC"),
     conda:
         "../envs/multiqc.yaml"
     shell:

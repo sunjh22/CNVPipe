@@ -39,8 +39,6 @@ include: "rules/merge.smk"
 include: "rules/report.smk"
 
 # Get final CNV table
-localrules: all
-
 if config['params']['species'] != 'human':
     rule all:
         input:
@@ -50,11 +48,12 @@ else:
     if config['settings']['recurrent']:
         rule all:
             input:
-                "res/recurrent/recurrent.bed",
-                expand("res/CNVPipe/{sample}.priority.bed", sample = config['global']['sample-names']),
+                "res/report/recurrentCNVs",
+                expand("res/report/{sample}", sample = config['global']['sample-names']),
                 "cleaned/multiqc-report.html",
     else:
         rule all:
             input:
                 expand("res/CNVPipe/{sample}.priority.bed", sample = config['global']['sample-names']),
+                expand("res/report/{sample}", sample = config['global']['sample-names']),
                 "cleaned/multiqc-report.html",

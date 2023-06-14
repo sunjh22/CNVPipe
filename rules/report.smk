@@ -12,28 +12,37 @@
 rule plot_single_sample:
     input:
         cnv = rules.CNVPipe_prioritize.output,
-        bam = "mapped/{sample}.bam",
-        snp = (rules.gatk_applyVQSR.output if config['settings']['gatk-snp'] and 
-                config['params']['binSize'] < 4000 else rules.freebayes_filter.output.snp),
     output:
-        "res/report/{sample}.pdf",
+        report(
+            directory("res/report/{sample}"),
+            patterns=["{chrom}_{start}_{end}_{cnv}.png"],
+            caption="../report/plotSingleSampleCNVs.rst",
+            category="{sample}"
+        ),
     params:
-        absPath = config['params']['absPath'],
-        control = config["global"]["control-sample-names"][:3],
+        control = (config["global"]["control-sample-names"][0] if 
+                    config["global"]["control-sample-names"] else
+                    ""),
     conda:
         "../envs/report.yaml"
-    shell:
-        "python {params.absPath}/scripts/reportCNVs.py {input.cnv} {input.snp} {input.bam} {output} {params.control}"
+    script:
+        "../scripts/plotCNVs.py"
 
 
 rule plot_recurrent_cnvs:
     input:
         rules.recurrent_classifyCNV_convert.output,
     output:
-        "res/report/recurrent-CNVs.pdf",
+        report(
+            directory("res/report/recurrentCNVs"),
+            patterns=["{chrom}_{start}_{end}_{cnv}.png"],
+            caption="../report/plotRecurrentCNVs.rst",
+            category="Recurrent CNVs"
+        ),
     params:
-        absPath = config['params']['absPath']
+        control = (config["global"]["control-sample-names"][0] if 
+                    config["global"]["control-sample-names"] else ""),
     conda:
         "../envs/report.yaml"
-    shell:
-        "python {absPath}/scripts/report.py {input} {output}"
+    script:
+        "../scripts/plotRecurrentCNVs.py"

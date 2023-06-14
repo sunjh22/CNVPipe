@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 
 # Includes all functions used in CNVPipe
+import os, subprocess
+import pandas as pd
 
 def testSameCNVType(cn1, cn2):
     """Test if two CNVs are the same type"""
@@ -210,6 +212,66 @@ def mergeCNVFromTools(cnvList, min_threshold=0.75, max_threshold=0.95):
         cnvList = cnvs2[:]
 
     return mergedCnvs
+
+
+def readCNV2DataFrame(infile, recurrent=False):
+    """Read output from CNVPipe, convert into a DataFrame"""
+    if not recurrent:
+        cnv_df = pd.read_csv(infile, sep='\t', usecols=[0,1,2,3],
+                             dtype={'chrom':str, 'start':int, 'end':int, 'cn':int})
+    else:
+        cnv_df = pd.read_csv(infile, sep='\t', usecols=[0,1,2,3,4],
+                             dtype={'chrom':str, 'start':int, 'end':int, 'cn':int, 'samples':str})
+    cnv = ['DUP' if cn_value > 2 else 'DEL' for cn_value in cnv_df['cn']]
+    cnv_df.insert(3, 'cnv', cnv)
+    return (cnv_df.iloc[:10].drop('cn', axis=1) if not recurrent else cnv_df.iloc[:10].drop('cn', axis=1))
+
+
+def samplotPlot(cnvs, smp_name, control, recurrent=False):
+    """Use samplot to plot reads distribution for CNVs"""
+    chrom, start, end, cnv = cnvs
+    size = end - start
+    plot_start = start - round(size/10)
+    plot_end = end + round(size/10)
+    bamFile = [f'mapped/{sample}.bam' for sample in smp_name]
+    ctrbams = f'mapped/{control}.bam' if control else ""
+    tgt_dir = 'res/report/'+smp_name[0] if not recurrent else 'res/report/recurrentCNVs'
+    if not os.path.exists(tgt_dir):
+        os.makedirs(tgt_dir, exist_ok=True)
+    outFile = os.path.join(tgt_dir, chrom+'_'+str(start)+'_'+str(end)+'_'+cnv+'.png')
+    subprocess.run(['samplot', 'plot',
+                    '-n', *smp_name, control,
+                    '-b', *bamFile, ctrbams,
+                    '-c', chrom,
+                    '-s', str(plot_start),
+                    '-e', str(plot_end),
+                    #'-t', cnv,
+                    '-w 300',
+                    '--same_yaxis_scales', 
+                    '--max_coverage_points 1000',
+                    '--coverage_tracktype superimpose', 
+                    '--coverage-only', 
+                    '--legend_fontsize 4',
+                    '--marker_size 1',
+                    '--dpi 100',
+                    '-H 1',
+                    '-W 2',
+                    '-o', outFile])
+    
+
+# def concat_pngs(outFile):
+#     """Concatnate several png pictures into a PDF file"""
+#     smp_name = os.path.basename(outFile).split('.')[0]
+#     files = os.listdir('res/report/'+smp_name)
+#     img_open_list = []
+#     for file in files:
+#         img_open = Image.open('res/report/'+smp_name+'/'+file)
+#         if img_open.mode != 'RGB':
+#             img_open = img_open.convert('RGB')
+#         img_open_list.append(img_open)
+#     img1 = img_open_list[0]
+#     img_open_list = img_open_list[1:]
+#     img1.save(outFile, 'PDF', resolution=300, save_all=True, append_images=img_open_list)
 
 
 if __name__ == '__main__':
