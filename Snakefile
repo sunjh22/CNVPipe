@@ -54,6 +54,5 @@ else:
     else:
         rule all:
             input:
-                expand("res/CNVPipe/{sample}.priority.bed", sample = config['global']['sample-names']),
                 expand("res/report/{sample}", sample = config['global']['sample-names']),
                 "cleaned/multiqc-report.html",

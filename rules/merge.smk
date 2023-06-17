@@ -55,6 +55,11 @@ rule all_merge_CNVCall:
 # Apply duphold and assign 'depth score' (2. DS)
 include: "duphold.smk"
 
+localrules: all_cnvpipe_convert
+rule all_cnvpipe_convert:
+    input:
+        expand("res/CNVpipe/{sample}.bed", sample = config['global']['sample-names'])
+
 # Output CNVPipe results at this step for other species, following steps will not be ran.
 rule cnvpipe_convert:
     input:

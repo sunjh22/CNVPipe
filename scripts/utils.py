@@ -224,7 +224,7 @@ def readCNV2DataFrame(infile, recurrent=False):
                              dtype={'chrom':str, 'start':int, 'end':int, 'cn':int, 'samples':str})
     cnv = ['DUP' if cn_value > 2 else 'DEL' for cn_value in cnv_df['cn']]
     cnv_df.insert(3, 'cnv', cnv)
-    return (cnv_df.iloc[:10].drop('cn', axis=1) if not recurrent else cnv_df.iloc[:10].drop('cn', axis=1))
+    return (cnv_df.iloc[:10].drop('cn', axis=1) if not recurrent else cnv_df.drop('cn', axis=1))
 
 
 def samplotPlot(cnvs, smp_name, control, recurrent=False):
@@ -251,11 +251,11 @@ def samplotPlot(cnvs, smp_name, control, recurrent=False):
                     '--max_coverage_points 1000',
                     '--coverage_tracktype superimpose', 
                     '--coverage-only', 
-                    '--legend_fontsize 4',
+                    '--legend_fontsize 2',
                     '--marker_size 1',
                     '--dpi 100',
-                    '-H 1',
-                    '-W 2',
+                    '-H 2',
+                    '-W', str(len(smp_name)*2+2),
                     '-o', outFile])
     
 

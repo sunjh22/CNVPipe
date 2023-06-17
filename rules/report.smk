@@ -11,7 +11,7 @@
 
 rule plot_single_sample:
     input:
-        cnv = rules.CNVPipe_prioritize.output,
+        rules.CNVPipe_prioritize.output,
     output:
         report(
             directory("res/report/{sample}"),
