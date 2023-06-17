@@ -1,0 +1,1 @@
+This plot showing the reads distribution of CNV {{snakemake.wildcards.chrom}}:{{snakemake.wildcards.start}}-{{snakemake.wildcards.end}} for {{snakemake.wildcards.sample}}.

@@ -1,0 +1,1 @@
+This plot showing the reads distribution of recurrent CNV {{snakemake.wildcards.chrom}}:{{snakemake.wildcards.start}}-{{snakemake.wildcards.end}} in samples.
