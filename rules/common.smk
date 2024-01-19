@@ -45,17 +45,28 @@ def valid_filepath(fn):
     clean = fn.replace('_', '').replace('-', '').replace('.', '').replace('/', '').replace('\\', '')
     return clean.isalnum() and clean.isascii()
 
-# Check whether filename and filepath are valid
-problematic_filenames = 0
-for index, row in config["global"]["samples"].iterrows():
-    if not valid_filename(row['sample']):
-        raise Exception("Invalid sample name: "+ str(row["sample"]) + 
-        "we only allow alpha-numerical, dots, dashes, and underscores.")
-    if not os.path.isfile(row['fq1']) or (not pd.isnull(row['fq2']) and not os.path.isfile(row['fq2'])):
-        raise Exception("Input fastq files listed in the input files table " + config["data"]["samples"] +
-            " not found: " + str(row["fq1"]) + "; " + str(row["fq2"]))
-    if not valid_filepath(row['fq1']) or (not pd.isnull(row['fq2']) and not valid_filepath(row['fq2'])):
-        problematic_filenames += 1
+# Check whether filename and filepath are valid when input is fastq
+if not config['params']['bam-input']:
+    problematic_filenames = 0
+    for index, row in config["global"]["samples"].iterrows():
+        if not valid_filename(row['sample']):
+            raise Exception("Invalid sample name: "+ str(row["sample"]) + 
+            "we only allow alpha-numerical, dots, dashes, and underscores.")
+        if not os.path.isfile(row['fq1']) or (not pd.isnull(row['fq2']) and not os.path.isfile(row['fq2'])):
+            raise Exception("Input fastq files listed in the input files table " + config["data"]["samples"] +
+                " not found: " + str(row["fq1"]) + "; " + str(row["fq2"]))
+        if not valid_filepath(row['fq1']) or (not pd.isnull(row['fq2']) and not valid_filepath(row['fq2'])):
+            problematic_filenames += 1
+
+    # Warning about input names.
+    if problematic_filenames > 0:
+        logger.warning(
+            "In " + str(problematic_filenames) + " of the " + str(len(config["global"]["sample-names"])) +
+            " input fastq files listed in the input files table " + config["data"]["samples"] +
+            " contain problematic characters. We generally advise to only use alpha-numeric" +
+            " characters, dots, dashes, and underscores. "
+        )
+    del problematic_filenames
 
 # Clean up the file name for the reference genome.
 if config["data"]["genome"].endswith(".gz"):
@@ -140,15 +151,6 @@ logger.info("")
 logger.info("=====================================================================================")
 logger.info("")
 
-# Warning about input names.
-if problematic_filenames > 0:
-    logger.warning(
-        "In " + str(problematic_filenames) + " of the " + str(len(config["global"]["sample-names"])) +
-        " input fastq files listed in the input files table " + config["data"]["samples"] +
-        " contain problematic characters. We generally advise to only use alpha-numeric" +
-        " characters, dots, dashes, and underscores. "
-    )
-
 # Install a package that will be used later
 try:
     import kmeans1d
@@ -156,7 +158,6 @@ except:
     os.system('pip3 install kmeans1d')
     
 # No need to have these output vars available in the rest of the snakefiles
-del problematic_filenames
 del username
 del hostname
 del conda_ver
@@ -165,3 +166,19 @@ del cmdline
 del cfgfiles
 del smpcnt
 del ctrsmpcnt
+
+
+# Helper function to get the name of the genome dictorary file as expected by GATK
+def genome_dict():
+    return os.path.splitext(config["data"]["genome"])[0] + ".dict"
+
+# Helper function to get bam files and their index files
+def get_sample_bam(samples):
+    "Quickly access all sample bam file"
+    bam = ["mapped/"+sample+".bam" for sample in samples]
+    return bam
+
+def get_sample_bai(samples):
+    "Quickly access all sample bam index file"
+    bai = ["mapped/"+sample+".bam.bai" for sample in samples]
+    return bai

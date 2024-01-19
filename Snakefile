@@ -6,14 +6,15 @@ configfile: "config.yaml"
 # Include config file, get sample and control names, print CNVPipe interface
 include: "rules/common.smk"
 
-# Build genome index, BWA index and GATK dictionary for reference genome if they are not existed
-include: "rules/pre-processing.smk"
+if not config['params']['bam-input']:
+    # Build genome index, BWA index and GATK dictionary for reference genome if they are not existed
+    include: "rules/pre-processing.smk"
 
-# Reads filtering by Fastp
-include: "rules/fastp.smk"
+    # Reads filtering by Fastp
+    include: "rules/fastp.smk"
 
-# Map reads with BWA
-include: "rules/bwamem.smk"
+    # Map reads with BWA
+    include: "rules/bwamem.smk"
 
 # Automatically determine bin size
 include: "rules/autobin.smk"

@@ -124,13 +124,3 @@ rule all_bwamem:
     input:
         expand("mapped/{sample}.bam", sample=config['global']['all-sample-names']),
         expand("mapped/{sample}.bam.bai", sample=config['global']['all-sample-names'])
-
-def get_sample_bam(samples):
-    "Quickly access all sample bam file"
-    bam = ["mapped/"+sample+".bam" for sample in samples]
-    return bam
-
-def get_sample_bai(samples):
-    "Quickly access all sample bam index file"
-    bai = ["mapped/"+sample+".bam.bai" for sample in samples]
-    return bai

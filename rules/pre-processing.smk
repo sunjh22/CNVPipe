@@ -2,10 +2,6 @@
 #     Pre-processing
 # =================================================================================================
 
-# Helper function to get the name of the genome dictorary file as expected by GATK
-def genome_dict():
-    return os.path.splitext(config["data"]["genome"])[0] + ".dict"
-
 # Build index for reference genome
 rule samtools_faidx:
     input:

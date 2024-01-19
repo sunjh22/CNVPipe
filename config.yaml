@@ -55,6 +55,9 @@ settings:
     recurrent: False
 
 params:
+    # Whether the input is BAM or fastq?
+    bam-input: False
+    
     # Specify the species for which CNVPipe will be applied on, should be one of ['human', 'rice', 'others']
     species: 'human'
 
