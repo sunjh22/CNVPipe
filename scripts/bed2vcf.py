@@ -35,14 +35,11 @@ if __name__ == "__main__":
     print('##ALT=<ID=DUP,Description="Copy number gain">', file=Out)
     print('##ALT=<ID=DEL,Description="Copy number loss">', file=Out)
     print('##INFO=<ID=END,Number=1,Type=Integer,Description="End position of CNV">', file=Out)
-    print('##INFO=<ID=TN,Number=1,Type=Integer,Description="Number of tools overlapped \
-        for this CNV">', file=Out)
-    print('##INFO=<ID=TNa,Number=1,Type=String,Description="Name of tools overlapped \
-        for this CNV">', file=Out)
+    print('##INFO=<ID=TN,Number=1,Type=Integer,Description="Number of tools overlapped for this CNV">', file=Out)
+    print('##INFO=<ID=TNa,Number=1,Type=String,Description="Name of tools overlapped for this CNV">', file=Out)
     print('##INFO=<ID=SAMPLE,Number=1,Type=String,Description="Sample name">', file=Out)
     print('##FORMAT=<ID=CN,Number=1,Type=Integer,Description="Integer copy number">', file=Out)
-    print('##FORMAT=<ID=AS,Number=1,Type=Float,Description="Accumulated overlapped \
-        fraction/score, the bigger this value, the more confidence of CNV">', file=Out)
+    print('##FORMAT=<ID=AS,Number=1,Type=Float,Description="Accumulated overlapped fraction/score, the bigger this value, the more confidence of CNV">', file=Out)
     print('##reference=/data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa', file=Out)
 
     for key in chrLength.keys():

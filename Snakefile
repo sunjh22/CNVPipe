@@ -6,6 +6,7 @@ configfile: "config.yaml"
 # Include config file, get sample and control names, print CNVPipe interface
 include: "rules/common.smk"
 
+# Do quality control and read alignment if input files are fastq, otherwise skip these steps
 if not config['params']['bam-input']:
     # Build genome index, BWA index and GATK dictionary for reference genome if they are not existed
     include: "rules/pre-processing.smk"

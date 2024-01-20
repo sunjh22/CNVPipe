@@ -3,9 +3,9 @@
 # =================================================================================================
 
 # Merge CNV calls from 5 tools by different strategies according to the read depth of the data.
-# if RD < 1x: merge cn.mops, cnvkit and cnvpytor
-# if 1x <= RD < 5x: merge cn.mops, cnvkit, delly, cnvpytor and smoove
-# if RD >= 5x: merge smoove, delly, cnvkit, cnvpytor, mops
+# if RD < 1x (bin > 40k): merge cn.mops, cnvkit and cnvpytor
+# if 1x <= RD < 5x (8k < bin < 40k): merge cn.mops, cnvkit, delly, cnvpytor and smoove
+# if RD >= 5x (bin < 8k): merge smoove, delly, cnvkit, cnvpytor, mops
 # Assign 'accumulative score' (1. AS)
 if config['params']['binSize'] <= 8000:
     rule merge_CNVCall_highDepth:

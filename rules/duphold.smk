@@ -8,7 +8,7 @@ rule convert_bed2vcf:
         bed = "res/merge/{sample}.merged.bed",
         fai = config['data']['genome'] + ".fai",
     output:
-        "res/duphold/{sample}.vcf",
+        "temp/duphold/{sample}.vcf",
     params:
         absPath = config['params']['absPath']
     shell:
@@ -21,7 +21,7 @@ rule duphold_score:
         bam = "mapped/{sample}.bam",
         vcf = rules.convert_bed2vcf.output,
     output:
-        "res/duphold/{sample}.duphold.vcf",
+        "temp/duphold/{sample}.duphold.vcf",
     params:
         genome = config['data']['genome'],
     threads: 8
@@ -38,7 +38,7 @@ rule duphold_extract:
     input:
         rules.duphold_score.output,
     output:
-        "res/duphold/{sample}.duphold.bed",
+        "temp/duphold/{sample}.duphold.bed",
     conda:
         "../envs/freebayes.yaml"
     shell:
@@ -49,7 +49,7 @@ rule duphold_convert:
     input:
         rules.duphold_extract.output,
     output:
-        "res/duphold/{sample}.duphold.score.bed",
+        "res/duphold/{sample}.bed",
     script:
         "../scripts/scoreDuphold.py"
 
@@ -58,4 +58,4 @@ localrules: all_duphold
 
 rule all_duphold:
     input:
-        expand("res/duphold/{sample}.duphold.score.bed", sample = config['global']['sample-names'])
+        expand("res/duphold/{sample}.bed", sample = config['global']['sample-names'])
