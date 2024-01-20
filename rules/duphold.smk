@@ -42,7 +42,7 @@ rule duphold_extract:
     conda:
         "../envs/freebayes.yaml"
     shell:
-        "bcftools query -f '%CHROM\t%POS\t%INFO/END[\t%CN\t%AS\t%DHFFC\t%DHBFC]\t%INFO/TNa\t%INFO/TN\t%INFO/SAMPLE\n' {input} > {output}"
+        "bcftools query -f '%CHROM\t%POS\t%INFO/END[\t%CN\t%AS\t%DHFC\t%DHBFC\t%DHFFC]\t%INFO/TNa\t%INFO/TN\t%INFO/GCF\t%INFO/SAMPLE\n' {input} > {output}"
 
 # Score CNV region by duphold results
 rule duphold_convert:
