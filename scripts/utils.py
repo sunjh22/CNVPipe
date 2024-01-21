@@ -13,7 +13,7 @@ def testSameCNVType(cn1, cn2):
 
 
 def readCNVFile(infile, tool):
-    """Read CNVKit output file into a list"""
+    """Read file content of different sources into a CNV list"""
     cnvList = []
     with open(infile) as f:
         for line in f:
@@ -29,7 +29,7 @@ def readCNVFile(infile, tool):
                     continue
                 chrom, start, end, cn = x[0], int(x[1]), int(x[2]), int(x[3])
             elif tool in ['Bad', 'Normal']:
-                chrom, start, end, cn = x[0], int(x[1]), int(x[2]), 2
+                chrom, start, end, cn = x[0], int(x[1]), int(x[2]), 0
             else:
                 raise ValueError('No tool is indicated, please indicate one!')
             if cn == 2:

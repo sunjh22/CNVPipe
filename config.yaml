@@ -10,6 +10,10 @@ data:
     access:    "/data/jinwf/jhsun/CNVPipe/resources/CNVKit/access-excludes.hg38.analysisSet.bed"
     smoove-exclude: "/data/jinwf/jhsun/CNVPipe/resources/Smoove/hg38.sv_blacklist.bed"
 
+    # 'lowmappable' file record regions with low unique mappability
+    # http://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Umap.MultiTrackMappability.bw
+    low-mappable: "/jinwf/jhsun/CNVPipe/resources/Smoove/lowmappable.hg38.bed"
+
     # 'delly-map' is mandatory for human, while not required for other species;
     # 'delly-map' files can be downloaded from https://gear.embl.de/data/delly/.
     delly-map: "/data/jinwf/jhsun/CNVPipe/resources/Delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz"

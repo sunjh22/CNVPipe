@@ -55,21 +55,24 @@ rule all_merge_CNVCall:
 # Apply duphold and assign 'depth score' (2. DS)
 include: "duphold.smk"
 
-localrules: all_cnvpipe_convert
-rule all_cnvpipe_convert:
-    input:
-        expand("res/CNVpipe/{sample}.bed", sample = config['global']['sample-names'])
-
-# Output CNVPipe results at this step for other species, following steps will not be ran.
+# Output CNVpipe results at this step for other species (like rice), following steps will not be ran.
+# Note the difference of 'CNVpipe' here and 'CNVPipe' in later rules.
+# Selection criteria for CNV is duphold_score>0 and tool_num>=2.
 rule cnvpipe_convert:
     input:
         rules.duphold_convert.output,
     output:
         "res/CNVpipe/{sample}.bed",
     shell:
-        "awk '$7>0 && $9>=2' {input} | cut -f 1-9 > {output}"
+        "awk '$7>0 && $12>=2' {input} | cut -f 1-13 > {output}"
 
-# Apply cnvfilter and assign 'SNP score' (3. SS) if SNPs could be called
+localrules: all_cnvpipe_convert
+rule all_cnvpipe_convert:
+    input:
+        expand("res/CNVpipe/{sample}.bed", sample = config['global']['sample-names'])
+
+# Apply cnvfilter, and assign 'True' for bad CNVs that cannot pass SNP verification, otherwise 
+# label 'True'.
 rule cnvfilter_call:
     input:
         bed = rules.duphold_convert.output,
@@ -89,6 +92,7 @@ rule cnvfilter_call:
         "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} {params.vcf_source} > {log} 2>&1"           
 
 # Calculate overlap fraction with low-complexity region and assign 'good score' (4. GS)
+# Calculate overlap fraction with low-mappable regions and assign 'map score' (. MS)
 # Calculate overlap fraction with CNVs in normal population and assign 'normal score' (5. NS)
 rule good_normal_score:
     input:
@@ -97,6 +101,7 @@ rule good_normal_score:
         "res/merge/{sample}.goodscore.bed",
     params:
         badList = config['data']['smoove-exclude'],
+        lowMapList = config['data']['low-mappable'],
         normalList = config['data']['normal-common-cnv'],
     script:
         "../scripts/goodNormalScore.py"
