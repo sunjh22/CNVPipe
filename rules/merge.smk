@@ -142,7 +142,7 @@ rule CNVPipe_convert:
     output:
         "res/CNVPipe/{sample}.bed",
     shell:
-        "(head -n1 {input}; awk '$9>=2 && $7>0 && $10==\"True\"' {input}) > {output}"
+        "(head -n1 {input}; awk '$12>=2 && $7>0 && $14==\"True\"' {input}) > {output}"
 
 # Prioritize CNVs based on all score metrics, pathogenicity has very big weight.
 rule CNVPipe_prioritize:

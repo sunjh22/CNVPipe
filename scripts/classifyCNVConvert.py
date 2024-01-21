@@ -21,11 +21,11 @@ with open(pathoBedFile, 'r') as f:
 
 with open(normalBedFile, 'r') as f, open(outputFile, 'w') as g:
     if flag == "before-recurrent":
-        print('chrom\tstart\tend\tcn\tcnv\tAS\tDS\ttools\ttoolNum\tcnvfilter\tGS\tNS\tpathogenicity\tPS\tdosageGene', file=g)
+        print('chrom\tstart\tend\tcn\tcnv\tAS\tDS\tdhfc\tdhbfc\tdhffc\ttools\ttoolNum\tgc\tcnvfilter\tGS\tMS\tNS\tpathogenicity\tPS\tdosageGene', file=g)
     elif flag == "after-recurrent":
         print('chrom\tstart\tend\tcn\tsamples\tsampleNum\taccumScore\tpathogenicity\tpathoScore\tdosageGene', file=g)
     else:
-        raise ValueError('You must indicate this convert script is use for "before-recurrent" or "after-recurrent".')
+        raise ValueError('You must indicate that this script is used for "before-recurrent" or "after-recurrent".')
     for x in f:
         if x.startswith('chromosome'):
             continue

@@ -25,25 +25,26 @@ def calculateOverlapScore(target_cnv, cnv_list, reciprocal_prop=0.3):
     # print("This CNV totally overlaps with {:d} CNV regions\n".format(i))
     return score
 
+if __name__ == "__main__":
+    
+    inputFile = snakemake.input[0]
+    badListFile = snakemake.params[0]       # centromere, telomere etc. by default, we use blacklist from 10x
+    lowMapFile = snakemake.params[1]        # low mappable regions
+    normalCNVFile = snakemake.params[2]     # common SVs in normal population
+    outputFile = snakemake.output[0]
 
-inputFile = snakemake.input[0]
-badListFile = snakemake.params[0]       # centromere, telomere etc. by default, we use blacklist from 10x
-lowMapFile = snakemake.params[1]        # low mappable regions
-normalCNVFile = snakemake.params[2]     # common SVs in normal population
-outputFile = snakemake.output[0]
+    bad_list = readCNVFile(badListFile, tool='Bad')
+    lowMap_list = readCNVFile(lowMapFile, tool='Bad')
+    normal_list = readCNVFile(normalCNVFile, tool='Normal')
 
-bad_list = readCNVFile(badListFile, tool='Bad')
-lowMap_list = readCNVFile(lowMapFile, tool='Bad')
-normal_list = readCNVFile(normalCNVFile, tool='Normal')
-
-with open(inputFile, 'r') as f, open(outputFile, 'w') as g:
-    print('chrom\tstart\tend\tcn\tcnv\tAS\tDS\tdhfc\tdhbfc\tdhffc\ttools\ttoolNum\tgc\tCNVfilter\tGS\tMS\tNS', file=g)
-    for x in f:
-        if x.startswith('chrom'):
-            continue
-        cnv = x.strip().split('\t')[:3]
-        bad_score = calculateOverlapScore(cnv, bad_list, reciprocal_prop=0.3)
-        map_score = calculateOverlapScore(cnv, lowMap_list, reciprocal_prop=0.3)
-        normal_score = calculateOverlapScore(cnv, normal_list, reciprocal_prop=0.5)
-        print(x.strip(), bad_score, map_score, normal_score, sep='\t', file=g)
+    with open(inputFile, 'r') as f, open(outputFile, 'w') as g:
+        print('chrom\tstart\tend\tcn\tcnv\tAS\tDS\tdhfc\tdhbfc\tdhffc\ttools\ttoolNum\tgc\tCNVfilter\tGS\tMS\tNS', file=g)
+        for x in f:
+            if x.startswith('chrom'):
+                continue
+            cnv = x.strip().split('\t')[:3]
+            bad_score = calculateOverlapScore(cnv, bad_list, reciprocal_prop=0.3)
+            map_score = calculateOverlapScore(cnv, lowMap_list, reciprocal_prop=0.3)
+            normal_score = calculateOverlapScore(cnv, normal_list, reciprocal_prop=0.5)
+            print(x.strip(), bad_score, map_score, normal_score, sep='\t', file=g)
     
