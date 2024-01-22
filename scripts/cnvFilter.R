@@ -7,11 +7,11 @@ options(BioC_mirror="https://mirrors.tuna.tsinghua.edu.cn/bioconductor/")
 #   install.packages("BiocManager")
 # }
 
-if(!require("remotes", quietly=TRUE)){
-  BiocManager::install("remotes")
-}
+#if(!require("remotes", quietly=TRUE)){
+#  BiocManager::install("remotes")
+#}
 
-Sys.setenv(XML_CONFIG="/usr/bin/xml2-config")
+#Sys.setenv(XML_CONFIG="/usr/bin/xml2-config")
 
 if(!require("CNVfilteR", quietly=TRUE)){
   BiocManager::install("CNVfilteR")
@@ -20,6 +20,10 @@ if(!require("CNVfilteR", quietly=TRUE)){
 
 if(!require("dplyr", quietly=TRUE)){
   install.packages('dplyr')
+}
+
+if(!require("BSgenome.Hsapiens.UCSC.hg38", quietly=TRUE)){
+    BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')
 }
 
 suppressMessages(library(CNVfilteR))
