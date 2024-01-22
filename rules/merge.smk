@@ -87,7 +87,7 @@ rule cnvfilter_call:
     log:
         "logs/cnvfilter/{sample}.log"
     conda:
-        "../envs/cnvfilter.yaml"
+        "../envs/cnmops.yaml"
     shell:
         "Rscript {params.absPath}/scripts/cnvFilter.R {input.bed} {input.vcf} {output} {params.vcf_source} > {log} 2>&1"           
 

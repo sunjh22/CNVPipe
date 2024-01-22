@@ -3,9 +3,9 @@
 options("repos" = c(CRAN="https://mirror-hk.koddos.net/CRAN/"))
 options(BioC_mirror="https://mirrors.tuna.tsinghua.edu.cn/bioconductor/")
 
-if (!requireNamespace("BiocManager", quietly = TRUE)){
-  install.packages("BiocManager")
-}
+# if (!requireNamespace("BiocManager", quietly = TRUE)){
+#   install.packages("BiocManager")
+# }
 
 if(!require("remotes", quietly=TRUE)){
   BiocManager::install("remotes")
@@ -14,7 +14,7 @@ if(!require("remotes", quietly=TRUE)){
 Sys.setenv(XML_CONFIG="/usr/bin/xml2-config")
 
 if(!require("CNVfilteR", quietly=TRUE)){
-  BiocManager::install("jpuntomarcos/CNVfilteR")
+  BiocManager::install("CNVfilteR")
   # BiocManager::install("jpuntomarcos/CNVfilteR", version='1.13.2')
 }
 

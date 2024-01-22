@@ -1,11 +1,19 @@
 #!/usr/bin/env Rscript
 
-suppressMessages(library(cn.mops))
+if (!require("BiocManager", quietly = TRUE)){
+    install.packages("BiocManager")
+    BiocManager::install(version = "3.18")
+}
 
-if(!require(magrittr, quietly=TRUE)){
+if (!require("cn.mops", quietly = TRUE)){
+    BiocManager::install("cn.mops")
+}
+
+if(!require("magrittr", quietly=TRUE)){
     install.packages("magrittr", repos = "http://cran.us.r-project.org")
 }
 
+suppressMessages(library(cn.mops))
 suppressMessages(library(magrittr))
 
 options(scipen = 999)

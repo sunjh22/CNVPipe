@@ -3,4 +3,5 @@ channels:
   - bioconda
 dependencies:
   # Tools
-  - bioconductor-cn.mops = 1.44.0
+  - r-base = 4.3.2
+  #- bioconductor-cn.mops = 1.44.0
