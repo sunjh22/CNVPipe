@@ -5,6 +5,7 @@ options(BioC_mirror="https://mirrors.tuna.tsinghua.edu.cn/bioconductor/")
 
 # if (!requireNamespace("BiocManager", quietly = TRUE)){
 #   install.packages("BiocManager")
+#   BiocManager::install(version = "3.18")
 # }
 
 #if(!require("remotes", quietly=TRUE)){

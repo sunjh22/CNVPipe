@@ -95,6 +95,7 @@ else:
             rules.map_reads.output,
         output:
             bam = "mapped/{sample}.bam",
+        params:
             metric = "temp/gatk/{sample}.metric",
         threads: 6
         log:
@@ -103,7 +104,7 @@ else:
             "../envs/pre-processing.yaml"
         shell:
             "gatk MarkDuplicates --java-options \"-Xms10G -Xmx10G -XX:ParallelGCThreads=6\" "
-            "-I {input} -O {output.bam} -M {output.metric} >{log} 2>&1"
+            "-I {input} -O {output.bam} -M {params.metric} >{log} 2>&1"
 
 # Index bam files
 rule samtools_index:
