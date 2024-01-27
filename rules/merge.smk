@@ -136,13 +136,22 @@ rule classifycnv_convert:
         "../scripts/classifyCNVConvert.py"
 
 # Filter CNVs based on toolNum, DS and cnvfilter label.
-rule CNVPipe_convert:
-    input:
-        rules.classifycnv_convert.output,
-    output:
-        "res/CNVPipe/{sample}.bed",
-    shell:
-        "(head -n1 {input}; awk '$12>=2 && $7>0 && $14==\"True\"' {input} | sort -Vk 1 -k 2,3n) > {output}"
+if config['params']['binSize'] < 40000:
+    rule CNVPipe_convert:
+        input:
+            rules.classifycnv_convert.output,
+        output:
+            "res/CNVPipe/{sample}.bed",
+        shell:
+            "(head -n1 {input}; awk '$12>=2 && $7>0 && $14==\"True\"' {input} | sort -Vk 1 -k 2,3n) > {output}"
+else:
+    rule CNVPipe_convert:
+        input:
+            rules.classifycnv_convert.output,
+        output:
+            "res/CNVPipe/{sample}.bed",
+        shell:
+            "(head -n1 {input}; awk '($12>=2 || $11~/mops/) && $14==\"True\"' {input} | sort -Vk 1 -k 2,3n) > {output}"
 
 # Prioritize CNVs based on all score metrics, pathogenicity has very big weight.
 rule CNVPipe_prioritize:
