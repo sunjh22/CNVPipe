@@ -27,7 +27,7 @@ with open(normalBedFile, 'r') as f, open(outputFile, 'w') as g:
     else:
         raise ValueError('You must indicate that this script is used for "before-recurrent" or "after-recurrent".')
     for x in f:
-        if x.startswith('chromosome') or x.startswith('chrom'):
+        if x.startswith('chrom'):
             continue
         fileds = x.strip().split('\t')
         cnv = "_".join(fileds[:3])

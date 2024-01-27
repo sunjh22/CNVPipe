@@ -136,7 +136,11 @@ def mergeConsecutiveSegments(cnvList, shift=0):
     >>> mergeConsecutiveSegments([['chr1',1,10,1], ['chr1',11,20,0], ['chr2',1,5,3], ['chr2',6,10,4], ['chr2',11,20,1], ['chr3',1,10,4], ['chr3',11,20,8]], shift=1)
     [['chr1', 1, 20, 0], ['chr2', 1, 10, 4], ['chr2', 11, 20, 1], ['chr3', 1, 20, 6]]
     """
-    new_cvnList = []
+    new_cnvList = []
+    # in some cases, no CNVs could be detected, we need to allow the input to be blank
+    if len(cnvList) == 0:
+        new_cnvList.append(['chrom', 'start', 'end', 'cn'])
+        return new_cnvList
     tmpChrom, tmpStart, tmpEnd, tmpCN = cnvList[0]
     for i in range(1, len(cnvList)):
         chrom, start, end, cn = cnvList[i]
@@ -144,11 +148,11 @@ def mergeConsecutiveSegments(cnvList, shift=0):
             tmpEnd = end
             tmpCN = round((tmpCN+cn)/2)
         else:
-            new_cvnList.append([tmpChrom, tmpStart, tmpEnd, tmpCN])
+            new_cnvList.append([tmpChrom, tmpStart, tmpEnd, tmpCN])
             tmpChrom, tmpStart, tmpEnd, tmpCN = chrom, start, end, cn
     
-    new_cvnList.append([tmpChrom, tmpStart, tmpEnd, tmpCN])
-    return new_cvnList
+    new_cnvList.append([tmpChrom, tmpStart, tmpEnd, tmpCN])
+    return new_cnvList
 
 
 def resolveConflictCNVs(cnvList):
