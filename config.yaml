@@ -37,6 +37,8 @@ data:
     gatk-omni: "/data/jinwf/jhsun/CNVPipe/resources/GATK/1000G_omni2.5.hg38.vcf.gz"
     gatk-1000g: "/data/jinwf/jhsun/CNVPipe/resources/GATK/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
     
+    bin-boundary: "/home/jhsun/data3/github-repo/WMED/boundary/hg38_bwa_12k_k76.gc.content.txt"
+
 settings:
     # Whether keep fastp and bwamem intermediate files (which should be very large), default is 
     # deleting them after workflow is finished, if you want to keep them, set the parameters to True.
@@ -63,7 +65,13 @@ params:
     bam-input: False
     
     # Specify the species for which CNVPipe will be applied on, should be one of ['human', 'rice', 'others']
-    species: 'human'
+    species: "human"
+
+    # Whether the dataset is single-cell or bulk?
+    single-cell: False
+
+    # If single-cell data, specify possible ploidies, default is "2", could be "1.7/2/3/3.3" etc.
+    ploidy: "2"
 
     # The resolution of CNV calling, it is critical to set an appropriate 'binSize' for CNV calling, 
     # as it will greatly affect the final result. We have some recommendations for different depth 

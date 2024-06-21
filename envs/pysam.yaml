@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # Tools
+  - pysam ==0.20.0
+  - sambamba ==1.0

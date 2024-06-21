@@ -34,7 +34,9 @@ bam_files <- tail(args, -4)
 
 # Drop MT (fails otherwise) and get read counts in bin_size windows. Windows should contain 50-100 reads each.
 human_ref <- paste('chr', c(as.character(seq(22)), "X", "Y"), sep = '')
+# Below one is for rice genome
 # rice_ref <- c('NC_029256.1','NC_029257.1','NC_029258.1','NC_029259.1','NC_029260.1','NC_029261.1','NC_029262.1','NC_029263.1','NC_029264.1','NC_029265.1','NC_029266.1','NC_029267.1')
+# The below one is actually for lettuce genome, do not change the name
 rice_ref <- c("CM022518.2","CM022519.2","CM022520.2","CM022521.2","CM022522.2","CM022523.2","CM022524.2","CM022525.2","CM022526.2")
 
 if(x_species=='human'){
