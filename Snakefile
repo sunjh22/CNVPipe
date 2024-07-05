@@ -66,9 +66,7 @@ else:
                 input:
                     "res/report/recurrentCNVs",
                     expand("res/report/{sample}", sample = config['global']['sample-names']),
-                    "cleaned/multiqc-report.html",
         else:
             rule all:
                 input:
                     expand("res/report/{sample}", sample = config['global']['sample-names']),
-                    "cleaned/multiqc-report.html",

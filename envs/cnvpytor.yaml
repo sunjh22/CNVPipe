@@ -1,4 +1,6 @@
 channels:
+  - conda-forge
   - bioconda
 dependencies:
-  - cnvpytor =1.2.1
+  - python == 3.8
+  - cnvpytor == 1.2.1-0

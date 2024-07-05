@@ -22,7 +22,9 @@ rule smoove_call:
     conda:
         "../envs/smoove.yaml"
     shell:
-        "(smoove call --outdir {params.outdir} {params.exclude} "
+        "mkdir -p temp/smoove; "
+        "touch {output}; "
+        "(smoove call --outdir temp/smoove {params.exclude} "
         "--name {wildcards.sample} --fasta {params.ref} -p 1 --genotype {input.bam}) > {log} 2>&1"
 
 # Extract all CNVs (DUP and DEL). Smoove might produce some contradictary calls for noisy or 
