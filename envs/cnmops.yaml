@@ -5,3 +5,4 @@ dependencies:
   # Tools
   - r-base = 4.3.2
   #- bioconductor-cn.mops = 1.44.0
+  - bioconductor-cnvfilter == 1.16.0
