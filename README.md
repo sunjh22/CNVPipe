@@ -36,7 +36,7 @@ There is a directory `resources` under CNVPipe, we recommend store all resouce f
 
 Then download from following resources.
 1. Download human reference genome from [UCSC](http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/analysisSet/) into `resources/refs/` if no reference genome;
-2. Download Delly mappbility file from [Delly](https://gear.embl.de/data/delly/) into `resources/Delly/`, remember to download all three `GRCh38` files;
+2. Download Delly mappbility file from [Delly](https://gear-genomics.embl.de/data/delly/) into `resources/Delly/`, remember to download all three `GRCh38` files;
 3. Download GATK bundle files from [here](https://console.cloud.google.com/storage/browser/genomics-public-data/resources/broad/hg38/v0/) into `resources/GATK`, all vcf files and their index are required.
 
 ### About calling resolution
