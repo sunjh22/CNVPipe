@@ -77,10 +77,9 @@ extras=""
 
 
 if args.depend:
-	for m in args.depend.split(" "):
-		depend = depend + ":" + m
-if depend:
-	depend = " -W \"depend=afterok" + depend + "\""
+	depend_ids = [m for m in args.depend.split() if m]
+	if depend_ids:
+		depend = "depend=afterok:" + ":".join(depend_ids)
 
 if args.positional:
 	for m in args.positional:
@@ -105,12 +104,12 @@ if args.o: so = " -o " + args.o
 if args.p: priority = " -p " + args.p
 if args.P: proxy = " -P " + args.P
 if args.q: q = " -q " + args.q
-if args.t: ar = " -t " + args.ar
+if args.t: ar = " -t " + args.t
 if args.u: user = " -u " + args.u
 if args.v: ev = " -v " + args.v
 if args.V: eall = " -V"
 if args.w: wd = " -w " + args.w
-if args.W: add= " -W \"" + args.W + "\""
+if args.W: add = args.W
 
 nodes=""
 ppn=""
@@ -145,12 +144,48 @@ if "cluster" in job_properties:
         os.makedirs(os.path.dirname(cluster["output"]), exist_ok=True)
         so = " -o " + cluster["output"]
 
-cmd = "qsub {a}{A}{b}{c}{C}{d}{D}{e}{f}{h}{j}{l}{m}{M}{N}{o}{p}{P}{q}{t}{u}{v}{V}{w}{W}{rp}{dep}{ex}".format(\
-	a=atime,A=acc_string,b=pbs_time,c=chkpt,C=pref,d=dd,D=rd,e=se,f=ft,h=hold,j=j,l=resource,m=mail,M=mailuser,\
-	N=jname,o=so,p=priority,P=proxy,q=q,t=ar,u=user,v=ev,V=eall,w=wd,W=add,rp=resourceparams,dep=depend,ex=extras)
+# Build argument list safely (no shell=True to avoid injection)
+cmd_args = ["qsub"]
+if atime: cmd_args.extend(["-a", args.a])
+if acc_string: cmd_args.extend(["-A", args.A])
+if pbs_time: cmd_args.extend(["-b", args.b])
+if chkpt: cmd_args.extend(["-c", args.c])
+if pref: cmd_args.extend(["-C", args.C])
+if dd: cmd_args.extend(["-d", args.d])
+if rd: cmd_args.extend(["-D", args.D])
+if se: cmd_args.extend(["-e", args.e])
+if ft: cmd_args.append("-f")
+if hold: cmd_args.append("-h")
+if j: cmd_args.extend(["-j", args.j])
+if resource: cmd_args.extend(["-l", args.l])
+if mail: cmd_args.extend(["-m", args.m])
+if mailuser: cmd_args.extend(["-M", args.M])
+if jname: cmd_args.extend(["-N", args.N])
+if so: cmd_args.extend(["-o", args.o])
+if priority: cmd_args.extend(["-p", args.p])
+if proxy: cmd_args.extend(["-P", args.P])
+if q: cmd_args.extend(["-q", args.q])
+if ar: cmd_args.extend(["-t", args.t])
+if user: cmd_args.extend(["-u", args.u])
+if ev: cmd_args.extend(["-v", args.v])
+if eall: cmd_args.append("-V")
+if wd: cmd_args.extend(["-w", args.w])
+if add: cmd_args.extend(["-W", add])
+# Resource list from job properties
+if nodes or ppn or mem or walltime:
+    res_list = []
+    if nodes: res_list.append(nodes)
+    if ppn: res_list.append(ppn)
+    if mem: res_list.append(mem)
+    if walltime: res_list.append(walltime)
+    cmd_args.extend(["-l", ",".join(res_list)])
+if depend: cmd_args.extend(["-W", depend])
+if extras: cmd_args.append(extras.strip())
+# Append the jobscript
+cmd_args.append(jobscript)
 
 try:
-    res = subprocess.run(cmd, check=True, shell=True, stdout=subprocess.PIPE)
+    res = subprocess.run(cmd_args, check=True, stdout=subprocess.PIPE)
 except subprocess.CalledProcessError as e:
     raise e
 

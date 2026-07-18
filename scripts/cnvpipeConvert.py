@@ -16,7 +16,7 @@ cnvList = pd.read_csv(inputFile, sep='\t')
 
 # assign a score based on the predicted pathogenicity of CNV
 patho_score = {'Pathogenic':1, 'Likely pathogenic':0.8, 'Uncertain significance':0.6, 'Likely benign': 0.4, 'Benign':0.2}
-cnvList['patho_score'] = [patho_score[x] for x in cnvList['pathogenicity']]
+cnvList['patho_score'] = [patho_score.get(str(x), 0.6) for x in cnvList['pathogenicity']]
 
 # a large dosage score will be assigned if there is a dosage gene in the CNV
 cnvList['dosage_score'] = [1 if isinstance(x,str) & (str(x) != '0.0') else 0 for x in cnvList['dosageGene']]

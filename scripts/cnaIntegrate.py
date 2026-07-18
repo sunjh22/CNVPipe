@@ -1,22 +1,24 @@
-#! /usr/bin/env python
-# This script is wrote to integrate single cell CNA profiles
-# in Snakemake pipeline
+#!/usr/bin/env python3
+"""Integrate single-cell CNA profiles into a combined matrix for CNVPipe."""
 
 from collections import defaultdict
+import glob
 
 inputfile = snakemake.input[:]
 outputfile = snakemake.output[0]
-medianFile = snakemake.params[0]
+medianPrefix = snakemake.params[0]
 
 samples = []
-with open(medianFile, 'r') as f:
-	for x in f:
-		x = x.strip().split('\t')
-		sample = x[0]
-		totalReads = float(x[1])
-		medianCount = float(x[2])
-		if totalReads > 700000 and medianCount > 35:
-			samples.append(sample)
+# Read per-sample stat files (written by countReads.py as medianCount.txt.<samplename>)
+for stat_file in glob.glob(medianPrefix + '.*'):
+    with open(stat_file, 'r') as f:
+        for x in f:
+            x = x.strip().split('\t')
+            sample = x[0]
+            totalReads = float(x[1])
+            medianCount = float(x[2])
+            if totalReads > 700000 and medianCount > 35:
+                samples.append(sample)
 
 samples = set(samples)
 

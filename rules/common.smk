@@ -14,8 +14,8 @@ snakemake.utils.min_version("5.7")
 # CNVPipe Version
 cnvpipe_version = "0.0.1"
 
-# Validate the format of config file TODO
-# snakemake.utils.validate(config, schema="../schemas/config.schema.yaml")
+# Validate config against schema
+snakemake.utils.validate(config, schema="../schemas/config.schema.yaml")
 
 # Store sample names into config['global']
 if "global" in config:
@@ -23,12 +23,14 @@ if "global" in config:
 else:
     config["global"] = {}
 
-config["global"]["samples"] = pd.read_csv(config["data"]["samples"], sep='\t', dtype=str).set_index(["sample"], drop=False)
+# Load sample table into a module-level variable (NOT stored in config to avoid
+# JSON serialization issues with Snakemake >= 9.x when logging the config dict).
+_samples_df = pd.read_csv(config["data"]["samples"], sep='\t', dtype=str).set_index(["sample"], drop=False)
 
 # The name of control samples in sample tsv should start with 'control' keyword.
 config["global"]["sample-names"] = list()
 config["global"]["control-sample-names"] = list()
-for s in config["global"]["samples"]['sample']:
+for s in _samples_df['sample']:
     if s not in config["global"]["sample-names"] and not s.startswith('control'):
         config["global"]["sample-names"].append(s)
     else:
@@ -48,7 +50,7 @@ def valid_filepath(fn):
 # Check whether filename and filepath are valid when input is fastq
 if not config['params']['bam-input']:
     problematic_filenames = 0
-    for index, row in config["global"]["samples"].iterrows():
+    for index, row in _samples_df.iterrows():
         if not valid_filename(row['sample']):
             raise Exception("Invalid sample name: "+ str(row["sample"]) + 
             "we only allow alpha-numerical, dots, dashes, and underscores.")
@@ -95,12 +97,12 @@ try:
     del process, out, err
     if not conda_ver:
         conda_ver = "n/a"
-except:
+except Exception:
     conda_ver = "n/a"
 
 # Get the conda env name, if available.
 # See https://stackoverflow.com/a/42660674/4184258
-conda_env = os.environ['CONDA_DEFAULT_ENV'] + " (" + os.environ["CONDA_PREFIX"] + ")"
+conda_env = os.environ.get('CONDA_DEFAULT_ENV', 'n/a') + " (" + os.environ.get("CONDA_PREFIX", "n/a") + ")"
 if conda_env == " ()":
     conda_env = "n/a"
 
@@ -125,12 +127,12 @@ ctrsmpcnt = str(len(config['global']['control-sample-names']))
 
 # Some helpful messages
 logger.info("=====================================================================================")
-logger.info("       ______  __   __ __        __ ______  ___   ______   _______ ")
-logger.info("      /   ___\/  \ /  /\ \      / /|   _  \ \  \ |   _  \ /  ____/ ")
-logger.info("     /   /    |   \|  | \ \    / / |  |_]  ||  | |  |_]  |  |___   ")
-logger.info("    |   /     |       |  \ \  / /  |   ___/ |  | |   ___/|   ___|  ")
-logger.info("     \  \_____|  |\   |   \ \/ /   |  |     |  | |  |    |  |____  ")
-logger.info("      \______/|__| \__|    \__/    |__|     \__\ |__|    \_______\ ")
+logger.info(r"       ______  __   __ __        __ ______  ___   ______   _______ ")
+logger.info(r"      /   ___\/  \ /  /\ \      / /|   _  \ \  \ |   _  \ /  ____/ ")
+logger.info(r"     /   /    |   \|  | \ \    / / |  |_]  ||  | |  |_]  |  |___   ")
+logger.info(r"    |   /     |       |  \ \  / /  |   ___/ |  | |   ___/|   ___|  ")
+logger.info(r"     \  \_____|  |\   |   \ \/ /   |  |     |  | |  |    |  |____  ")
+logger.info(r"      \______/|__| \__|    \__/    |__|     \__\ |__|    \_______\ ")
 logger.info("")
 logger.info("    Date:               " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 logger.info("    User:               " + username)
@@ -154,8 +156,11 @@ logger.info("")
 # Install a package that will be used later
 try:
     import kmeans1d
-except:
-    os.system('pip3 install kmeans1d')
+except ImportError:
+    raise ImportError(
+        "The 'kmeans1d' package is required for CNV prioritization. "
+        "Please install it via: pip install kmeans1d"
+    )
     
 # No need to have these output vars available in the rest of the snakefiles
 del username

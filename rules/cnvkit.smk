@@ -29,7 +29,7 @@ rule cnvkit_batch:
     message:
         "Bin size used for CNV calling is {params.binSize}"
     shell:
-        "(cnvkit.py batch {input.sample} -n {input.control} -m wgs -f {params.ref} "
+        "(PYTHONNOUSERSITE=1 cnvkit.py batch {input.sample} -n {input.control} -m wgs -f {params.ref} "
         "{params.access} --target-avg-size {params.binSize} -p {threads} "
         "--drop-low-coverage --output-reference {output.reference} "
         "-d {params.outdir}) > {log} 2>&1"
@@ -48,7 +48,7 @@ rule cnvkit_segmetric:
     conda:
         "../envs/cnvkit.yaml"
     shell:
-        "cnvkit.py segmetrics -s {input.cns} {input.cnr} {params} -o {output} > {log} 2>&1"
+        "PYTHONNOUSERSITE=1 cnvkit.py segmetrics -s {input.cns} {input.cnr} {params} -o {output} > {log} 2>&1"
 
 # Call integer copy number and filter by confidence interval
 rule cnvkit_call:
@@ -63,7 +63,7 @@ rule cnvkit_call:
     conda:
         "../envs/cnvkit.yaml"
     shell:
-        "cnvkit.py call {input} {params} -o {output} > {log} 2>&1"
+        "PYTHONNOUSERSITE=1 cnvkit.py call {input} {params} -o {output} > {log} 2>&1"
 
 # Merge segments with the same type of CNVs
 rule cnvkit_convert:

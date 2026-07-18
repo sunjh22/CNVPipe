@@ -2,5 +2,8 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - samplot == 1.3.0
-  - pandas == 0.20.3
+  - samplot ==1.3.0
+  - pandas ==0.20.3
+  - pip
+  - pip:
+    - kmeans1d

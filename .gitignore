@@ -17,3 +17,37 @@ resources/SVM/
 dust/
 resources/ML/
 resources/ML2/
+manuscript/
+.Rproj.user
+
+# Project documentation (local only)
+CLAUDE.md
+CHANGES.md
+
+# Runtime generated directories
+temp/
+res/
+cleaned/
+mapped/
+snps/
+segment/
+counts/
+benchmarks/
+logs/autobin/
+logs/cnvkit/
+logs/cnvpytor/
+logs/mops/
+logs/smoove/
+logs/delly/
+logs/gatk/
+logs/freebayes/
+logs/fastp/
+logs/bwamem/
+logs/samtools/
+logs/duphold/
+logs/merge/
+logs/cnvfilter/
+logs/segment/
+logs/recurrent/
+*.bcf.csi
+

@@ -1,0 +1,10 @@
+# Default Snakemake profile for CNVPipe.
+# Edit conda-prefix to point to a directory where conda environments will be stored.
+# Usage: snakemake --profile profiles/default --directory /your/working/directory
+
+use-conda: true
+# conda-prefix: /path/to/conda/environments
+
+cores: 10
+printshellcmds: true
+latency-wait: 60

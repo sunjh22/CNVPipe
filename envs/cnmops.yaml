@@ -2,7 +2,9 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  # Tools
-  - r-base = 4.3.2
-  #- bioconductor-cn.mops = 1.44.0
-  - bioconductor-cnvfilter == 1.16.0
+  - r-base ==4.3.2
+  - bioconductor-cn.mops
+  - bioconductor-cnvfilter
+  - bioconductor-bsgenome.hsapiens.ucsc.hg38
+  - r-magrittr
+  - r-dplyr

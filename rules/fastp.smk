@@ -4,7 +4,18 @@
 
 def get_fastq(wildcards):
     """Get fastq files of given sample."""
-    fastqs = config["global"]["samples"].loc[(wildcards.sample), ["fq1", "fq2"]].dropna()
+    # Accept both 'sample' and 'sample_1' wildcard formats (Snakemake 9.x
+    # may derive sample from paired-end filenames).
+    sample = wildcards.sample
+    try:
+        fastqs = _samples_df.loc[(sample), ["fq1", "fq2"]].dropna()
+    except KeyError:
+        # Try stripping _1 or _2 suffix (Snakemake ambiguity with PE pattern)
+        if sample.endswith('_1') or sample.endswith('_2'):
+            sample = '_'.join(sample.split('_')[:-1])
+            fastqs = _samples_df.loc[(sample), ["fq1", "fq2"]].dropna()
+        else:
+            raise
     if len(fastqs) == 2:
         return {"r1": fastqs.fq1, "r2": fastqs.fq2}
     else:
@@ -12,12 +23,15 @@ def get_fastq(wildcards):
 
 def is_single_end( sample, **kargs ):
     """Return True if sample-unit is single end."""
-    return pd.isnull(config["global"]["samples"].loc[(sample), "fq2"])
+    return pd.isnull(_samples_df.loc[(sample), "fq2"])
 
 def unpack_fastq_files(wildcards):
     return list(get_fastq(wildcards).values())
 
 # The efficiency of fastp reaches limit at 6 threads
+# Avoid ambiguity between PE and SE output patterns.
+ruleorder: clean_reads_pe > clean_reads_se
+
 rule clean_reads_se:
     input:
         unpack_fastq_files,

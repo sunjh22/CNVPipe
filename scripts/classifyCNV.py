@@ -2,7 +2,7 @@
 # coding=utf-8
 
 import argparse
-from subprocess import Popen
+from subprocess import Popen, PIPE
 import copy
 from multiprocessing import Pool
 import time
@@ -94,27 +94,34 @@ def initialize_cnv_genes(cnv_list):
 
 
 def run_bedtools_intersect(file_b_type):
-    """Runs the BEDTools intersect command.
-    Intersects the cleaned BED file that contains CNVs with a database specified in the file_b_type variable.
+    """Runs the BEDTools intersect command using safe subprocess invocation.
 
     Args:
         file_b_type: Contents of the database.
-
     """
-    if file_b_type == 'genes':
-        extra_params = '| cut -f1-4,6-9 | sort -u'  # save the CNV and hit coordinates, type, transcript, gene name
-    else:
-        extra_params = ''
-
     db_path = os.path.join(home_dir, main_resources_folder, args.GenomeBuild, databases[file_b_type]['source'])
-    intersect_command = ' '.join(['bedtools intersect -a', cleaned_bed_path, '-b', db_path, '-wo', extra_params, '>',
-                                  databases[file_b_type]['result_path']])
-    # ???
-    intersect_proc = Popen(['/bin/bash', '-c', intersect_command])
-    intersect_proc.wait()
-    if not intersect_proc.returncode == 0:
-        print("ERROR when running BEDTools on ", file_b_type)
-        sys.exit(1)
+    result_path = databases[file_b_type]['result_path']
+
+    cmd = ['bedtools', 'intersect', '-a', cleaned_bed_path, '-b', db_path, '-wo']
+    if file_b_type == 'genes':
+        # Pipe chain: bedtools intersect | cut | sort -u > result
+        with open(result_path, 'w') as out_f:
+            intersect_proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+            cut_proc = Popen(['cut', '-f1-4,6-9'], stdin=intersect_proc.stdout, stdout=PIPE)
+            intersect_proc.stdout.close()
+            sort_proc = Popen(['sort', '-u'], stdin=cut_proc.stdout, stdout=out_f)
+            cut_proc.stdout.close()
+            sort_proc.communicate()
+            if sort_proc.returncode != 0:
+                print(f"ERROR when running BEDTools on {file_b_type}")
+                sys.exit(1)
+    else:
+        with open(result_path, 'w') as out_f:
+            intersect_proc = Popen(cmd, stdout=out_f, stderr=PIPE)
+            intersect_proc.communicate()
+            if intersect_proc.returncode != 0:
+                print(f"ERROR when running BEDTools on {file_b_type}")
+                sys.exit(1)
 
 
 def genes_promoters_enhancers_intersect(detailed_results, cnv_genes_tmp):

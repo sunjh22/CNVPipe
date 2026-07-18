@@ -2,6 +2,11 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  # Tools
   - pysam ==0.20.0
   - sambamba ==1.0
+  - r-base
+# NOTE: Single-cell mode additionally requires the R packages 'aCGH' and
+# 'DNAcopy' from Bioconductor. These are not available as conda packages.
+# If using single-cell mode, install them manually in R:
+#   if (!require("BiocManager")) install.packages("BiocManager")
+#   BiocManager::install(c("aCGH", "DNAcopy"))

@@ -1,7 +1,6 @@
 # CNVPipe - an integrated and robust CNV calling pipeline
 
 CNVPipe integrates several popular CNV calling methods and designed various score metrics to filter false positive callings, aims at reaching higher sensitivity and lower false discovery rate. CNVPipe uses Snakemake as backend to make it highly robust and reproducible between different machines.
-CNVPipe-token: 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
 
 ## CNVPipe workflow
 
@@ -10,6 +9,17 @@ CNVPipe accept fastq files as input, then perform reads filtering by [fastp](htt
 The following figure demonstrates the workflow of CNVPipe.
 
 ![CNVPipe workflow](/doc/logo/CNVPipe-workflow.png)
+
+## Requirements
+
+- Snakemake >= 5.7 (tested with 9.x; see compatibility note below)
+- conda or mamba
+- Reference genome (FASTA, indexed with BWA, samtools, and GATK)
+- Resource files (see [Download resources](#download-cnvpipe-and-resource-files))
+
+### Snakemake 9.x compatibility note
+
+Snakemake 9.x deprecates `--conda-frontend mamba`. If using Snakemake >= 9, omit the `--conda-frontend mamba` flag. The default profile at `profiles/default/` is pre-configured for this. If you experience scheduling stalls, restarting Snakemake resolves the issue.
 
 ## Set up and usage
 
@@ -20,9 +30,9 @@ You can follow the [Snakemake](https://snakemake.readthedocs.io/en/stable/gettin
 Following is how I install Snakemake and use it in an isolated environment.
 
     wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh
-	bash Mambaforge-Linux-x86_64.sh
-	mamba create -c conda-forge -c bioconda -n snakemake snakemake
-	mamba activate snakemake
+    bash Mambaforge-Linux-x86_64.sh
+    mamba create -c conda-forge -c bioconda -n snakemake snakemake
+    mamba activate snakemake
 
 ### Download CNVPipe and resource files
 
@@ -53,7 +63,7 @@ A good resolution is critical for whole-genome level CNV calling, users could sp
 
 Alternatively, CNVPipe could estimate a resolution based on the median depth of input samples by ensuring each bin has 37500 base covered. To do this, we need to first run with
 
-    snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --cores 10 --directory /your/working/directory autobinBydepth
+    snakemake --use-conda --cores 10 --directory /your/working/directory autobinBydepth
 
 This will produce a `logs/autobin/binsize.txt` file, which will be read in real CNV calling process. Actually this step will do reads filtering and alignment, thus in later CNV calling, these pre-processing steps will be skipped.
 
@@ -66,19 +76,23 @@ Notice that this workflow should always be ran under `CNVPipe` directory, users 
         cd /your/working/directory
         python generateTable.py /working/directory/of/fastq/files
 
-2. The config file could be copied from `CNVPipe` directory into working directory, users need to modify the 'absPath' and the path of various resource files in it, and specify a resolution if you do not want CNVPipe to calculate one.
+2. The config file could be copied from `CNVPipe` directory into working directory, users need to modify the path of various resource files in it, and specify a resolution if you do not want CNVPipe to calculate one.
 
-3. Make sure `snakemake` environment is activated, then run CNVPipe with
+3. Make sure `snakemake` environment is activated, then run CNVPipe using the default profile for convenience:
 
-        snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --cores 10 --directory /your/working/directory
+        snakemake --profile profiles/default --directory /your/working/directory
+
+   Or without a profile:
+
+        snakemake --use-conda --cores 10 --directory /your/working/directory
 
 You can use Snakemake `dry run` to do a test first
 
-    snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --cores 10 --directory /your/working/directory -n
+    snakemake --profile profiles/default --directory /your/working/directory -n
 
 You can also run specific rules separately, for example, if you are interested in Delly, you can run with
 
-    snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --cores 10 --directory /your/working/directory all_delly
+    snakemake --use-conda --cores 10 --directory /your/working/directory all_delly
 
 Other options include:
 - all_fastp: only do reads filtering
@@ -94,20 +108,48 @@ Snakemake also provides an option to generate a graph showing all connected rule
 
     snakemake --directory /your/working/directory --rulegraph | dot -Tpdf > dag.pdf
 
+### Configuration
+
+The config file (`config.yaml`) is validated against a JSON schema at startup. Key parameters:
+
+| Parameter | Description |
+|-----------|-------------|
+| `data.samples` | Path to samples TSV |
+| `data.genome` | Reference genome FASTA |
+| `params.species` | `human`, `rice`, or `others` |
+| `params.genome-build` | `hg38` or `hg19` (for ClassifyCNV; human only) |
+| `params.binSize` | CNV calling resolution (see table above) |
+| `params.single-cell` | Enable single-cell mode |
+| `params.gatk.java-heap` | GATK Java heap in GB (default: 4) |
+| `params.gatk.java-heap-hc` | HaplotypeCaller Java heap in GB (default: 20) |
+
+All dependencies are managed through conda environments (see `envs/`). No runtime package installation occurs.
+
 ### Output of CNVPipe
 
 The output of CNVPipe includes a summary report of reads quality, refined CNV list for each sample, and figures showing the read depth and BAF for high-confidence CNVs for each sample.
 
 Summary report of reads quality is `cleaned/multiqc-report.html`.
 
-CNV list is under `res/` of working directory. Results from different tools including CNVPipe, CNVKit, CNVpytor, cn.MOPS, Delly and Smoove are all under this directory. For CNVPipe, a bed file was generated for each sample, in which locations, exact copy number, various scores and pathogenicity prediction results were given. Besides, a pdf file was generated to visualize the high-confident CNVs.
+CNV list is under `res/` of working directory. Results from different tools including CNVPipe, CNVKit, CNVpytor, cn.MOPS, Delly and Smoove are all under this directory. For CNVPipe, a bed file was generated for each sample with locations, exact copy number, various scores (AS, DS, GS, MS, NS, PS), CNVfilteR label, pathogenicity prediction, and dosage-sensitive genes. A priority-sorted version (`*.priority.bed`) is also provided. Coverage plots are under `res/report/{sample}/`.
 
 ## Run on clusters
 
 To run CNVPipe on cluster environment, we need to set up some "profiles" to correctly get the resources required in our pipeline. Snakemake provided some profile templates for different cluster environments at [here](https://github.com/Snakemake-Profiles).
 
+### Default profile
+
+A default profile is provided at `profiles/default/config.yaml`. Edit `conda-prefix` there once to avoid passing it on every invocation. The profile enables `--use-conda` and sets reasonable defaults.
+
 ### Run on pbs-torque
 
 A template profile for pbs-torque environment is provided under `profiles/pbs-torque/`. You might need to adjust the parameters such as cores and jobs in profile to fit into your cluster configuration. To run CNVPipe on pbs-torque cluster
 
-    snakemake --use-conda --conda-frontend mamba --conda-prefix /a/directory/where/you/store/conda/env/of/softwares --profile profiles/pbs-torque --directory /your/working/directory 
+    snakemake --use-conda --profile profiles/pbs-torque --directory /your/working/directory 
+
+## Security
+
+- All external tool invocations use list-form arguments (no shell injection vectors).
+- No runtime package installation: all Python and R dependencies are declared in conda environment YAML files with exact version pinning.
+- Config validation runs at startup to catch misconfigurations early.
+- No hardcoded filesystem paths in VCF headers or R scripts.

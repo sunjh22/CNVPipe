@@ -19,6 +19,8 @@ with open(pathoBedFile, 'r') as f:
         pathoInfo = [x[5], x[6], x[-2]]
         pathoCNV[cnv] = pathoInfo
 
+missing_patho_count = 0
+
 with open(normalBedFile, 'r') as f, open(outputFile, 'w') as g:
     if flag == "before-recurrent":
         print('chrom\tstart\tend\tcn\tcnv\tAS\tDS\tdhfc\tdhbfc\tdhffc\ttools\ttoolNum\tgc\tcnvfilter\tGS\tMS\tNS\tpathogenicity\tPS\tdosageGene', file=g)
@@ -34,4 +36,11 @@ with open(normalBedFile, 'r') as f, open(outputFile, 'w') as g:
         if cnv in pathoCNV.keys():
             print(x.strip(), *pathoCNV[cnv], sep='\t', file=g)
         else:
-            print("The pathogenicity of CNV {:s} was not predicted, please check".format(cnv))
+            missing_patho_count += 1
+            placeholder = ["Uncertain significance", "0.6", "0.0"]
+            print(x.strip(), *placeholder, sep='\t', file=g)
+
+if missing_patho_count > 0:
+    import sys
+    print(f"WARNING: {missing_patho_count} CNV(s) had no pathogenicity prediction; "
+          f"assigned 'Uncertain significance' as default.", file=sys.stderr)

@@ -27,10 +27,14 @@ rule segment:
         boundary = config['data']['bin-boundary'],
         ploidyFile = "ploidyEstimate.txt",
         ploidy = config['params']['ploidy'],
+        badBins = config['data'].get('bad-bins', ''),
     log:
         "logs/segment/{sample}.rscript.log"
+    conda:
+        "../envs/pysam.yaml"
     shell:
-        "Rscript {params.absPath}/scripts/cbs.plot.r {params.boundary} {input} {output} {params.ploidyFile} {params.ploidy} 1>{log} 2>&1"
+        "Rscript {params.absPath}/scripts/cbs.plot.r {params.boundary} {input} {output} "
+        "{params.ploidyFile} {params.ploidy} {params.badBins} 1>{log} 2>&1"
 
 rule integrate:
     input:

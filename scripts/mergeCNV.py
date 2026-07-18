@@ -11,7 +11,7 @@ from utils import readCNVFile, mergeCNVFromTools
 sample = os.path.basename(snakemake.input[0]).split('.')[0]
 cnvs = []
 
-if snakemake.params[0] == 'high':
+if snakemake.params.flag == 'high':
     smoove = snakemake.input[0]
     delly = snakemake.input[1]
     cnvkit = snakemake.input[2]
@@ -27,7 +27,7 @@ if snakemake.params[0] == 'high':
             cnv.append(cnvtools[i])
             # five columns in cnvs: chr, start, end, cn, tool
             cnvs.append(cnv)
-elif snakemake.params[0] == 'median':
+elif snakemake.params.flag == 'median':
     mops = snakemake.input[0]
     cnvkit = snakemake.input[1]
     delly = snakemake.input[2]
@@ -41,7 +41,7 @@ elif snakemake.params[0] == 'median':
         for cnv in readCNVFile(cnvfile, 'merge'):
             cnv.append(cnvtools[i])
             cnvs.append(cnv)
-elif snakemake.params[0] == 'low':
+elif snakemake.params.flag == 'low':
     mops = snakemake.input[0]
     cnvkit = snakemake.input[1]
     cnvpytor = snakemake.input[2]

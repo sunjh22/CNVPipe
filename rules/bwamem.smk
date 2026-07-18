@@ -30,7 +30,7 @@ rule map_reads:
         "../envs/pre-processing.yaml"
     shell:
         "(bwa mem -M {params.read_group} -t {threads} {input.ref} {input.reads} | "
-        "samtools sort -@ 10 -o {output}) >{log} 2>&1"
+        "samtools sort -@ {threads} -o {output}) >{log} 2>&1"
 
 # 1. Mark duplicates with GATK MarkDuplicates
 # 2. Recalibrate base quality, prepare for SNP calling, theoretically this step would not affect
@@ -43,13 +43,16 @@ if config['settings']['bqsr']:
         output:
             bam = temp("mapped/{sample}.mkdup.bam"),
             metric = "temp/gatk/{sample}.metric",
+        params:
+            java_heap = config.get('params', {}).get('gatk', {}).get('java-heap', '4'),
         threads: 6
         log:
             "logs/gatk/{sample}.markDuplicates.log"
         conda:
             "../envs/pre-processing.yaml"
         shell:
-            "gatk MarkDuplicates --java-options \"-Xms10G -Xmx10G -XX:ParallelGCThreads=6\" "
+            "gatk MarkDuplicates --java-options \"-Xms{params.java_heap}G -Xmx{params.java_heap}G "
+            "-XX:ParallelGCThreads={threads}\" "
             "-I {input} -O {output.bam} -M {output.metric} >{log} 2>&1"
 
     rule gatk_BaseRecalibrator:
@@ -95,16 +98,18 @@ else:
             rules.map_reads.output,
         output:
             bam = "mapped/{sample}.bam",
-        params:
             metric = "temp/gatk/{sample}.metric",
+        params:
+            java_heap = config.get('params', {}).get('gatk', {}).get('java-heap', '4'),
         threads: 6
         log:
             "logs/gatk/{sample}.markDuplicates.log"
         conda:
             "../envs/pre-processing.yaml"
         shell:
-            "gatk MarkDuplicates --java-options \"-Xms10G -Xmx10G -XX:ParallelGCThreads=6\" "
-            "-I {input} -O {output.bam} -M {params.metric} >{log} 2>&1"
+            "gatk MarkDuplicates --java-options \"-Xms{params.java_heap}G -Xmx{params.java_heap}G "
+            "-XX:ParallelGCThreads={threads}\" "
+            "-I {input} -O {output.bam} -M {output.metric} >{log} 2>&1"
 
 # Index bam files
 rule samtools_index:

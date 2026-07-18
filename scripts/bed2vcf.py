@@ -40,7 +40,8 @@ if __name__ == "__main__":
     print('##INFO=<ID=SAMPLE,Number=1,Type=String,Description="Sample name">', file=Out)
     print('##FORMAT=<ID=CN,Number=1,Type=Integer,Description="Integer copy number">', file=Out)
     print('##FORMAT=<ID=AS,Number=1,Type=Float,Description="Accumulated overlapped fraction/score, the bigger this value, the more confidence of CNV">', file=Out)
-    print('##reference=/data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa', file=Out)
+    ref_path = os.path.splitext(inputFaiFile)[0]
+    print(f'##reference={ref_path}', file=Out)
 
     for key in chrLength.keys():
         print('##contig=<ID={:s},length={:d}>'.format(key, chrLength[key]), file=Out)

@@ -3,5 +3,5 @@ channels:
   - bioconda
 dependencies:
   # Tools
-  - delly =1.1.5
-  - bcftools =1.16
+  - delly ==1.1.5
+  - bcftools ==1.16

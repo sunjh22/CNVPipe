@@ -1,4 +1,5 @@
-# /usr/bin/env python
+#!/usr/bin/env python3
+"""Count reads per genomic bin for single-cell CNV analysis."""
 
 import sys
 import pysam
@@ -6,7 +7,7 @@ import statistics
 import os
 
 if len(sys.argv) != 5:
-    sys.exit("Wrong input files! Usage: python countReads.py bamFile boundaryFile countsFile medianCountsFile")
+    sys.exit("Usage: python countReads.py <bamFile> <boundaryFile> <countsFile> <medianCountsFile>")
 
 inputBam = sys.argv[1]
 inputBins = sys.argv[2]
@@ -35,5 +36,7 @@ with open(outputCount, 'w') as f:
     for i in range(len(bins)):
         print('\t'.join(bins[i][:3]), count[i], sep='\t', file=f)
 
-with open(outputMedianStat, 'a') as f:
+# Write per-sample stats file to avoid race conditions from parallel append.
+per_sample_stat = outputMedianStat + '.' + samplename
+with open(per_sample_stat, 'w') as f:
     print(samplename, countSum, countMedian, sep='\t', file=f)

@@ -71,8 +71,9 @@ rule all_cnvpipe_convert:
     input:
         expand("res/CNVpipe/{sample}.bed", sample = config['global']['sample-names'])
 
-# Apply cnvfilter, and assign 'True' for bad CNVs that cannot pass SNP verification, otherwise 
-# label 'True'.
+# Apply cnvfilter, and assign 'False' for CNVs that pass SNP verification, otherwise
+# label 'True' (bad).
+# NOTE: CNVfilteR requires human genome (BSgenome.Hsapiens.UCSC.hg38).
 rule cnvfilter_call:
     input:
         bed = rules.duphold_convert.output,
@@ -107,13 +108,15 @@ rule good_normal_score:
         "../scripts/goodNormalScore.py"
 
 # Apply ClassifyCNV and assign 'pathogenicity score' (6. PS)
+# NOTE: ClassifyCNV is human-genome specific.
 rule classifycnv_predict:
     input:
         rules.good_normal_score.output,
     output:
         "res/classifycnv/{sample}.classifycnv.txt",
     params:
-        absPath = config['params']['absPath']
+        absPath = config['params']['absPath'],
+        genomeBuild = config.get('params', {}).get('genome-build', 'hg38'),
     threads: 2
     log:
         "logs/merge/{sample}.patho.log"
@@ -121,7 +124,7 @@ rule classifycnv_predict:
         "../envs/classifycnv.yaml"
     shell:
         "python {params.absPath}/scripts/classifyCNV.py --absPath {params.absPath} --infile {input}"
-        " --GenomeBuild hg38 --cores {threads} >{log} 2>&1"
+        " --GenomeBuild {params.genomeBuild} --cores {threads} >{log} 2>&1"
 
 # Convert ClassifyCNV output to well-formated CNV bed file.
 rule classifycnv_convert:
@@ -188,11 +191,12 @@ rule recurrent_classifyCNV:
         "res/classifycnv/recurrent.classifycnv.txt",
     params:
         absPath = config['params']['absPath'],
+        genomeBuild = config.get('params', {}).get('genome-build', 'hg38'),
     log:
         "logs/recurrent/recurrent.classifyCNV.log"
     shell:
         "python {params.absPath}/scripts/classifyCNV.py --absPath {params.absPath} --infile "
-        "{input} --GenomeBuild hg38 --cores {threads} >{log} 2>&1; "
+        "{input} --GenomeBuild {params.genomeBuild} --cores {threads} >{log} 2>&1; "
 
 rule recurrent_classifyCNV_convert:
     input:

@@ -21,7 +21,7 @@ def getCNVs(inputFiles):
                 toolNum = int(cnv[8])
                 cnvfilter = cnv[9]
                 goodScore = int(cnv[10])
-                if toolNum >=3 and cnvfilter == 'True' and dupScore == 100 and goodScore == 100:
+                if toolNum >= 2 and cnvfilter == 'True' and dupScore >= 80 and goodScore >= 80:
                     new_cnv = [chrom, start, end, cn, sample]
                     new_cnvs.append(new_cnv)
 

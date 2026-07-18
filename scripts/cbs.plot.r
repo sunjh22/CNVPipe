@@ -1,14 +1,6 @@
-#! /usr/bin/env Rscript
-# This Rscript is written for performing cbs segmentation and MergeLevel on preliminary CNV profile
-# Usage: Rscript cbs.plot.r SRR.varbin.txt SRR SRR.cna.txt
-
-if(!require(aCGH, quietly = TRUE)){
-	BiocManager::install('aCGH')
-}
-
-if(!require(DNAcopy, quietly = TRUE)){
-	BiocManager::install('DNAcopy')
-}
+#!/usr/bin/env Rscript
+# This Rscript performs CBS segmentation for single-cell CNV profiles.
+# Usage: Rscript cbs.plot.r <gc-content-file> <varbin-data> <output> <ploidy-file> <ploidy> <bad-bins>
 
 suppressMessages(library(aCGH))
 suppressMessages(library(DNAcopy))
@@ -123,6 +115,6 @@ cbs.segment01 <- function(bad.bins, varbin.gc, varbin.data, outputfile, ploidyFi
 	}
 }
 
-cbs.segment01(bad.bins="/home/jhsun/data3/github-repo/WMED/boundary/hg38_bwa_12k_k76.badbins.txt", 
-			varbin.gc=args[1], varbin.data=args[2], outputfile=args[3], ploidyFile = args[4], 
+cbs.segment01(bad.bins=args[5],
+			varbin.gc=args[1], varbin.data=args[2], outputfile=args[3], ploidyFile = args[4],
 			alpha=0.0001, nperm=1000, undo.prune=0.05, min.width=5, esti_ploidy=T)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Generate the samples table to be used as CNVPipe input that lists paired end read samples.
-# Usage: ./generate-table.py <directory-with-fastq-files> [<samples.tsv>]
+"""Generate the samples table (samples.tsv) for CNVPipe from a directory of FASTQ files.
+Usage: python generateTable.py <directory-with-fastq-files> [<samples.tsv>]"""
 
 import sys, os
 import re
@@ -227,14 +227,14 @@ def write_table(mates, outfile):
     if invalid_samples > 0:
         print(colored(
             "Out of these, " + str(invalid_samples) + " sample names contain invalid characters.",
-            "This might cause trouble when using grenepipe with these files. "
+            "This might cause trouble when using CNVPipe with these files. "
             "Please consider to use the `copy-samples.py` script with the `--clean` option "
             "to fix these sample names.", "red"
         ))
     if invalid_files > 0:
         print(colored(
             "Out of these, " + str(invalid_files) + " fastq files contain invalid characters.",
-            "This might cause trouble when using grenepipe with these files. "
+            "This might cause trouble when using CNVPipe with these files. "
             "Please consider to use the `copy-samples.py` script with the `--clean` option "
             "to fix these file names.", "red"
         ))

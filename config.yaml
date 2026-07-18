@@ -2,42 +2,46 @@
 
 data:
     # 'samples' and 'genome' are mandatory.
-    samples:    "/data/jinwf/jhsun/project/CNVPipe/analysis/samples.tsv"
-    genome: "/data/jinwf/jhsun/refs/hg38/analysisSet/hg38.analysisSet.fa"
+    samples:    "/data/sunjh/project/CNVPipe/analysis/samples.tsv"
+    genome: "/data/sunjh/refs/hg38/analysisSet/hg38.analysisSet.fa"
 
     # 'access' and 'smoove-exclude' files for human and rice are pre-configured under CNVPipe 
     # 'resources/CNVKit' and 'resources/Smoove' directory. They are not mandatory for other sepcies.
-    access:    "/data/jinwf/jhsun/CNVPipe/resources/CNVKit/access-excludes.hg38.analysisSet.bed"
-    smoove-exclude: "/data/jinwf/jhsun/CNVPipe/resources/Smoove/hg38.sv_blacklist.bed"
+    access:    "/data/sunjh/project/CNVPipe/resources/CNVKit/access-excludes.hg38.analysisSet.bed"
+    smoove-exclude: "/data/sunjh/project/CNVPipe/resources/Smoove/hg38.sv_blacklist.bed"
 
     # 'lowmappable' file record regions with low unique mappability
     # http://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Umap.MultiTrackMappability.bw
-    low-mappable: "/jinwf/jhsun/CNVPipe/resources/Smoove/lowmappable.hg38.bed"
+    low-mappable: "/data/sunjh/project/CNVPipe/resources/Smoove/lowmappable.hg38.bed"
 
     # 'delly-map' is mandatory for human, while not required for other species;
-    # 'delly-map' files can be downloaded from https://gear.embl.de/data/delly/.
-    delly-map: "/data/jinwf/jhsun/CNVPipe/resources/Delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz"
+    # 'delly-map' files can be downloaded from https://gear-genomics.embl.de/data/delly/.
+    delly-map: "/data/sunjh/refs/hg38/bundle/Delly/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz"
 
     # 'normal-common-cnv' file is used to evaluate the overlap between identified CNVs with
     # high-frequency CNVs in normal population, it's under 'resources/dbVar' directory.
     # Keep it empty if calling CNVs for other species.
-    normal-common-cnv: "/data/jinwf/jhsun/CNVPipe/resources/dbVar/common_global_normal.bed"
+    normal-common-cnv: "/data/sunjh/project/CNVPipe/resources/dbVar/common_global_normal.bed"
     
     # Below three GATK bundle files are mandatory if base quality recalibration function is 
     # activated (default is deactivated), otherwise can be empty.
     # GATK bundle files can be downloaded from Google cloud:
     # https://console.cloud.google.com/storage/browser/genomics-public-data/resources/broad/hg38/v0;tab=objects?pli=1&prefix=&forceOnObjectsSortingFiltering=false
-    gatk-dbsnp: "/data/jinwf/jhsun/CNVPipe/resources/GATK/dbsnp_146.hg38.vcf.gz"
-    gatk-mills: "/home/jhsun/data3/CNVPipe/resources/GATK/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
-    gatk-hg38: "/home/jhsun/data3/CNVPipe/resources/GATK/Homo_sapiens_assembly38.known_indels.vcf.gz"
+    gatk-dbsnp: "/data/sunjh/refs/hg38/bundle/gatk/dbsnp_146.hg38.vcf.gz"
+    gatk-mills: "/data/sunjh/refs/hg38/bundle/gatk/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
+    gatk-hg38: "/data/sunjh/refs/hg38/bundle/gatk/Homo_sapiens_assembly38.known_indels.vcf.gz"
     
     # Below three GATK bundle files are mandatory if GATK SNP calling pipeline is activated 
     # (default is deactivated), otherwise can be empty.
-    gatk-hapmap: "/data/jinwf/jhsun/CNVPipe/resources/GATK/hapmap_3.3.hg38.vcf.gz"
-    gatk-omni: "/data/jinwf/jhsun/CNVPipe/resources/GATK/1000G_omni2.5.hg38.vcf.gz"
-    gatk-1000g: "/data/jinwf/jhsun/CNVPipe/resources/GATK/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
+    gatk-hapmap: "/data/sunjh/refs/hg38/bundle/gatk/hapmap_3.3.hg38.vcf.gz"
+    gatk-omni: "/data/sunjh/refs/hg38/bundle/gatk/1000G_omni2.5.hg38.vcf.gz"
+    gatk-1000g: "/data/sunjh/refs/hg38/bundle/gatk/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
     
-    bin-boundary: "/home/jhsun/data3/github-repo/WMED/boundary/hg38_bwa_12k_k76.gc.content.txt"
+    # 'bad-bins' records genomic bins with abnormal GC content or mappability, used by
+    # the single-cell segmentation step. Required if single-cell mode is activated.
+    bad-bins: "/data/sunjh/refs/hg38/bundle/WMED/hg38_bwa_12k_k76.badbins.txt"
+
+    bin-boundary: "/data/sunjh/refs/hg38/bundle/WMED/hg38_bwa_12k_k76.gc.content.txt"
 
 settings:
     # Whether keep fastp and bwamem intermediate files (which should be very large), default is 
@@ -67,6 +71,9 @@ params:
     # Specify the species for which CNVPipe will be applied on, should be one of ['human', 'rice', 'others']
     species: "human"
 
+    # Genome build identifier (used by ClassifyCNV for human genomes; ignored for other species).
+    genome-build: "hg38"
+
     # Whether the dataset is single-cell or bulk?
     single-cell: False
 
@@ -85,6 +92,11 @@ params:
 
     # The least number of samples required to regard a CNV to be a recurrent CNV, default is 5.
     recurrent-threshold: 5
+
+    # Java heap memory for GATK tools (in GB). Adjust based on available node memory.
+    gatk:
+        java-heap: "4"
+        java-heap-hc: "20"
 
     # Set threads for different programs, no need to change them if no special requirement.
     fastp:

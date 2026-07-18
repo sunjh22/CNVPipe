@@ -1,0 +1,81 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+description: "Configuration schema for CNVPipe"
+type: object
+properties:
+  data:
+    type: object
+    required: [samples, genome]
+    properties:
+      samples:
+        type: string
+        description: "Path to samples TSV table"
+      genome:
+        type: string
+        description: "Path to reference genome FASTA file"
+      access:
+        type: string
+        description: "Path to CNVKit access-excludes BED file"
+      "smoove-exclude":
+        type: string
+      "low-mappable":
+        type: string
+      "delly-map":
+        type: string
+      "normal-common-cnv":
+        type: string
+      "gatk-dbsnp":
+        type: string
+      "gatk-mills":
+        type: string
+      "gatk-hg38":
+        type: string
+      "gatk-hapmap":
+        type: string
+      "gatk-omni":
+        type: string
+      "gatk-1000g":
+        type: string
+      "bin-boundary":
+        type: string
+      "bad-bins":
+        type: string
+  settings:
+    type: object
+    properties:
+      keep-intermediate:
+        type: object
+        properties:
+          fastp:
+            type: boolean
+          bwamem:
+            type: boolean
+      bqsr:
+        type: boolean
+      gatk-snp:
+        type: boolean
+      recurrent:
+        type: boolean
+  params:
+    type: object
+    required: [species, binSize]
+    properties:
+      bam-input:
+        type: boolean
+      species:
+        type: string
+        enum: [human, rice, others]
+      single-cell:
+        type: boolean
+      ploidy:
+        type: string
+      binSize:
+        type: integer
+        minimum: 20
+      delly:
+        type: object
+        properties:
+          complex-mode:
+            type: boolean
+      recurrent-threshold:
+        type: integer
+        minimum: 2

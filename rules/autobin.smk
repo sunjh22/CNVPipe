@@ -25,8 +25,4 @@ checkpoint autobinBydepth:
 if os.path.isfile("logs/autobin/binsize.txt"):
     with open("logs/autobin/binsize.txt", 'r') as f:
         config['params']['binSize'] = int(f.readline().strip())
-
-# checkpoint cannot be used outside of the input function
-# if not config['params']['binSize']:
-#     with checkpoints.autobinBydepth.get().output[0].open as f:
-#         config['params']['binSize'] = int(f.readline().strip())
+    print(f"Using auto-determined bin size: {config['params']['binSize']}")

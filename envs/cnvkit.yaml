@@ -3,5 +3,5 @@ channels:
   - bioconda
 
 dependencies:
-  #- pomegranate=0.14.8
-  - cnvkit=0.9.10
+  - cnvkit==0.9.10
+  - numpy <2.0

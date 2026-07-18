@@ -1,0 +1,14 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+description: "Samples table schema for CNVPipe"
+type: object
+properties:
+  sample:
+    type: string
+    description: "Sample name; prefix with 'control-' for control samples"
+  fq1:
+    type: string
+    description: "Path to forward/only FASTQ file"
+  fq2:
+    type: string
+    description: "Path to reverse FASTQ file (empty for single-end)"
+required: [sample, fq1]
